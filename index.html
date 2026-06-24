@@ -48,6 +48,49 @@
                 radial-gradient(ellipse at 80% 80%, rgba(139, 94, 60, 0.02) 0%, transparent 60%);
         }
 
+        /* ===== صفحة تسجيل الدخول (تظهر كاملة) ===== */
+        .login-fullscreen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: var(--bg);
+            background-image: 
+                radial-gradient(ellipse at 20% 20%, rgba(201, 169, 110, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(139, 94, 60, 0.04) 0%, transparent 60%);
+        }
+        .login-fullscreen.hidden { display: none; }
+
+        .login-box {
+            background: var(--surface);
+            border-radius: var(--radius-xl);
+            padding: 40px 30px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-elevated);
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            animation: modalPop 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        .login-box .logo-big {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 3px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 45px;
+            margin: 0 auto 20px;
+            background: var(--surface2);
+            overflow: hidden;
+        }
+        .login-box .logo-big img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .login-box h1 { font-size: 28px; color: var(--gold); margin-bottom: 8px; font-weight: 900; }
+        .login-box p { color: var(--text3); margin-bottom: 28px; font-size: 14px; }
+
+        /* ===== شريط الإدارة ===== */
         .admin-bar {
             background: rgba(26, 20, 16, 0.95);
             backdrop-filter: blur(20px);
@@ -225,12 +268,35 @@
             .status-btn { padding: 8px 12px; font-size: 11px; }
             .admin-bar { padding: 10px 16px; }
             .admin-title { font-size: 18px; }
+            .login-box { padding: 30px 20px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="admin-bar">
+    <!-- ===== صفحة تسجيل الدخول (تظهر أولاً) ===== -->
+    <div id="loginFullscreen" class="login-fullscreen">
+        <div class="login-box">
+            <div class="logo-big" id="loginLogo">☕</div>
+            <h1>رشفة</h1>
+            <p>لوحة تحكم المدير</p>
+            <div class="form-group">
+                <label>البريد الإلكتروني</label>
+                <input type="email" id="loginEmail" placeholder="admin@rashfa.com" dir="ltr">
+            </div>
+            <div class="form-group">
+                <label>كلمة السر</label>
+                <input type="password" id="loginPassword" placeholder="********" dir="ltr">
+            </div>
+            <button class="btn btn-gold" onclick="loginAdmin()" style="width:100%;justify-content:center;padding:14px;">
+                <i class="fa-solid fa-lock"></i> تسجيل الدخول
+            </button>
+            <p id="loginError" style="color:var(--danger);text-align:center;margin-top:14px;display:none;font-weight:600;"></p>
+        </div>
+    </div>
+
+    <!-- ===== شريط الإدارة (يظهر بعد الدخول) ===== -->
+    <div class="admin-bar" id="adminBar" style="display:none;">
         <div class="admin-logo-area">
             <div class="admin-logo" id="adminLogoDisplay">☕</div>
             <div class="admin-title">رشفة<small>لوحة التحكم المتقدمة</small></div>
@@ -238,10 +304,12 @@
         <div class="admin-actions">
             <button class="btn btn-outline btn-sm" onclick="window.location.href='https://rashfa-liart.vercel.app/'"><i class="fa-solid fa-store"></i> المتجر</button>
             <button class="btn btn-purple btn-sm" onclick="window.exportOrders()"><i class="fa-solid fa-download"></i> تصدير</button>
+            <button class="btn btn-danger btn-sm" onclick="logoutAdmin()"><i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج</button>
         </div>
     </div>
 
-    <div class="container">
+    <!-- ===== المحتوى الرئيسي (يظهر بعد الدخول) ===== -->
+    <div class="container" id="mainContent" style="display:none;">
         <div class="page-header">
             <h1>⚙️ لوحة تحكم رشفة</h1>
             <p>إدارة احترافية للمنتجات، الطلبات، والمخزون</p>
@@ -367,6 +435,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, get, set, push, update, remove, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyARX12v1lvgKaFhIoYWRtv1Nqxpt8zz8HE",
@@ -380,6 +449,7 @@
 
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
+        const auth = getAuth(app);
 
         // ===== إعداد Cloudinary =====
         const CLOUDINARY_CLOUD_NAME = 'dzprjrvu7';
@@ -396,9 +466,11 @@
         let productsListener = null;
         let selectedProductImage = null;
         let selectedLogoImage = null;
+        let currentUser = null;
         
         const STATUS_FLOW = ['pending', 'accepted', 'delivering', 'delivered'];
         const DELETE_AFTER_MINUTES = 5;
+        const ADMIN_UID = 'bGaNd7dz74VaffyUlkWwAl9BTCq2';
 
         // ===== دوال مساعدة =====
         function showToast(msg, type = 'success') {
@@ -409,8 +481,83 @@
             c.appendChild(t);
             setTimeout(() => t.remove(), 3500);
         }
+        
+        function isAdmin() {
+            return currentUser && currentUser.uid === ADMIN_UID;
+        }
 
-        // ===== دالة رفع الصورة إلى Cloudinary باستخدام XMLHttpRequest (تحل مشكلة CORS) =====
+        // ===== إظهار وإخفاء الواجهات =====
+        function showAdminPanel() {
+            document.getElementById('loginFullscreen').classList.add('hidden');
+            document.getElementById('adminBar').style.display = 'flex';
+            document.getElementById('mainContent').style.display = 'block';
+            document.querySelectorAll('.tab').forEach(t => t.style.display = '');
+            // تنشيط المستمعات بعد إظهار المحتوى
+            if (!productsListener) setupProductsListener();
+            if (!window._ordersListenerSetup) {
+                setupOrdersListener();
+                window._ordersListenerSetup = true;
+            }
+            loadLogo();
+            renderOrders();
+            renderProductsGrid();
+            updateStats();
+        }
+
+        function showLoginScreen() {
+            document.getElementById('loginFullscreen').classList.remove('hidden');
+            document.getElementById('adminBar').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'none';
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('loginError').style.display = 'none';
+        }
+
+        // ===== دوال تسجيل الدخول والخروج =====
+        window.loginAdmin = async function() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
+            const btn = document.querySelector('.login-box .btn-gold');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الدخول...';
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                if (userCredential.user.uid !== ADMIN_UID) {
+                    await signOut(auth);
+                    throw new Error('هذا الحساب ليس حساب المدير.');
+                }
+                // سيتم استدعاء showAdminPanel() تلقائياً من خلال onAuthStateChanged
+            } catch (error) {
+                errorEl.textContent = '❌ ' + (error.message === 'هذا الحساب ليس حساب المدير.' ? error.message : 'فشل تسجيل الدخول. تأكد من البيانات.');
+                errorEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-lock"></i> تسجيل الدخول';
+            }
+        };
+
+        window.logoutAdmin = async function() {
+            await signOut(auth);
+            showToast('👋 تم تسجيل الخروج', 'info');
+            // سيتم استدعاء showLoginScreen() تلقائياً من خلال onAuthStateChanged
+        };
+
+        // مراقبة حالة المستخدم
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (isAdmin()) {
+                console.log('🔓 المدير مسجل الدخول:', user.email);
+                showAdminPanel();
+            } else {
+                console.log('🔒 وضع الزائر - عرض صفحة الدخول');
+                showLoginScreen();
+            }
+        });
+
+        // ===== دالة رفع الصورة إلى Cloudinary باستخدام XMLHttpRequest =====
         async function uploadToCloudinary(file, folder = 'rashfa-products') {
             return new Promise((resolve, reject) => {
                 console.log('🔄 بدء رفع الصورة إلى Cloudinary...');
@@ -424,15 +571,12 @@
                     return;
                 }
                 
-                // إنشاء FormData وإرسال الملف مباشرة
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
                 formData.append('folder', folder);
                 
-                // استخدام XMLHttpRequest بدلاً من fetch لحل مشكلة CORS على localhost
                 const xhr = new XMLHttpRequest();
-                
                 xhr.open('POST', CLOUDINARY_UPLOAD_URL, true);
                 
                 xhr.onload = function() {
@@ -489,8 +633,7 @@
                     reject(new Error('انتهت مهلة الاتصال بـ Cloudinary'));
                 };
                 
-                xhr.timeout = 60000; // 60 ثانية مهلة
-                
+                xhr.timeout = 60000;
                 console.log('📤 جاري إرسال الصورة ');
                 xhr.send(formData);
             });
@@ -535,7 +678,6 @@
             });
         }
 
-        // ===== دالة إنشاء توقيع الحذف =====
         async function generateDeleteSignature(publicId, timestamp) {
             const str = `public_id=${publicId}&timestamp=${timestamp}HzpFyW0Swe0AjpGOB5V95dQGhBg`;
             const encoder = new TextEncoder();
@@ -552,10 +694,8 @@
                 try {
                     console.log(`🔄 محاولة ${attempt}/${retries} لإضافة المنتج...`);
                     
-                    // رفع الصورة إلى Cloudinary
                     const imageData = await uploadToCloudinary(imageFile, 'rashfa-products');
                     
-                    // إضافة بيانات الصورة إلى المنتج
                     productData.image = imageData.url;
                     productData.cloudinary_public_id = imageData.public_id;
                     productData.image_metadata = {
@@ -565,7 +705,6 @@
                         original_filename: imageData.original_filename
                     };
                     
-                    // حفظ المنتج في Firebase
                     const newProductRef = push(ref(database, 'products'));
                     await set(newProductRef, productData);
                     
@@ -576,7 +715,6 @@
                     if (attempt === retries) {
                         throw new Error(`فشل إضافة المنتج بعد ${retries} محاولات: ${err.message}`);
                     }
-                    // انتظار قبل إعادة المحاولة
                     await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
                 }
             }
@@ -659,7 +797,6 @@
                 renderProductsGrid();
             }, (error) => {
                 console.error('❌ خطأ في تحميل المنتجات:', error);
-                showToast('فشل تحميل المنتجات', 'error');
             });
         }
 
@@ -693,6 +830,10 @@
                 }
                 
                 const imageUrl = p.image || '';
+                const actionButtons = `
+                    <button class="btn btn-gold btn-sm" onclick="openEditModal('${p.id}')"><i class="fa-solid fa-pen"></i> تعديل</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
+                `;
                 
                 return `
                 <div class="product-card-admin ${stockClass}" data-product-id="${p.id}">
@@ -709,14 +850,7 @@
                         </div>
                         <small>المخزون: ${currentQty} / ${init}</small>
                         ${p.description ? `<p style="font-size:12px;color:var(--text3);margin-top:4px;">${p.description.substring(0, 50)}${p.description.length > 50 ? '...' : ''}</p>` : ''}
-                        <div class="product-actions">
-                            <button class="btn btn-gold btn-sm" onclick="openEditModal('${p.id}')">
-                                <i class="fa-solid fa-pen"></i> تعديل
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">
-                                <i class="fa-solid fa-trash"></i> حذف
-                            </button>
-                        </div>
+                        <div class="product-actions">${actionButtons}</div>
                     </div>
                 </div>`;
             }).join('');
@@ -744,12 +878,7 @@
         // ===== مستمع تغيير صورة المنتج =====
         document.getElementById('prodImageInput')?.addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (!file) {
-                console.log('⚠️ لم يتم اختيار ملف');
-                return;
-            }
-            
-            console.log('📄 تم اختيار ملف:', file.name, 'النوع:', file.type, 'الحجم:', (file.size / 1024).toFixed(2), 'KB');
+            if (!file) return;
             
             if (!file.type.startsWith('image/')) {
                 showToast('⚠️ اختر ملف صورة', 'error');
@@ -777,12 +906,7 @@
                     uploadArea.classList.add('has-file');
                     const p = uploadArea.querySelector('p');
                     if (p) p.textContent = 'تم اختيار الصورة: ' + file.name;
-                    console.log('✅ تم تحميل معاينة الصورة');
                 }
-            };
-            reader.onerror = function() {
-                console.error('❌ فشل قراءة الملف');
-                showToast('فشل قراءة الصورة', 'error');
             };
             reader.readAsDataURL(file);
         });
@@ -794,8 +918,6 @@
             const quantity = parseInt(document.getElementById('prodQty')?.value);
             const description = document.getElementById('prodDesc')?.value?.trim();
             const imageFile = selectedProductImage;
-            
-            console.log('📝 محاولة إضافة منتج:', { name, price, quantity, description, hasImage: !!imageFile });
             
             const errors = [];
             if (!name) errors.push('اسم المنتج');
@@ -823,16 +945,13 @@
                 const success = await safeAddProduct(newProduct, imageFile);
                 
                 if (success) {
-                    console.log(`✅ تمت إضافة "${name}" بنجاح`);
                     window.resetAddProductForm();
                     showToast(`🎉 تمت إضافة "${name}" بنجاح!`, 'success');
                     setTimeout(() => window.switchTab('products'), 500);
                 } else {
                     throw new Error('فشل غير معروف في إضافة المنتج.');
                 }
-                
             } catch (err) {
-                console.error('❌ فشل إضافة المنتج:', err);
                 showToast('❌ فشل إضافة المنتج: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
@@ -877,48 +996,53 @@
             if (!confirm(`حذف "${productName}"؟ سيتم حذف الصورة أيضاً من Cloudinary.`)) return;
             
             try {
-                // حذف الصورة من Cloudinary إذا كانت موجودة
                 if (product?.cloudinary_public_id) {
-                    console.log(`🔄 جاري حذف الصورة : ${product.cloudinary_public_id}`);
                     await deleteFromCloudinary(product.cloudinary_public_id);
                 }
-                
-                // حذف المنتج من Firebase
                 await remove(ref(database, `products/${pid}`));
                 showToast(`🗑️ تم حذف "${productName}"`, 'info');
-            } catch (e) { 
-                console.error('فشل الحذف:', e);
-                showToast('❌ فشل الحذف', 'error'); 
-            }
+            } catch (e) { showToast('❌ فشل الحذف', 'error'); }
         };
 
         // ===== إدارة الإحصائيات =====
         function updateStats() {
-            document.getElementById('statOrders').textContent = allOrders.length;
-            document.getElementById('statPending').textContent = allOrders.filter(o => 
+            const statOrders = document.getElementById('statOrders');
+            const statPending = document.getElementById('statPending');
+            const statProducts = document.getElementById('statProducts');
+            const statLowStock = document.getElementById('statLowStock');
+            const statWarningCard = document.getElementById('statWarningCard');
+            
+            if (!statOrders) return;
+            
+            statOrders.textContent = allOrders.length;
+            statPending.textContent = allOrders.filter(o => 
                 o.status === 'pending' || o.status === 'accepted' || o.status === 'delivering'
             ).length;
-            document.getElementById('statProducts').textContent = allProducts.length;
+            statProducts.textContent = allProducts.length;
             
             const low = allProducts.filter(p => {
                 const threshold = Math.max(1, Math.ceil((p.initialStock || p.quantity || 0) * 0.05));
                 return (p.quantity || 0) <= threshold;
             }).length;
             
-            document.getElementById('statLowStock').textContent = low;
-            document.getElementById('statWarningCard').classList.toggle('warning-stat', low > 0);
+            statLowStock.textContent = low;
+            if (statWarningCard) statWarningCard.classList.toggle('warning-stat', low > 0);
             
-            const pendingCount = allOrders.filter(o => o.status === 'pending').length;
             const pendingBadge = document.getElementById('pendingBadge');
-            pendingBadge.textContent = pendingCount;
-            pendingBadge.style.display = pendingCount > 0 ? 'inline' : 'none';
-            
             const lowStockBadge = document.getElementById('lowStockBadge');
-            lowStockBadge.textContent = low;
-            lowStockBadge.style.display = low > 0 ? 'inline' : 'none';
+            const pendingCount = allOrders.filter(o => o.status === 'pending').length;
+            
+            if (pendingBadge) {
+                pendingBadge.textContent = pendingCount;
+                pendingBadge.style.display = pendingCount > 0 ? 'inline' : 'none';
+            }
+            if (lowStockBadge) {
+                lowStockBadge.textContent = low;
+                lowStockBadge.style.display = low > 0 ? 'inline' : 'none';
+            }
         }
 
-        // ===== إدارة الطلبات =====
+        // ===== إدارة الطلبات (جميع الدوال كما هي) =====
         async function deductStock(orderId, data) {
             if (data._stockDeducted || !data.items?.length) return;
             for (const item of data.items) {
@@ -977,14 +1101,11 @@
 
             deleteTimers[orderId] = { timeoutId, intervalId, deleteTime, completionTimestamp };
             countdownIntervals[orderId] = intervalId;
-
-            console.log(`⏱️ الطلب #${orderId.slice(-8)} سيُحذف بعد ${formatTime(Math.ceil(remainingMs/1000))} [${status}]`);
         }
 
         async function removeOrderFromDB(orderId, status) {
             try {
                 await remove(ref(database, `orders/${orderId}`));
-                console.log(`🗑️ تم حذف الطلب #${orderId.slice(-8)}`);
                 showToast(`🗑️ تم حذف الطلب ${status === 'delivered' ? 'المكتمل' : 'المرفوض'}`, 'info');
             } catch (err) { console.error('فشل الحذف:', err); }
         }
@@ -1001,30 +1122,24 @@
             }
         }
 
-        // ===== طباعة الريسيت =====
         function printReceipt(order) {
-            if (!order || !order.id) { showToast('⚠️ خطأ: بيانات الطلب غير موجودة', 'error'); return; }
-
+            if (!order || !order.id) return;
             const date = new Date(order.createdAt || Date.now()).toLocaleString('ar-EG');
             const itemsHtml = (order.items || []).map(i => 
                 `<tr><td style="text-align:right;padding:4px 8px;border-bottom:1px dashed #ccc;">${i.name} ×${i.quantity}</td><td style="text-align:center;padding:4px 8px;border-bottom:1px dashed #ccc;">${(i.price * i.quantity).toFixed(2)} ج</td></tr>`
             ).join('');
             
-            const receiptHTML = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>رشفة - ريسيت</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;background:white;color:black;padding:10px;width:80mm;margin:0 auto}.header{text-align:center;margin-bottom:10px}.header h2{font-size:18px;margin-bottom:2px}.header p{font-size:11px;color:#555}hr{border:none;border-top:1px dashed #999;margin:8px 0}.info{font-size:12px}.info p{margin:3px 0}table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}th{text-align:right;padding:4px 8px;border-bottom:1px solid #999;font-size:11px}.total{font-size:18px;font-weight:bold;text-align:center;margin:8px 0}.footer{text-align:center;font-size:11px;margin-top:10px}.status{text-align:center;font-size:13px;font-weight:bold;margin:5px 0}@media print{body{width:80mm}}.print-btn{display:block;margin:10px auto;padding:10px 20px;background:#4A90D9;color:white;border:none;border-radius:5px;font-size:16px;cursor:pointer;text-align:center}.print-btn:hover{background:#3A7BC8}</style></head><body><div class="header"><h2>☕ رشفة للكيف الحلال</h2><p>Rashfa Coffee</p><p>+201126101152</p></div><hr><div class="info"><p><strong>طلب #${order.id.slice(-8)}</strong></p><p>📅 ${date}</p><p>👤 اسم المستلم: <strong>${order.recipientName || '---'}</strong></p><p>📞 ${order.phone || '---'}</p><p>📍 ${order.address || '---'}</p></div><hr><table><thead><tr><th>المنتج</th><th>السعر</th></tr></thead><tbody>${itemsHtml}</tbody></table><hr><div class="total">الإجمالي: ${order.total || 0} جنيه</div><div class="footer"><p>شكراً لاختياركم رشفة ☕</p><p>نتمنى لكم تجربة ممتعة</p></div><button class="print-btn" onclick="window.print()">🖨️ طباعة الريسيت</button></body></html>`;
+            const receiptHTML = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>رشفة - ريسيت</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;background:white;color:black;padding:10px;width:80mm;margin:0 auto}.header{text-align:center;margin-bottom:10px}.header h2{font-size:18px;margin-bottom:2px}.header p{font-size:11px;color:#555}hr{border:none;border-top:1px dashed #999;margin:8px 0}.info{font-size:12px}.info p{margin:3px 0}table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}th{text-align:right;padding:4px 8px;border-bottom:1px solid #999;font-size:11px}.total{font-size:18px;font-weight:bold;text-align:center;margin:8px 0}.footer{text-align:center;font-size:11px;margin-top:10px}@media print{body{width:80mm}}.print-btn{display:block;margin:10px auto;padding:10px 20px;background:#4A90D9;color:white;border:none;border-radius:5px;font-size:16px;cursor:pointer;text-align:center}.print-btn:hover{background:#3A7BC8}</style></head><body><div class="header"><h2>☕ رشفة للكيف الحلال</h2><p>Rashfa Coffee</p><p>+201126101152</p></div><hr><div class="info"><p><strong>طلب #${order.id.slice(-8)}</strong></p><p>📅 ${date}</p><p>👤 اسم المستلم: <strong>${order.recipientName || '---'}</strong></p><p>📞 ${order.phone || '---'}</p><p>📍 ${order.address || '---'}</p></div><hr><table><thead><tr><th>المنتج</th><th>السعر</th></tr></thead><tbody>${itemsHtml}</tbody></table><hr><div class="total">الإجمالي: ${order.total || 0} جنيه</div><div class="footer"><p>شكراً لاختياركم رشفة ☕</p><p>نتمنى لكم تجربة ممتعة</p></div><button class="print-btn" onclick="window.print()">🖨️ طباعة الريسيت</button></body></html>`;
 
             const printWindow = window.open('', '_blank', 'width=400,height=650');
             if (printWindow) {
                 printWindow.document.write(receiptHTML);
                 printWindow.document.close();
-            } else {
-                showToast('⚠️ يرجى السماح بالنوافذ المنبثقة', 'warning');
             }
         }
 
-        // ===== مستمع الطلبات =====
         function setupOrdersListener() {
             const ordersRef = ref(database, 'orders');
-            
             onValue(ordersRef, async (snap) => {
                 const orders = [];
                 if (snap.exists()) {
@@ -1032,10 +1147,7 @@
                         orders.push({ id: child.key, ...child.val() });
                     });
                 }
-
                 orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-                
-                console.log(`📋 تم استلام ${orders.length} طلب من قاعدة البيانات`);
 
                 for (const o of orders) {
                     if (o.status === 'accepted' && !o._stockDeducted && previousStatuses[o.id] !== 'accepted') {
@@ -1043,7 +1155,6 @@
                     }
                     previousStatuses[o.id] = o.status;
                 }
-
                 allOrders = orders;
 
                 for (const o of orders) {
@@ -1058,7 +1169,6 @@
                 }
 
                 updateStats();
-                
                 if (document.getElementById('panel-orders')?.classList.contains('active')) {
                     renderOrders();
                 }
@@ -1081,6 +1191,7 @@
 
         function renderOrders() {
             const c = document.getElementById('ordersList');
+            if (!c || !document.getElementById('panel-orders')?.classList.contains('active')) return;
             
             let filteredOrders = allOrders;
             if (currentFilter === 'pending') {
@@ -1102,12 +1213,6 @@
                 const isDone = o.status === 'delivered';
                 const cIdx = STATUS_FLOW.indexOf(o.status);
                 const labels = { pending: '⏳ معلق', accepted: '✅ مقبول', delivering: '🚚 توصيل', delivered: '📦 مكتمل' };
-                
-                let priorityClass = 'priority-normal';
-                if (o.status === 'pending') {
-                    const age = Date.now() - (o.createdAt || Date.now());
-                    if (age > 30 * 60 * 1000) priorityClass = 'priority-high';
-                }
                 
                 let btns = '';
                 if (isRej) {
@@ -1140,18 +1245,18 @@
                     countdownHtml = `<span class="countdown-timer" id="countdown-${o.id}">⏱️ ${formatTime(remaining)}</span>`;
                 }
 
-                return `<div class="order-card ${o.status==='pending'&&!o._seen?'new-order':''} ${priorityClass}" id="order-${o.id}">
+                return `<div class="order-card ${o.status==='pending'&&!o._seen?'new-order':''}" id="order-${o.id}">
                     <div class="order-header">
                         <span class="order-id">📋 #${o.id.slice(-8)}</span>
-                        <span class="order-status-badge" style="background:${o.status==='pending'?'rgba(255,193,7,0.15)':o.status==='accepted'?'rgba(74,144,217,0.15)':o.status==='delivering'?'rgba(40,167,69,0.15)':'rgba(170,170,170,0.15)'};color:${o.status==='pending'?'#FFC107':o.status==='accepted'?'#4A90D9':o.status==='delivering'?'#28A745':'#AAA'}">${labels[o.status] || o.status}</span>
+                        <span class="order-status-badge">${labels[o.status] || o.status}</span>
                         <span class="order-date">${date}</span>
                     </div>
-                    <div class="order-info-row"><i class="fa-solid fa-user"></i> <strong style="font-size: 16px; color: var(--text);">${o.recipientName || '---'}</strong></div>
+                    <div class="order-info-row"><i class="fa-solid fa-user"></i> <strong>${o.recipientName || '---'}</strong></div>
                     <div class="order-info-row"><i class="fa-solid fa-location-dot"></i> ${o.address||'---'}</div>
                     <div class="order-info-row"><i class="fa-solid fa-phone"></i> ${o.phone||'---'}</div>
                     <div class="order-items-list">${(o.items||[]).map(i=>`<div class="order-item-row"><span>${i.name} ×${i.quantity}</span><span>${(i.price*i.quantity).toFixed(2)} ج</span></div>`).join('')}</div>
                     <div class="order-total-row">💰 ${o.total||0} جنيه</div>
-                    ${o.rejectionReason?`<div class="rejection-reason">❌ ${o.rejectionReason}${o.rejectionDetails?' - '+o.rejectionDetails:''}</div>`:''}
+                    ${o.rejectionReason?`<div class="rejection-reason">❌ ${o.rejectionReason}</div>`:''}
                     ${countdownHtml}
                     <div class="status-flow">${btns}</div>
                 </div>`;
@@ -1161,8 +1266,6 @@
         window.advanceStatus = async function(oid, ns) {
             const o = allOrders.find(x => x.id === oid);
             if (!o) return;
-            const ci = STATUS_FLOW.indexOf(o.status), ni = STATUS_FLOW.indexOf(ns);
-            if (ni !== ci + 1 && ni !== ci) { showToast('⚠️ خطوة واحدة فقط', 'warning'); return; }
             try {
                 const data = { status: ns };
                 if (ns === 'delivered') data.deliveredAt = Date.now();
@@ -1174,8 +1277,7 @@
 
         window.printReceiptForOrder = function(oid) {
             const order = allOrders.find(x => x.id === oid);
-            if (!order) { showToast('⚠️ لم يتم العثور على الطلب', 'error'); return; }
-            printReceipt(order);
+            if (order) printReceipt(order);
         };
 
         window.openRejectModal = function(oid) {
@@ -1205,17 +1307,8 @@
         document.getElementById('logoFileInput')?.addEventListener('change', function(e) {
             const f = e.target.files[0];
             if (!f) return;
-            
-            console.log('🖼️ تم اختيار شعار:', f.name);
-            
-            if (!f.type.startsWith('image/')) {
-                showToast('⚠️ اختر ملف صورة', 'error');
-                this.value = '';
-                return;
-            }
-            
+            if (!f.type.startsWith('image/')) { showToast('⚠️ اختر ملف صورة', 'error'); this.value = ''; return; }
             selectedLogoImage = f;
-            
             const r = new FileReader();
             r.onload = ev => { 
                 const logoPreview = document.getElementById('logoPreviewLarge');
@@ -1236,14 +1329,13 @@
             const btn = this; btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الشعار ';
             try {
                 const logoData = await uploadToCloudinary(f, 'rashfa-logo');
-                
                 await set(ref(database, 'settings/logo'), { 
                     url: logoData.url, 
                     cloudinary_public_id: logoData.public_id,
                     updatedAt: Date.now() 
                 });
-                
                 document.getElementById('adminLogoDisplay').innerHTML = `<img src="${logoData.url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                document.getElementById('loginLogo').innerHTML = `<img src="${logoData.url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
                 selectedLogoImage = null;
                 document.getElementById('logoFileInput').value = '';
                 const logoArea = document.getElementById('logoUploadArea');
@@ -1253,10 +1345,7 @@
                     if (p) p.textContent = 'اختر شعار المتجر';
                 }
                 showToast('✅ تم حفظ الشعار بنجاح!', 'success');
-            } catch (err) { 
-                console.error('❌ فشل رفع الشعار:', err);
-                showToast('❌ فشل رفع الشعار: ' + err.message, 'error'); 
-            }
+            } catch (err) { showToast('❌ فشل رفع الشعار', 'error'); }
             finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-save"></i> حفظ الشعار'; }
         });
 
@@ -1265,28 +1354,29 @@
                 if (s.exists() && s.val().url) {
                     const logoPreview = document.getElementById('logoPreviewLarge');
                     if (logoPreview) logoPreview.innerHTML = `<img src="${s.val().url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                    const adminLogoDisplay = document.getElementById('adminLogoDisplay');
+                    if (adminLogoDisplay) adminLogoDisplay.innerHTML = `<img src="${s.val().url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                    const loginLogo = document.getElementById('loginLogo');
+                    if (loginLogo) loginLogo.innerHTML = `<img src="${s.val().url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
                 }
             }).catch(err => console.error('❌ فشل تحميل الشعار:', err));
         }
 
         onValue(ref(database, 'settings/logo'), s => {
             if (s.exists() && s.val().url) {
-                const logoDisplay = document.getElementById('adminLogoDisplay');
-                if (logoDisplay) logoDisplay.innerHTML = `<img src="${s.val().url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                const logo = s.val().url;
+                ['adminLogoDisplay', 'loginLogo', 'logoPreviewLarge'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerHTML = `<img src="${logo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                });
             }
         });
 
         // ===== بدء التشغيل =====
         function init() {
             console.log('🚀 بدء تشغيل لوحة تحكم رشفة...');
-            console.log('☁️ استخدام Cloudinary لتخزين الصور');
-            console.log(`📁 Cloud Name: ${CLOUDINARY_CLOUD_NAME}`);
-            console.log(`🔑 Upload Preset: ${CLOUDINARY_UPLOAD_PRESET}`);
-            console.log('🔧 استخدام XMLHttpRequest لتجنب مشاكل CORS');
-            
-            setupOrdersListener();
-            setupProductsListener();
-            loadLogo();
+            console.log('🔐 في انتظار تسجيل الدخول...');
+            // onAuthStateChanged سيتولى إظهار إما صفحة الدخول أو لوحة التحكم
             
             // تعيين الدوال العامة
             window.switchTab = window.switchTab;
@@ -1303,6 +1393,8 @@
             window.resetAddProductForm = window.resetAddProductForm;
             window.filterOrders = window.filterOrders;
             window.exportOrders = window.exportOrders;
+            window.loginAdmin = window.loginAdmin;
+            window.logoutAdmin = window.logoutAdmin;
             
             console.log('✅ لوحة تحكم رشفة جاهزة للعمل');
         }
