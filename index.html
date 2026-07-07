@@ -255,6 +255,33 @@
         .upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
         .img-preview { width: 120px; height: 120px; border-radius: var(--radius); object-fit: contain; margin-top: 10px; border: 2px solid var(--border); display: none; background: #2A221A; }
         .img-preview.show { display: block; }
+        
+        /* ===== شريط التقدم ===== */
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 10px;
+            margin-top: 12px;
+            overflow: hidden;
+            display: none;
+        }
+        .progress-bar-container.active { display: block; }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold-dark), var(--gold));
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .upload-status-text {
+            font-size: 12px;
+            color: var(--text3);
+            margin-top: 6px;
+            text-align: center;
+            display: none;
+        }
+        .upload-status-text.active { display: block; }
 
         /* ===== Toast ===== */
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
@@ -396,6 +423,10 @@
                             <p>اختر صورة المنتج</p>
                             <input type="file" id="prodImageInput" accept="image/*">
                         </div>
+                        <div class="progress-bar-container" id="imgProgressBar">
+                            <div class="progress-bar-fill" id="imgProgressFill"></div>
+                        </div>
+                        <div class="upload-status-text" id="imgUploadStatus"></div>
                         <img class="img-preview" id="imgPreview" alt="معاينة الصورة">
                     </div>
                     <div class="form-group" style="grid-column:1/-1;"><label>وصف المنتج *</label><textarea id="prodDesc" placeholder="وصف مختصر للمنتج..." required></textarea></div>
@@ -418,6 +449,10 @@
                             <p>اختر شعار المتجر</p>
                             <input type="file" id="logoFileInput" accept="image/*">
                         </div>
+                        <div class="progress-bar-container" id="logoProgressBar">
+                            <div class="progress-bar-fill" id="logoProgressFill"></div>
+                        </div>
+                        <div class="upload-status-text" id="logoUploadStatus"></div>
                         <button class="btn btn-gold" id="uploadLogoBtn"><i class="fa-solid fa-save"></i> حفظ الشعار</button>
                     </div>
                 </div>
@@ -681,59 +716,251 @@
             }
         });
 
-        // ===== دالة رفع الصورة إلى Cloudinary =====
-        async function uploadToCloudinary(file, folder = 'rashfa-products') {
-            return new Promise((resolve, reject) => {
-                if (!file || !file.type.startsWith('image/')) {
-                    reject(new Error('الملف غير صالح أو ليس صورة'));
-                    return;
-                }
+        // ===== دالة التحقق من إعدادات Cloudinary =====
+        async function verifyCloudinarySetup() {
+            console.log('🔍 التحقق من إعدادات Cloudinary...');
+            
+            try {
+                // إنشاء صورة اختبار صغيرة جداً
+                const canvas = document.createElement('canvas');
+                canvas.width = 1;
+                canvas.height = 1;
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
                 
-                if (file.size > 10 * 1024 * 1024) {
-                    reject(new Error('حجم الصورة كبير جداً (الحد الأقصى 10 ميجابايت)'));
-                    return;
-                }
+                const testFormData = new FormData();
+                testFormData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                testFormData.append('file', blob, 'test.png');
                 
-                console.log('🔄 بدء رفع الصورة إلى Cloudinary...', file.name);
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                formData.append('folder', folder);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
                 
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', CLOUDINARY_UPLOAD_URL, true);
-                xhr.timeout = 60000;
+                const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+                    method: 'POST',
+                    body: testFormData,
+                    signal: controller.signal
+                });
                 
-                xhr.onload = function() {
-                    if (xhr.status >= 200 && xhr.status < 300) {
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ إعدادات Cloudinary صحيحة');
+                    
+                    // حذف صورة الاختبار
+                    if (data.public_id) {
                         try {
-                            const responseData = JSON.parse(xhr.responseText);
-                            if (responseData.error) {
-                                reject(new Error(responseData.error.message || 'فشل رفع الصورة'));
+                            await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/destroy`, {
+                                method: 'POST',
+                                body: new FormData()
+                            });
+                        } catch (e) {
+                            // تجاهل خطأ الحذف
+                        }
+                    }
+                    return true;
+                } else {
+                    console.error('❌ خطأ في إعدادات Cloudinary:', response.status);
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ فشل التحقق من Cloudinary:', error);
+                return false;
+            }
+        }
+
+        // ===== دالة ضغط الصورة قبل الرفع =====
+        async function compressImageIfNeeded(file, maxWidth = 1920, maxHeight = 1920, quality = 0.85) {
+            // إذا كانت الصورة صغيرة، نعيدها كما هي
+            if (file.size < 500 * 1024) { // أقل من 500 كيلوبايت
+                return file;
+            }
+            
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // تصغير الأبعاد إذا كانت كبيرة جداً
+                        if (width > maxWidth || height > maxHeight) {
+                            const ratio = Math.min(maxWidth / width, maxHeight / height);
+                            width = Math.round(width * ratio);
+                            height = Math.round(height * ratio);
+                        }
+                        
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        
+                        // استخدام خوارزمية تحسين الجودة
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        canvas.toBlob((blob) => {
+                            if (!blob) {
+                                resolve(file); // فشل الضغط، استخدم الملف الأصلي
                                 return;
                             }
-                            console.log('✅ تم رفع الصورة بنجاح:', responseData.secure_url);
-                            resolve({
-                                url: responseData.secure_url,
-                                public_id: responseData.public_id,
-                                width: responseData.width,
-                                height: responseData.height,
-                                format: responseData.format,
-                                original_filename: responseData.original_filename
+                            
+                            const compressedFile = new File([blob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
                             });
-                        } catch (parseError) {
-                            reject(new Error('فشل تحليل الرد من Cloudinary'));
-                        }
-                    } else {
-                        reject(new Error(`فشل رفع الصورة (${xhr.status})`));
-                    }
+                            
+                            console.log(`🗜️ تم ضغط الصورة: ${(file.size/1024).toFixed(1)}KB → ${(compressedFile.size/1024).toFixed(1)}KB`);
+                            resolve(compressedFile);
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = () => resolve(file); // فشل التحميل، استخدم الملف الأصلي
+                    img.src = e.target.result;
                 };
-                
-                xhr.onerror = () => reject(new Error('فشل الاتصال بـ Cloudinary'));
-                xhr.ontimeout = () => reject(new Error('انتهت مهلة الاتصال بـ Cloudinary'));
-                
-                xhr.send(formData);
+                reader.onerror = () => resolve(file); // فشل القراءة، استخدم الملف الأصلي
+                reader.readAsDataURL(file);
             });
+        }
+
+        // ===== دالة رفع الصورة إلى Cloudinary (مُحسَّنة) =====
+        async function uploadToCloudinary(file, folder = 'rashfa-products', progressCallback = null) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    // التحقق من صحة الملف
+                    if (!file || !(file instanceof File)) {
+                        reject(new Error('الملف غير صالح'));
+                        return;
+                    }
+                    
+                    if (!file.type.startsWith('image/')) {
+                        reject(new Error('الملف ليس صورة. الأنواع المدعومة: JPG, PNG, GIF, WebP'));
+                        return;
+                    }
+                    
+                    if (file.size > 10 * 1024 * 1024) {
+                        reject(new Error('حجم الصورة كبير جداً (الحد الأقصى 10 ميجابايت)'));
+                        return;
+                    }
+                    
+                    // ضغط الصورة قبل الرفع
+                    const fileToUpload = await compressImageIfNeeded(file);
+                    
+                    console.log('🔄 بدء رفع الصورة إلى Cloudinary...', {
+                        name: fileToUpload.name,
+                        size: (fileToUpload.size / 1024 / 1024).toFixed(2) + ' MB',
+                        type: fileToUpload.type
+                    });
+                    
+                    const formData = new FormData();
+                    formData.append('file', fileToUpload);
+                    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                    formData.append('folder', folder);
+                    formData.append('quality', 'auto');
+                    formData.append('fetch_format', 'auto');
+                    
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', CLOUDINARY_UPLOAD_URL, true);
+                    xhr.timeout = 120000; // دقيقتين
+                    
+                    // تتبع تقدم الرفع
+                    xhr.upload.onprogress = (event) => {
+                        if (event.lengthComputable && progressCallback) {
+                            const percentComplete = Math.round((event.loaded / event.total) * 100);
+                            progressCallback(percentComplete);
+                            console.log(`📤 تقدم الرفع: ${percentComplete}%`);
+                        }
+                    };
+                    
+                    xhr.onload = function() {
+                        console.log('📥 استجابة Cloudinary:', xhr.status);
+                        
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const responseData = JSON.parse(xhr.responseText);
+                                
+                                if (responseData.error) {
+                                    console.error('❌ خطأ Cloudinary:', responseData.error);
+                                    reject(new Error(responseData.error.message || 'فشل رفع الصورة'));
+                                    return;
+                                }
+                                
+                                console.log('✅ تم رفع الصورة بنجاح:', {
+                                    url: responseData.secure_url,
+                                    public_id: responseData.public_id,
+                                    size: responseData.bytes,
+                                    format: responseData.format
+                                });
+                                
+                                resolve({
+                                    url: responseData.secure_url,
+                                    public_id: responseData.public_id,
+                                    width: responseData.width,
+                                    height: responseData.height,
+                                    format: responseData.format,
+                                    original_filename: responseData.original_filename,
+                                    bytes: responseData.bytes
+                                });
+                            } catch (parseError) {
+                                console.error('❌ فشل تحليل رد Cloudinary:', parseError);
+                                reject(new Error('فشل معالجة رد الخادم'));
+                            }
+                        } else {
+                            console.error('❌ فشل الرفع - رمز الحالة:', xhr.status);
+                            try {
+                                const errorResponse = JSON.parse(xhr.responseText);
+                                reject(new Error(errorResponse.error?.message || `فشل رفع الصورة (${xhr.status})`));
+                            } catch {
+                                reject(new Error(`فشل رفع الصورة (${xhr.status})`));
+                            }
+                        }
+                    };
+                    
+                    xhr.onerror = function() {
+                        console.error('❌ خطأ في الاتصال بـ Cloudinary');
+                        reject(new Error('فشل الاتصال بخادم Cloudinary. تأكد من اتصالك بالإنترنت'));
+                    };
+                    
+                    xhr.ontimeout = function() {
+                        console.error('❌ انتهت مهلة الاتصال بـ Cloudinary');
+                        reject(new Error('انتهت مهلة رفع الصورة. حاول مرة أخرى أو استخدم صورة أصغر'));
+                    };
+                    
+                    xhr.send(formData);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        // ===== دالة عرض تقدم الرفع =====
+        function showUploadProgress(progressBarId, progressFillId, statusTextId) {
+            const progressBar = document.getElementById(progressBarId);
+            const progressFill = document.getElementById(progressFillId);
+            const statusText = document.getElementById(statusTextId);
+            
+            if (progressBar) progressBar.classList.add('active');
+            if (statusText) {
+                statusText.classList.add('active');
+                statusText.textContent = 'جاري الرفع... 0%';
+            }
+            
+            return (percent) => {
+                if (progressFill) progressFill.style.width = percent + '%';
+                if (statusText) statusText.textContent = `جاري الرفع... ${percent}%`;
+                
+                if (percent >= 100) {
+                    if (statusText) statusText.textContent = 'جاري معالجة الصورة...';
+                    setTimeout(() => {
+                        if (progressBar) progressBar.classList.remove('active');
+                        if (statusText) {
+                            statusText.classList.remove('active');
+                            statusText.textContent = '';
+                        }
+                        if (progressFill) progressFill.style.width = '0%';
+                    }, 1500);
+                }
+            };
         }
 
         // ===== دالة حذف صورة من Cloudinary =====
@@ -951,6 +1178,14 @@
                 const p = uploadArea.querySelector('p');
                 if (p) p.textContent = 'اختر صورة المنتج';
             }
+            // إخفاء شريط التقدم
+            const progressBar = document.getElementById('imgProgressBar');
+            const statusText = document.getElementById('imgUploadStatus');
+            if (progressBar) progressBar.classList.remove('active');
+            if (statusText) {
+                statusText.classList.remove('active');
+                statusText.textContent = '';
+            }
         };
 
         // ===== مستمع تغيير صورة المنتج =====
@@ -989,7 +1224,7 @@
             reader.readAsDataURL(file);
         });
 
-        // ===== إضافة منتج جديد =====
+        // ===== إضافة منتج جديد (مُحسَّنة) =====
         document.getElementById('addProductBtn')?.addEventListener('click', async function() {
             const name = document.getElementById('prodName')?.value?.trim();
             const price = parseFloat(document.getElementById('prodPrice')?.value);
@@ -1010,11 +1245,19 @@
             }
             
             const btn = this;
+            const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الصورة ';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تجهيز الصورة...';
             
-            await ErrorHandler.safeExecute(async () => {
-                const imageData = await uploadToCloudinary(imageFile, 'rashfa-products');
+            try {
+                // إظهار شريط التقدم
+                const progressCallback = showUploadProgress('imgProgressBar', 'imgProgressFill', 'imgUploadStatus');
+                
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الصورة...';
+                
+                const imageData = await uploadToCloudinary(imageFile, 'rashfa-products', progressCallback);
+                
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري حفظ المنتج...';
                 
                 const newProduct = {
                     name, price, quantity, initialStock: quantity,
@@ -1025,7 +1268,8 @@
                         width: imageData.width,
                         height: imageData.height,
                         format: imageData.format,
-                        original_filename: imageData.original_filename
+                        original_filename: imageData.original_filename,
+                        bytes: imageData.bytes
                     },
                     createdAt: Date.now(), lastUpdated: Date.now()
                 };
@@ -1036,10 +1280,22 @@
                 window.resetAddProductForm();
                 showToast(`🎉 تمت إضافة "${name}" بنجاح!`, 'success');
                 setTimeout(() => window.switchTab('products'), 500);
-            }, 'إضافة منتج');
-            
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-plus"></i> إضافة المنتج';
+            } catch (error) {
+                console.error('❌ فشل إضافة المنتج:', error);
+                
+                let errorMessage = 'فشل إضافة المنتج';
+                
+                if (error.message.includes('Cloudinary') || error.message.includes('رفع')) {
+                    errorMessage = '❌ فشل رفع الصورة. تأكد من: \n• اتصال الإنترنت \n• حجم الصورة أقل من 10 ميجابايت \n• نوع الصورة مدعوم (JPG, PNG)';
+                } else if (error.message.includes('قاعدة البيانات')) {
+                    errorMessage = '❌ فشل حفظ المنتج في قاعدة البيانات';
+                }
+                
+                showToast(errorMessage, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
         });
 
         // ===== تعديل وحذف المنتجات =====
@@ -1558,11 +1814,18 @@
             if (!f) { showToast('⚠️ اختر صورة', 'error'); return; }
             
             const btn = this; 
+            const originalText = btn.innerHTML;
             btn.disabled = true; 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الشعار ';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الشعار...';
             
-            await ErrorHandler.safeExecute(async () => {
-                const logoData = await uploadToCloudinary(f, 'rashfa-logo');
+            try {
+                // إظهار شريط التقدم للشعار
+                const progressCallback = showUploadProgress('logoProgressBar', 'logoProgressFill', 'logoUploadStatus');
+                
+                const logoData = await uploadToCloudinary(f, 'rashfa-logo', progressCallback);
+                
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
+                
                 await set(ref(database, 'settings/logo'), { 
                     url: logoData.url, 
                     cloudinary_public_id: logoData.public_id,
@@ -1579,10 +1842,13 @@
                     if (p) p.textContent = 'اختر شعار المتجر';
                 }
                 showToast('✅ تم حفظ الشعار بنجاح!', 'success');
-            }, 'رفع الشعار');
-            
-            btn.disabled = false; 
-            btn.innerHTML = '<i class="fa-solid fa-save"></i> حفظ الشعار';
+            } catch (error) {
+                console.error('❌ فشل رفع الشعار:', error);
+                showToast('❌ فشل رفع الشعار. تأكد من اتصال الإنترنت وحجم الصورة', 'error');
+            } finally {
+                btn.disabled = false; 
+                btn.innerHTML = originalText;
+            }
         });
 
         function updateLogoDisplay(url) {
@@ -1607,8 +1873,17 @@
         });
 
         // ===== بدء التشغيل =====
-        function init() {
+        async function init() {
             console.log('🚀 بدء تشغيل لوحة تحكم بروفيشنال...');
+            
+            // التحقق من إعدادات Cloudinary
+            const cloudinaryReady = await verifyCloudinarySetup();
+            if (cloudinaryReady) {
+                console.log('✅ Cloudinary جاهز للعمل');
+            } else {
+                console.warn('⚠️ تحقق من إعدادات Cloudinary - قد تواجه مشاكل في رفع الصور');
+            }
+            
             console.log('🔐 في انتظار تسجيل الدخول...');
             
             // تعيين الدوال العامة
