@@ -48,7 +48,6 @@
                 radial-gradient(ellipse at 80% 80%, rgba(139, 94, 60, 0.02) 0%, transparent 60%);
         }
 
-        /* ===== صفحة تسجيل الدخول ===== */
         .login-fullscreen {
             display: flex;
             align-items: center;
@@ -90,7 +89,6 @@
         .login-box h1 { font-size: 28px; color: var(--gold); margin-bottom: 8px; font-weight: 900; }
         .login-box p { color: var(--text3); margin-bottom: 28px; font-size: 14px; }
 
-        /* ===== شريط الإدارة ===== */
         .admin-bar {
             background: rgba(26, 20, 16, 0.95);
             backdrop-filter: blur(20px);
@@ -136,7 +134,6 @@
         .page-header h1 { font-size: 36px; color: var(--gold); font-weight: 900; }
         .page-header p { color: var(--text3); font-size: 15px; }
 
-        /* ===== كروت المبيعات والإحصائيات ===== */
         .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
         .stat-card { background: var(--surface2); border-radius: var(--radius-lg); padding: 20px; border: 1px solid var(--border); text-align: center; transition: var(--transition); position: relative; overflow: hidden; cursor: pointer; }
         .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0; transition: opacity 0.3s; }
@@ -149,7 +146,6 @@
         .stat-card.sales-stat { border-color: rgba(45, 106, 79, 0.4); }
         @keyframes warningPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(224, 159, 62, 0.2); } 50% { box-shadow: 0 0 0 12px rgba(224, 159, 62, 0); } }
 
-        /* ===== التبويبات ===== */
         .tabs { display: flex; gap: 4px; margin-bottom: 24px; flex-wrap: wrap; justify-content: center; background: var(--surface); border-radius: var(--radius-lg); padding: 6px; border: 1px solid var(--border); }
         .tab { padding: 12px 24px; border: none; background: transparent; cursor: pointer; font-weight: 700; font-family: 'Cairo', sans-serif; font-size: 14px; color: var(--text3); transition: var(--transition); border-radius: var(--radius); display: flex; align-items: center; gap: 7px; white-space: nowrap; }
         .tab.active { color: var(--text); background: var(--surface2); box-shadow: var(--shadow-card); }
@@ -165,12 +161,9 @@
         .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 12px; }
         .card-title { font-size: 20px; font-weight: 800; color: var(--gold); display: flex; align-items: center; gap: 10px; }
 
-        /* ===== الطلبات ===== */
         .orders-list { display: flex; flex-direction: column; gap: 14px; }
         .order-card { background: var(--surface2); border-radius: var(--radius-lg); padding: 20px; border: 1px solid var(--border); transition: var(--transition); position: relative; }
         .order-card.new-order { animation: highlightNew 2s ease; border-color: var(--gold) !important; }
-        .order-card.priority-high { border-right: 4px solid var(--danger); }
-        .order-card.priority-normal { border-right: 4px solid var(--warning); }
         @keyframes highlightNew { 0% { background: rgba(201, 169, 110, 0.15); } 100% { background: var(--surface2); } }
         .order-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
         .order-id { font-weight: 800; color: var(--gold-light); font-size: 16px; }
@@ -214,7 +207,6 @@
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
-        /* ===== المنتجات ===== */
         .products-grid-admin { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
         .product-card-admin { background: var(--surface2); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); transition: var(--transition); }
         .product-card-admin:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: var(--shadow-elevated); }
@@ -236,7 +228,6 @@
         .stock-bar-danger { background: var(--danger); }
         .product-actions { display: flex; gap: 8px; margin-top: 10px; }
 
-        /* ===== المودالات ===== */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
         .modal-overlay.active { display: flex; }
         .modal-dialog { background: var(--surface); border-radius: var(--radius-xl); max-width: 550px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 28px; border: 1px solid var(--border); box-shadow: var(--shadow-elevated); animation: modalPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
@@ -256,7 +247,6 @@
         .img-preview { width: 120px; height: 120px; border-radius: var(--radius); object-fit: contain; margin-top: 10px; border: 2px solid var(--border); display: none; background: #2A221A; }
         .img-preview.show { display: block; }
         
-        /* ===== شريط التقدم ===== */
         .progress-bar-container {
             width: 100%;
             height: 6px;
@@ -283,7 +273,6 @@
         }
         .upload-status-text.active { display: block; }
 
-        /* ===== Toast ===== */
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
         .toast { padding: 14px 22px; border-radius: 50px; color: white; font-weight: 700; font-size: 14px; box-shadow: var(--shadow-elevated); animation: toastIn 0.4s ease; white-space: nowrap; max-width: 90vw; text-align: center; pointer-events: auto; }
         .toast-success { background: var(--success); }
@@ -294,19 +283,6 @@
 
         .empty-state { text-align: center; padding: 50px 20px; color: var(--text3); }
         .empty-state i { font-size: 55px; opacity: 0.3; margin-bottom: 14px; display: block; }
-
-        /* ===== ميزة الإشعارات ===== */
-        .notification-dot {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            width: 10px;
-            height: 10px;
-            background: var(--danger);
-            border-radius: 50%;
-            animation: pulse 1.5s infinite;
-            display: none;
-        }
 
         @media (max-width: 768px) {
             .stats-row { grid-template-columns: repeat(2, 1fr); }
@@ -459,7 +435,6 @@
             </div>
         </div>
 
-        <!-- لوحة التحليلات الجديدة -->
         <div class="panel" id="panel-analytics">
             <div class="card">
                 <div class="card-header">
@@ -534,6 +509,7 @@
         // ===== إعداد Cloudinary =====
         const CLOUDINARY_CLOUD_NAME = 'dzprjrvu7';
         const CLOUDINARY_UPLOAD_PRESET = 'rashfa_preset';
+        const CLOUDINARY_API_KEY = '671577839241732';
         const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
         // المتغيرات العامة
@@ -552,52 +528,6 @@
         const DELETE_AFTER_MINUTES = 5;
         const ADMIN_UIDS = ['bGaNd7dz74VaffyUlkWwAl9BTCq2', 'GYfllL1eBmgtbF6mc2dCHnyWhXp2'];
 
-        // ===== معالج الأخطاء المركزي =====
-        class ErrorHandler {
-            static handle(error, context = '') {
-                const message = error?.message || error?.toString() || 'حدث خطأ غير معروف';
-                console.error(`❌ [${context}]:`, error);
-                
-                // تصنيف الأخطاء
-                if (message.includes('auth/') || message.includes('Firebase: Error')) {
-                    // أخطاء Firebase
-                    if (message.includes('auth/user-not-found') || message.includes('auth/wrong-password')) {
-                        return '❌ البريد الإلكتروني أو كلمة السر غير صحيحة';
-                    } else if (message.includes('auth/too-many-requests')) {
-                        return '❌ محاولات كثيرة جداً، يرجى المحاولة لاحقاً';
-                    } else if (message.includes('auth/network-request-failed')) {
-                        return '❌ فشل الاتصال بالإنترنت، تأكد من اتصالك';
-                    }
-                }
-                
-                if (message.includes('Network') || message.includes('fetch')) {
-                    return '❌ مشكلة في الاتصال بالإنترنت، يرجى المحاولة مرة أخرى';
-                }
-                
-                if (message.includes('Cloudinary')) {
-                    return '❌ فشل رفع الصورة، تأكد من اتصال الإنترنت وحجم الملف';
-                }
-                
-                if (message.includes('Permission') || message.includes('denied')) {
-                    return '❌ ليس لديك صلاحية للقيام بهذا الإجراء';
-                }
-                
-                // رسالة افتراضية
-                return `❌ ${message}`;
-            }
-
-            static async safeExecute(fn, context = '', onError = null) {
-                try {
-                    return await fn();
-                } catch (error) {
-                    const friendlyMessage = ErrorHandler.handle(error, context);
-                    showToast(friendlyMessage, 'error');
-                    if (onError) onError(error);
-                    return null;
-                }
-            }
-        }
-
         // ===== دوال مساعدة =====
         function showToast(msg, type = 'success') {
             const c = document.getElementById('toastContainer');
@@ -606,331 +536,92 @@
             t.className = `toast toast-${type}`;
             t.textContent = msg;
             c.appendChild(t);
-            setTimeout(() => {
-                if (t.parentNode) t.remove();
-            }, 3500);
+            setTimeout(() => { if (t.parentNode) t.remove(); }, 3500);
         }
         
         function isAdmin() {
             return currentUser && ADMIN_UIDS.includes(currentUser.uid);
         }
 
-        // ===== إظهار وإخفاء الواجهات =====
-        function showAdminPanel() {
-            const loginEl = document.getElementById('loginFullscreen');
-            const adminBar = document.getElementById('adminBar');
-            const mainContent = document.getElementById('mainContent');
-            
-            if (loginEl) loginEl.classList.add('hidden');
-            if (adminBar) adminBar.style.display = 'flex';
-            if (mainContent) mainContent.style.display = 'block';
-            
-            document.querySelectorAll('.tab').forEach(t => t.style.display = '');
-            
-            if (!productsListener) setupProductsListener();
-            if (!window._ordersListenerSetup) {
-                setupOrdersListener();
-                window._ordersListenerSetup = true;
-            }
-            loadLogo();
-            renderOrders();
-            renderProductsGrid();
-            updateStats();
-            console.log('✅ تم إظهار لوحة التحكم');
-        }
-
-        function showLoginScreen() {
-            const loginEl = document.getElementById('loginFullscreen');
-            const adminBar = document.getElementById('adminBar');
-            const mainContent = document.getElementById('mainContent');
-            
-            if (loginEl) loginEl.classList.remove('hidden');
-            if (adminBar) adminBar.style.display = 'none';
-            if (mainContent) mainContent.style.display = 'none';
-            
-            const emailInput = document.getElementById('loginEmail');
-            const passwordInput = document.getElementById('loginPassword');
-            const errorEl = document.getElementById('loginError');
-            
-            if (emailInput) emailInput.value = '';
-            if (passwordInput) passwordInput.value = '';
-            if (errorEl) errorEl.style.display = 'none';
-            console.log('🔒 تم إظهار صفحة تسجيل الدخول');
-        }
-
-        // ===== دوال تسجيل الدخول والخروج =====
-        window.loginAdmin = async function() {
-            const email = document.getElementById('loginEmail')?.value;
-            const password = document.getElementById('loginPassword')?.value;
-            const errorEl = document.getElementById('loginError');
-            const btn = document.querySelector('.login-box .btn-gold');
-            
-            if (!email || !password) {
-                if (errorEl) {
-                    errorEl.textContent = '❌ يرجى إدخال البريد الإلكتروني وكلمة السر';
-                    errorEl.style.display = 'block';
-                }
-                return;
+        // ===== دالة رفع الصورة إلى Cloudinary باستخدام fetch (أكثر استقراراً) =====
+        async function uploadToCloudinary(file, folder = 'rashfa-products', progressCallback = null) {
+            // التحقق من صحة الملف
+            if (!file || !(file instanceof File)) {
+                throw new Error('الملف غير صالح');
             }
             
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الدخول...';
+            if (!file.type.startsWith('image/')) {
+                throw new Error('الملف ليس صورة. الأنواع المدعومة: JPG, PNG, GIF, WebP');
             }
             
-            await ErrorHandler.safeExecute(async () => {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                if (!ADMIN_UIDS.includes(userCredential.user.uid)) {
-                    await signOut(auth);
-                    throw new Error('هذا الحساب ليس حساب المدير.');
-                }
-            }, 'تسجيل الدخول', () => {
-                if (errorEl) {
-                    errorEl.textContent = '❌ فشل تسجيل الدخول. تأكد من البيانات.';
-                    errorEl.style.display = 'block';
-                }
+            if (file.size > 10 * 1024 * 1024) {
+                throw new Error('حجم الصورة كبير جداً (الحد الأقصى 10 ميجابايت)');
+            }
+            
+            console.log('🔄 بدء رفع الصورة إلى Cloudinary...', {
+                name: file.name,
+                size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+                type: file.type
             });
             
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-lock"></i> تسجيل الدخول';
-            }
-        };
-
-        window.logoutAdmin = async function() {
-            await ErrorHandler.safeExecute(async () => {
-                await signOut(auth);
-                showToast('👋 تم تسجيل الخروج', 'info');
-            }, 'تسجيل الخروج');
-        };
-
-        // مراقبة حالة المستخدم
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (isAdmin()) {
-                console.log('🔓 المدير مسجل الدخول:', user?.email);
-                showAdminPanel();
-            } else {
-                console.log('🔒 وضع الزائر - عرض صفحة الدخول');
-                showLoginScreen();
-            }
-        });
-
-        // ===== دالة التحقق من إعدادات Cloudinary =====
-        async function verifyCloudinarySetup() {
-            console.log('🔍 التحقق من إعدادات Cloudinary...');
+            // تجهيز FormData
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            formData.append('folder', folder);
+            formData.append('api_key', CLOUDINARY_API_KEY);
             
             try {
-                // إنشاء صورة اختبار صغيرة جداً
-                const canvas = document.createElement('canvas');
-                canvas.width = 1;
-                canvas.height = 1;
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                
-                const testFormData = new FormData();
-                testFormData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                testFormData.append('file', blob, 'test.png');
-                
+                // استخدام fetch مع timeout
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                const timeoutId = setTimeout(() => controller.abort(), 120000); // دقيقتين
                 
                 const response = await fetch(CLOUDINARY_UPLOAD_URL, {
                     method: 'POST',
-                    body: testFormData,
+                    body: formData,
                     signal: controller.signal
                 });
                 
                 clearTimeout(timeoutId);
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('✅ إعدادات Cloudinary صحيحة');
-                    
-                    // حذف صورة الاختبار
-                    if (data.public_id) {
-                        try {
-                            await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/destroy`, {
-                                method: 'POST',
-                                body: new FormData()
-                            });
-                        } catch (e) {
-                            // تجاهل خطأ الحذف
-                        }
-                    }
-                    return true;
-                } else {
-                    console.error('❌ خطأ في إعدادات Cloudinary:', response.status);
-                    return false;
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error?.message || `فشل رفع الصورة (${response.status})`);
                 }
-            } catch (error) {
-                console.error('❌ فشل التحقق من Cloudinary:', error);
-                return false;
-            }
-        }
-
-        // ===== دالة ضغط الصورة قبل الرفع =====
-        async function compressImageIfNeeded(file, maxWidth = 1920, maxHeight = 1920, quality = 0.85) {
-            // إذا كانت الصورة صغيرة، نعيدها كما هي
-            if (file.size < 500 * 1024) { // أقل من 500 كيلوبايت
-                return file;
-            }
-            
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        let width = img.width;
-                        let height = img.height;
-                        
-                        // تصغير الأبعاد إذا كانت كبيرة جداً
-                        if (width > maxWidth || height > maxHeight) {
-                            const ratio = Math.min(maxWidth / width, maxHeight / height);
-                            width = Math.round(width * ratio);
-                            height = Math.round(height * ratio);
-                        }
-                        
-                        const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        
-                        // استخدام خوارزمية تحسين الجودة
-                        ctx.imageSmoothingEnabled = true;
-                        ctx.imageSmoothingQuality = 'high';
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        canvas.toBlob((blob) => {
-                            if (!blob) {
-                                resolve(file); // فشل الضغط، استخدم الملف الأصلي
-                                return;
-                            }
-                            
-                            const compressedFile = new File([blob], file.name, {
-                                type: 'image/jpeg',
-                                lastModified: Date.now()
-                            });
-                            
-                            console.log(`🗜️ تم ضغط الصورة: ${(file.size/1024).toFixed(1)}KB → ${(compressedFile.size/1024).toFixed(1)}KB`);
-                            resolve(compressedFile);
-                        }, 'image/jpeg', quality);
-                    };
-                    img.onerror = () => resolve(file); // فشل التحميل، استخدم الملف الأصلي
-                    img.src = e.target.result;
+                
+                const responseData = await response.json();
+                
+                if (responseData.error) {
+                    throw new Error(responseData.error.message || 'فشل رفع الصورة');
+                }
+                
+                console.log('✅ تم رفع الصورة بنجاح:', {
+                    url: responseData.secure_url,
+                    public_id: responseData.public_id,
+                    size: responseData.bytes,
+                    format: responseData.format
+                });
+                
+                // تحديث شريط التقدم إذا وجد
+                if (progressCallback) {
+                    progressCallback(100);
+                }
+                
+                return {
+                    url: responseData.secure_url,
+                    public_id: responseData.public_id,
+                    width: responseData.width,
+                    height: responseData.height,
+                    format: responseData.format,
+                    original_filename: responseData.original_filename,
+                    bytes: responseData.bytes
                 };
-                reader.onerror = () => resolve(file); // فشل القراءة، استخدم الملف الأصلي
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // ===== دالة رفع الصورة إلى Cloudinary (مُحسَّنة) =====
-        async function uploadToCloudinary(file, folder = 'rashfa-products', progressCallback = null) {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    // التحقق من صحة الملف
-                    if (!file || !(file instanceof File)) {
-                        reject(new Error('الملف غير صالح'));
-                        return;
-                    }
-                    
-                    if (!file.type.startsWith('image/')) {
-                        reject(new Error('الملف ليس صورة. الأنواع المدعومة: JPG, PNG, GIF, WebP'));
-                        return;
-                    }
-                    
-                    if (file.size > 10 * 1024 * 1024) {
-                        reject(new Error('حجم الصورة كبير جداً (الحد الأقصى 10 ميجابايت)'));
-                        return;
-                    }
-                    
-                    // ضغط الصورة قبل الرفع
-                    const fileToUpload = await compressImageIfNeeded(file);
-                    
-                    console.log('🔄 بدء رفع الصورة إلى Cloudinary...', {
-                        name: fileToUpload.name,
-                        size: (fileToUpload.size / 1024 / 1024).toFixed(2) + ' MB',
-                        type: fileToUpload.type
-                    });
-                    
-                    const formData = new FormData();
-                    formData.append('file', fileToUpload);
-                    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                    formData.append('folder', folder);
-                    formData.append('quality', 'auto');
-                    formData.append('fetch_format', 'auto');
-                    
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', CLOUDINARY_UPLOAD_URL, true);
-                    xhr.timeout = 120000; // دقيقتين
-                    
-                    // تتبع تقدم الرفع
-                    xhr.upload.onprogress = (event) => {
-                        if (event.lengthComputable && progressCallback) {
-                            const percentComplete = Math.round((event.loaded / event.total) * 100);
-                            progressCallback(percentComplete);
-                            console.log(`📤 تقدم الرفع: ${percentComplete}%`);
-                        }
-                    };
-                    
-                    xhr.onload = function() {
-                        console.log('📥 استجابة Cloudinary:', xhr.status);
-                        
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            try {
-                                const responseData = JSON.parse(xhr.responseText);
-                                
-                                if (responseData.error) {
-                                    console.error('❌ خطأ Cloudinary:', responseData.error);
-                                    reject(new Error(responseData.error.message || 'فشل رفع الصورة'));
-                                    return;
-                                }
-                                
-                                console.log('✅ تم رفع الصورة بنجاح:', {
-                                    url: responseData.secure_url,
-                                    public_id: responseData.public_id,
-                                    size: responseData.bytes,
-                                    format: responseData.format
-                                });
-                                
-                                resolve({
-                                    url: responseData.secure_url,
-                                    public_id: responseData.public_id,
-                                    width: responseData.width,
-                                    height: responseData.height,
-                                    format: responseData.format,
-                                    original_filename: responseData.original_filename,
-                                    bytes: responseData.bytes
-                                });
-                            } catch (parseError) {
-                                console.error('❌ فشل تحليل رد Cloudinary:', parseError);
-                                reject(new Error('فشل معالجة رد الخادم'));
-                            }
-                        } else {
-                            console.error('❌ فشل الرفع - رمز الحالة:', xhr.status);
-                            try {
-                                const errorResponse = JSON.parse(xhr.responseText);
-                                reject(new Error(errorResponse.error?.message || `فشل رفع الصورة (${xhr.status})`));
-                            } catch {
-                                reject(new Error(`فشل رفع الصورة (${xhr.status})`));
-                            }
-                        }
-                    };
-                    
-                    xhr.onerror = function() {
-                        console.error('❌ خطأ في الاتصال بـ Cloudinary');
-                        reject(new Error('فشل الاتصال بخادم Cloudinary. تأكد من اتصالك بالإنترنت'));
-                    };
-                    
-                    xhr.ontimeout = function() {
-                        console.error('❌ انتهت مهلة الاتصال بـ Cloudinary');
-                        reject(new Error('انتهت مهلة رفع الصورة. حاول مرة أخرى أو استخدم صورة أصغر'));
-                    };
-                    
-                    xhr.send(formData);
-                } catch (error) {
-                    reject(error);
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    throw new Error('انتهت مهلة رفع الصورة. حاول مرة أخرى أو استخدم صورة أصغر');
                 }
-            });
+                throw error;
+            }
         }
 
         // ===== دالة عرض تقدم الرفع =====
@@ -975,26 +666,21 @@
                 const formData = new FormData();
                 formData.append('public_id', publicId);
                 formData.append('timestamp', timestamp);
-                formData.append('api_key', '671577839241732');
+                formData.append('api_key', CLOUDINARY_API_KEY);
                 formData.append('signature', signature);
                 
-                return new Promise((resolve) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/destroy`, true);
-                    
-                    xhr.onload = function() {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            console.log('✅ تم حذف الصورة من Cloudinary');
-                            resolve(JSON.parse(xhr.responseText));
-                        } else {
-                            console.warn('⚠️ فشل حذف الصورة من Cloudinary');
-                            resolve(null);
-                        }
-                    };
-                    
-                    xhr.onerror = () => resolve(null);
-                    xhr.send(formData);
+                const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/destroy`, {
+                    method: 'POST',
+                    body: formData
                 });
+                
+                if (response.ok) {
+                    console.log('✅ تم حذف الصورة من Cloudinary');
+                    return await response.json();
+                } else {
+                    console.warn('⚠️ فشل حذف الصورة من Cloudinary');
+                    return null;
+                }
             } catch (error) {
                 console.warn('⚠️ فشل حذف الصورة:', error);
                 return null;
@@ -1016,6 +702,105 @@
             return `${m}:${s.toString().padStart(2, '0')}`;
         }
 
+        // ===== إظهار وإخفاء الواجهات =====
+        function showAdminPanel() {
+            const loginEl = document.getElementById('loginFullscreen');
+            const adminBar = document.getElementById('adminBar');
+            const mainContent = document.getElementById('mainContent');
+            
+            if (loginEl) loginEl.classList.add('hidden');
+            if (adminBar) adminBar.style.display = 'flex';
+            if (mainContent) mainContent.style.display = 'block';
+            
+            document.querySelectorAll('.tab').forEach(t => t.style.display = '');
+            
+            if (!productsListener) setupProductsListener();
+            if (!window._ordersListenerSetup) {
+                setupOrdersListener();
+                window._ordersListenerSetup = true;
+            }
+            loadLogo();
+            renderOrders();
+            renderProductsGrid();
+            updateStats();
+            console.log('✅ تم إظهار لوحة التحكم');
+        }
+
+        function showLoginScreen() {
+            const loginEl = document.getElementById('loginFullscreen');
+            const adminBar = document.getElementById('adminBar');
+            const mainContent = document.getElementById('mainContent');
+            
+            if (loginEl) loginEl.classList.remove('hidden');
+            if (adminBar) adminBar.style.display = 'none';
+            if (mainContent) mainContent.style.display = 'none';
+            
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('loginError').style.display = 'none';
+            console.log('🔒 تم إظهار صفحة تسجيل الدخول');
+        }
+
+        // ===== دوال تسجيل الدخول والخروج =====
+        window.loginAdmin = async function() {
+            const email = document.getElementById('loginEmail')?.value;
+            const password = document.getElementById('loginPassword')?.value;
+            const errorEl = document.getElementById('loginError');
+            const btn = document.querySelector('.login-box .btn-gold');
+            
+            if (!email || !password) {
+                if (errorEl) {
+                    errorEl.textContent = '❌ يرجى إدخال البريد الإلكتروني وكلمة السر';
+                    errorEl.style.display = 'block';
+                }
+                return;
+            }
+            
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الدخول...';
+            }
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                if (!ADMIN_UIDS.includes(userCredential.user.uid)) {
+                    await signOut(auth);
+                    throw new Error('هذا الحساب ليس حساب المدير.');
+                }
+            } catch (error) {
+                if (errorEl) {
+                    errorEl.textContent = '❌ فشل تسجيل الدخول. تأكد من البيانات.';
+                    errorEl.style.display = 'block';
+                }
+            }
+            
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-lock"></i> تسجيل الدخول';
+            }
+        };
+
+        window.logoutAdmin = async function() {
+            try {
+                await signOut(auth);
+                showToast('👋 تم تسجيل الخروج', 'info');
+            } catch (error) {
+                console.error('خطأ في تسجيل الخروج:', error);
+            }
+        };
+
+        // مراقبة حالة المستخدم
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (isAdmin()) {
+                console.log('🔓 المدير مسجل الدخول:', user?.email);
+                showAdminPanel();
+            } else {
+                console.log('🔒 وضع الزائر - عرض صفحة الدخول');
+                showLoginScreen();
+            }
+        });
+
         // ===== إدارة التبويبات =====
         window.switchTab = function(name) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1036,7 +821,11 @@
             if (name === 'orders') renderOrders();
             if (name === 'products') renderProductsGrid();
             if (name === 'logo') loadLogo();
-            if (name === 'analytics') renderAnalytics();
+            if (name === 'analytics') {
+                // تحديث التحليلات عند التبديل إليها
+                updateStats();
+                renderAnalytics();
+            }
             
             console.log(`✅ تم التبديل إلى تبويب: ${name}`);
         };
@@ -1072,7 +861,7 @@
                 URL.revokeObjectURL(link.href);
                 showToast('📥 تم تصدير الطلبات', 'success');
             } catch (error) {
-                showToast(ErrorHandler.handle(error, 'تصدير الطلبات'), 'error');
+                showToast('❌ فشل تصدير الطلبات', 'error');
             }
         };
 
@@ -1096,9 +885,12 @@
                     console.log(`📦 تم تحميل ${allProducts.length} منتج`);
                     updateStats();
                     renderProductsGrid();
+                    // تحديث التحليلات إذا كانت مفتوحة
+                    if (document.getElementById('panel-analytics')?.classList.contains('active')) {
+                        renderAnalytics();
+                    }
                 }, (error) => {
                     console.error('❌ خطأ في تحميل المنتجات:', error);
-                    showToast('❌ فشل تحميل المنتجات', 'error');
                 });
             } catch (error) {
                 console.error('❌ فشل إعداد مستمع المنتجات:', error);
@@ -1107,8 +899,11 @@
 
         function renderProductsGrid() {
             const grid = document.getElementById('productsGrid');
+            if (!grid) return;
+            
+            // التحقق من أن التبويب نشط
             const panelActive = document.getElementById('panel-products')?.classList.contains('active');
-            if (!grid || !panelActive) return;
+            if (!panelActive) return;
             
             if (!allProducts || !allProducts.length) {
                 grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><i class="fa-solid fa-box-open"></i><span>لا توجد منتجات حتى الآن</span></div>';
@@ -1135,6 +930,7 @@
                     stockClass = 'low-stock';
                 }
                 
+                // استخدام رابط الصورة من Cloudinary المخزن في قاعدة البيانات
                 const imageUrl = p.image || '';
                 
                 return `
@@ -1178,7 +974,6 @@
                 const p = uploadArea.querySelector('p');
                 if (p) p.textContent = 'اختر صورة المنتج';
             }
-            // إخفاء شريط التقدم
             const progressBar = document.getElementById('imgProgressBar');
             const statusText = document.getElementById('imgUploadStatus');
             if (progressBar) progressBar.classList.remove('active');
@@ -1224,7 +1019,7 @@
             reader.readAsDataURL(file);
         });
 
-        // ===== إضافة منتج جديد (مُحسَّنة) =====
+        // ===== إضافة منتج جديد =====
         document.getElementById('addProductBtn')?.addEventListener('click', async function() {
             const name = document.getElementById('prodName')?.value?.trim();
             const price = parseFloat(document.getElementById('prodPrice')?.value);
@@ -1247,22 +1042,28 @@
             const btn = this;
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تجهيز الصورة...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الصورة...';
             
             try {
                 // إظهار شريط التقدم
                 const progressCallback = showUploadProgress('imgProgressBar', 'imgProgressFill', 'imgUploadStatus');
                 
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الصورة...';
+                // تحديث التقدم بشكل يدوي
+                progressCallback(10);
                 
+                // رفع الصورة إلى Cloudinary
                 const imageData = await uploadToCloudinary(imageFile, 'rashfa-products', progressCallback);
                 
                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري حفظ المنتج...';
                 
+                // إنشاء كائن المنتج مع رابط الصورة من Cloudinary
                 const newProduct = {
-                    name, price, quantity, initialStock: quantity,
-                    description,
-                    image: imageData.url,
+                    name: name,
+                    price: price,
+                    quantity: quantity,
+                    initialStock: quantity,
+                    description: description,
+                    image: imageData.url, // رابط الصورة من Cloudinary
                     cloudinary_public_id: imageData.public_id,
                     image_metadata: {
                         width: imageData.width,
@@ -1271,12 +1072,15 @@
                         original_filename: imageData.original_filename,
                         bytes: imageData.bytes
                     },
-                    createdAt: Date.now(), lastUpdated: Date.now()
+                    createdAt: Date.now(),
+                    lastUpdated: Date.now()
                 };
                 
+                // حفظ المنتج في Firebase مع رابط الصورة
                 const newProductRef = push(ref(database, 'products'));
                 await set(newProductRef, newProduct);
                 
+                // إعادة تعيين النموذج
                 window.resetAddProductForm();
                 showToast(`🎉 تمت إضافة "${name}" بنجاح!`, 'success');
                 setTimeout(() => window.switchTab('products'), 500);
@@ -1286,9 +1090,11 @@
                 let errorMessage = 'فشل إضافة المنتج';
                 
                 if (error.message.includes('Cloudinary') || error.message.includes('رفع')) {
-                    errorMessage = '❌ فشل رفع الصورة. تأكد من: \n• اتصال الإنترنت \n• حجم الصورة أقل من 10 ميجابايت \n• نوع الصورة مدعوم (JPG, PNG)';
+                    errorMessage = '❌ فشل رفع الصورة. تأكد من:\n• اتصال الإنترنت\n• حجم الصورة أقل من 10 ميجابايت\n• نوع الصورة مدعوم (JPG, PNG)';
                 } else if (error.message.includes('قاعدة البيانات')) {
                     errorMessage = '❌ فشل حفظ المنتج في قاعدة البيانات';
+                } else {
+                    errorMessage = '❌ ' + error.message;
                 }
                 
                 showToast(errorMessage, 'error');
@@ -1330,13 +1136,15 @@
                 return; 
             }
             
-            await ErrorHandler.safeExecute(async () => {
+            try {
                 await update(ref(database, `products/${pid}`), { 
                     name, price, quantity: qty, description: desc, lastUpdated: Date.now() 
                 });
                 window.closeEditModal();
                 showToast('✅ تم تحديث المنتج', 'success');
-            }, 'تحديث المنتج');
+            } catch (error) {
+                showToast('❌ فشل تحديث المنتج', 'error');
+            }
         };
 
         window.deleteProduct = async function(pid) {
@@ -1344,13 +1152,15 @@
             const productName = product?.name || 'المنتج';
             if (!confirm(`حذف "${productName}"؟ سيتم حذف الصورة أيضاً من Cloudinary.`)) return;
             
-            await ErrorHandler.safeExecute(async () => {
+            try {
                 if (product?.cloudinary_public_id) {
                     await deleteFromCloudinary(product.cloudinary_public_id);
                 }
                 await remove(ref(database, `products/${pid}`));
                 showToast(`🗑️ تم حذف "${productName}"`, 'info');
-            }, 'حذف المنتج');
+            } catch (error) {
+                showToast('❌ فشل حذف المنتج', 'error');
+            }
         };
 
         // ===== إدارة الإحصائيات =====
@@ -1548,6 +1358,10 @@
                     if (document.getElementById('panel-orders')?.classList.contains('active')) {
                         renderOrders();
                     }
+                    // تحديث التحليلات إذا كانت مفتوحة
+                    if (document.getElementById('panel-analytics')?.classList.contains('active')) {
+                        renderAnalytics();
+                    }
                 }, (error) => {
                     console.error('❌ خطأ في مستمع الطلبات:', error);
                 });
@@ -1559,7 +1373,7 @@
         window.forceRefreshOrders = async function() {
             showToast('🔄 جاري تحديث الطلبات...', 'info');
             
-            await ErrorHandler.safeExecute(async () => {
+            try {
                 const snap = await get(ref(database, 'orders'));
                 const orders = [];
                 if (snap.exists()) snap.forEach(c => orders.push({ id: c.key, ...c.val() }));
@@ -1568,13 +1382,18 @@
                 updateStats();
                 renderOrders();
                 showToast(`✅ ${orders.length} طلب`, 'success');
-            }, 'تحديث الطلبات');
+            } catch (error) {
+                showToast('❌ فشل تحديث الطلبات', 'error');
+            }
         };
 
         function renderOrders() {
             const c = document.getElementById('ordersList');
+            if (!c) return;
+            
+            // التحقق من أن التبويب نشط
             const panelActive = document.getElementById('panel-orders')?.classList.contains('active');
-            if (!c || !panelActive) return;
+            if (!panelActive) return;
             
             let filteredOrders = [...allOrders];
             if (currentFilter === 'pending') {
@@ -1650,13 +1469,15 @@
             const o = allOrders.find(x => x.id === oid);
             if (!o) return;
             
-            await ErrorHandler.safeExecute(async () => {
+            try {
                 const data = { status: ns };
                 if (ns === 'delivered') data.deliveredAt = Date.now();
                 if (ns === 'accepted') data.acceptedAt = Date.now();
                 await update(ref(database, `orders/${oid}`), data);
                 showToast('✅ تم تحديث حالة الطلب', 'success');
-            }, 'تحديث حالة الطلب');
+            } catch (error) {
+                showToast('❌ فشل تحديث حالة الطلب', 'error');
+            }
         };
 
         window.printReceiptForOrder = function(oid) {
@@ -1685,19 +1506,25 @@
                 return; 
             }
             
-            await ErrorHandler.safeExecute(async () => {
+            try {
                 await update(ref(database, `orders/${oid}`), { 
                     status: 'rejected', rejectionReason: reason, rejectionDetails: details, rejectedAt: Date.now() 
                 });
                 window.closeRejectModal();
                 showToast('❌ تم رفض الطلب', 'info');
-            }, 'رفض الطلب');
+            } catch (error) {
+                showToast('❌ فشل رفض الطلب', 'error');
+            }
         };
 
-        // ===== لوحة التحليلات =====
+        // ===== لوحة التحليلات (تم إصلاحها) =====
         function renderAnalytics() {
             const container = document.getElementById('analyticsContent');
-            if (!container || !document.getElementById('panel-analytics')?.classList.contains('active')) return;
+            if (!container) return;
+            
+            // التحقق من أن التبويب نشط
+            const panelActive = document.getElementById('panel-analytics')?.classList.contains('active');
+            if (!panelActive) return;
             
             const now = new Date();
             const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
@@ -1730,6 +1557,9 @@
             const rejectedOrders = allOrders.filter(o => o.status === 'rejected').length;
             const conversionRate = totalOrders > 0 ? ((deliveredOrders.length / totalOrders) * 100).toFixed(1) : 0;
             
+            // حساب إجمالي المبيعات الكلي
+            const totalSalesAll = deliveredOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+            
             container.innerHTML = `
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;">
                     <div class="stat-card sales-stat">
@@ -1755,6 +1585,21 @@
                 </div>
                 
                 <div style="margin-top:24px;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
+                        <div class="stat-card">
+                            <div class="stat-icon">💵</div>
+                            <div class="stat-value">${totalSalesAll.toFixed(0)} ج</div>
+                            <div class="stat-label">إجمالي المبيعات الكلي</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-value">${allOrders.length}</div>
+                            <div class="stat-label">إجمالي الطلبات</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top:24px;">
                     <h3 style="color:var(--gold);margin-bottom:16px;">🏆 أفضل المنتجات مبيعاً</h3>
                     <div style="display:flex;flex-direction:column;gap:10px;">
                         ${topProducts.length > 0 ? topProducts.map((p, i) => `
@@ -1771,10 +1616,32 @@
                         `).join('') : '<div class="empty-state"><i class="fa-solid fa-chart-bar"></i><span>لا توجد مبيعات حتى الآن</span></div>'}
                     </div>
                 </div>
+                
+                <div style="margin-top:24px;">
+                    <h3 style="color:var(--gold);margin-bottom:16px;">📋 ملخص الطلبات</h3>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        ${[
+                            { label: 'معلقة', count: allOrders.filter(o => o.status === 'pending').length, color: '#FFC107' },
+                            { label: 'مقبولة', count: allOrders.filter(o => o.status === 'accepted').length, color: '#4A90D9' },
+                            { label: 'قيد التوصيل', count: allOrders.filter(o => o.status === 'delivering').length, color: '#28A745' },
+                            { label: 'مكتملة', count: allOrders.filter(o => o.status === 'delivered').length, color: '#AAA' },
+                            { label: 'مرفوضة', count: allOrders.filter(o => o.status === 'rejected').length, color: '#FF6B6B' }
+                        ].map(item => `
+                            <div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);padding:12px 18px;border-radius:var(--radius);border:1px solid var(--border);">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span style="width:12px;height:12px;border-radius:50%;background:${item.color};display:inline-block;"></span>
+                                    <span>${item.label}</span>
+                                </div>
+                                <span style="font-weight:800;color:var(--gold-light);">${item.count}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
             `;
         }
         
         window.refreshAnalytics = function() {
+            updateStats();
             renderAnalytics();
             showToast('🔄 تم تحديث التحليلات', 'success');
         };
@@ -1821,6 +1688,7 @@
             try {
                 // إظهار شريط التقدم للشعار
                 const progressCallback = showUploadProgress('logoProgressBar', 'logoProgressFill', 'logoUploadStatus');
+                progressCallback(10);
                 
                 const logoData = await uploadToCloudinary(f, 'rashfa-logo', progressCallback);
                 
@@ -1873,17 +1741,8 @@
         });
 
         // ===== بدء التشغيل =====
-        async function init() {
+        function init() {
             console.log('🚀 بدء تشغيل لوحة تحكم بروفيشنال...');
-            
-            // التحقق من إعدادات Cloudinary
-            const cloudinaryReady = await verifyCloudinarySetup();
-            if (cloudinaryReady) {
-                console.log('✅ Cloudinary جاهز للعمل');
-            } else {
-                console.warn('⚠️ تحقق من إعدادات Cloudinary - قد تواجه مشاكل في رفع الصور');
-            }
-            
             console.log('🔐 في انتظار تسجيل الدخول...');
             
             // تعيين الدوال العامة
