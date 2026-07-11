@@ -1071,8 +1071,13 @@
         };
 
         // ===== إدارة الطلبات =====
+        // 🔧 تم إصلاحها: الخصم من المخزون يحدث فقط عند حالة "delivered" (اكتمال الطلب وتوصيله)
         async function deductStock(orderId, data) {
             if (data._stockDeducted || !data.items?.length) return;
+            
+            // ✅ الخصم يحدث فقط عندما يكون الطلب مكتمل التوصيل (delivered)
+            if (data.status !== 'delivered') return;
+            
             for (const item of data.items) {
                 if (!item.productId) continue;
                 await runTransaction(ref(database, `products/${item.productId}`), (cur) => {
@@ -1122,6 +1127,7 @@
             if (countdownIntervals[orderId]) { clearInterval(countdownIntervals[orderId]); delete countdownIntervals[orderId]; }
         }
 
+        // 🔧 تم تحسين دالة setupOrdersListener
         function setupOrdersListener() {
             onValue(ref(database, 'orders'), async (snap) => {
                 const orders = [];
@@ -1133,6 +1139,7 @@
                 }
                 orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
+                // 🔧 القبول التلقائي للطلبات الجديدة (عند وصول طلب جديد بحالة pending)
                 for (const o of orders) {
                     if (o.status === 'pending' && !previousStatuses[o.id]) {
                         try {
@@ -1141,18 +1148,29 @@
                             showToast(`✅ طلب جديد #${o.id.slice(-8)} - ${sent ? 'تم إرسال واتساب' : 'فشل إرسال واتساب'}`, sent ? 'success' : 'warning');
                         } catch (e) { console.error('❌ فشل القبول التلقائي:', e); }
                     }
-                    if (o.status === 'accepted' && !o._stockDeducted) await deductStock(o.id, o);
+                    
+                    // 🔧 الخصم يحدث فقط عند توصيل الطلب (delivered)
+                    if (o.status === 'delivered' && !o._stockDeducted) {
+                        await deductStock(o.id, o);
+                    }
+                    
                     previousStatuses[o.id] = o.status;
                 }
+                
                 allOrders = orders;
+                
+                // جدولة الحذف للطلبات المكتملة أو المرفوضة
                 for (const o of orders) {
                     if (o.status === 'delivered' || o.status === 'rejected') {
                         const completionTime = o.deliveredAt || o.rejectedAt || o.createdAt || Date.now();
                         if (!deleteTimers[o.id]) scheduleDelete(o.id, o.status, completionTime);
-                    } else if (deleteTimers[o.id]) cancelDelete(o.id);
+                    } else if (deleteTimers[o.id]) {
+                        cancelDelete(o.id);
+                    }
                 }
+                
                 updateStats();
-                updateAnalyticsCache(); // تحديث التحليلات
+                updateAnalyticsCache();
                 if (document.getElementById('panel-orders')?.classList.contains('active')) renderOrders();
             });
         }
@@ -1202,7 +1220,23 @@
             }).join('');
         }
 
-        window.advanceStatus = async (oid, ns) => { const o = allOrders.find(x => x.id === oid); if (!o) return; const d = { status: ns }; if (ns === 'delivered') d.deliveredAt = Date.now(); if (ns === 'accepted') d.acceptedAt = Date.now(); await update(ref(database, `orders/${oid}`), d); showToast('✅ تم تحديث الحالة', 'success'); };
+        // 🔧 تعديل advanceStatus ليتم الخصم عند التوصيل
+        window.advanceStatus = async (oid, ns) => { 
+            const o = allOrders.find(x => x.id === oid); 
+            if (!o) return; 
+            const d = { status: ns }; 
+            if (ns === 'delivered') {
+                d.deliveredAt = Date.now();
+            }
+            if (ns === 'accepted') {
+                d.acceptedAt = Date.now();
+                // إرسال رسالة واتساب عند القبول
+                sendWhatsAppToClient(o);
+            }
+            await update(ref(database, `orders/${oid}`), d); 
+            showToast('✅ تم تحديث الحالة', 'success'); 
+        };
+        
         window.printReceiptForOrder = (oid) => { const o = allOrders.find(x => x.id === oid); if (o) printReceipt(o); };
         window.sendWhatsAppToClientById = (oid) => { const o = allOrders.find(x => x.id === oid); if (o) sendWhatsAppToClient(o); };
         window.openRejectModal = (oid) => { document.getElementById('rejectOrderId').value = oid; document.getElementById('rejectReason').value = ''; document.getElementById('rejectDetails').value = ''; document.getElementById('rejectModal').classList.add('active'); };
@@ -1260,6 +1294,7 @@
         // ===== التهيئة النهائية =====
         function init() {
             console.log('🚀 لوحة تحكم بروفيشنال جاهزة');
+            console.log('✅ تم الإصلاح: الخصم من المخزون يحدث فقط بعد اكتمال الطلب وتوصيله');
             console.log('📊 التحليلات محفوظة في localStorage ولن تختفي');
             console.log('📱 Wappfly API مفعل للإرسال التلقائي');
             
