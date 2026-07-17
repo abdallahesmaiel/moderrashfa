@@ -10,14 +10,11 @@
     
     <style>
         :root {
-            /* الألوان الأساسية - الوضع الداكن */
             --bg-primary: #0a0a0f;
             --bg-secondary: #12121a;
             --bg-tertiary: #1a1a25;
             --bg-card: #1e1e2a;
             --bg-hover: #252535;
-            
-            /* الذهبي المحسن */
             --gold-100: #fef3c7;
             --gold-200: #fde68a;
             --gold-300: #fcd34d;
@@ -25,38 +22,26 @@
             --gold-500: #c9a96e;
             --gold-600: #a6864b;
             --gold-700: #8b6914;
-            
-            /* ألوان الحالات */
             --status-pending: #f59e0b;
             --status-accepted: #3b82f6;
             --status-delivering: #10b981;
             --status-delivered: #6b7280;
             --status-rejected: #ef4444;
-            
-            /* نص */
             --text-primary: #f1f5f9;
             --text-secondary: #94a3b8;
             --text-muted: #64748b;
-            
-            /* حدود */
             --border-color: #2d2d3d;
             --border-light: #3d3d50;
-            
-            /* ظلال */
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
             --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
             --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
             --shadow-xl: 0 12px 48px rgba(0,0,0,0.6);
-            
-            /* نصف قطر */
             --radius-xs: 4px;
             --radius-sm: 8px;
             --radius: 12px;
             --radius-lg: 16px;
             --radius-xl: 24px;
             --radius-2xl: 32px;
-            
-            /* حركة */
             --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -79,13 +64,11 @@
             overflow-x: hidden;
         }
 
-        /* شريط التمرير */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-primary); }
         ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--gold-500); }
 
-        /* صفحة تسجيل الدخول */
         .login-fullscreen {
             display: flex; align-items: center; justify-content: center;
             min-height: 100vh; padding: 20px;
@@ -153,7 +136,6 @@
             background: rgba(239, 68, 68, 0.1); padding: 12px; border-radius: var(--radius);
         }
 
-        /* شريط الإدارة */
         .admin-bar {
             background: rgba(18, 18, 26, 0.95);
             backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
@@ -178,7 +160,6 @@
         }
         .admin-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 
-        /* أزرار */
         .btn {
             padding: 12px 24px; border-radius: 50px; font-family: 'Cairo', sans-serif;
             font-weight: 700; font-size: 14px; cursor: pointer; border: none;
@@ -229,7 +210,6 @@
         .btn-whatsapp:hover { background: #1ebe5b; transform: translateY(-2px); }
         .btn-block { width: 100%; justify-content: center; }
 
-        /* الحاوية الرئيسية */
         .container { max-width: 1400px; margin: 0 auto; padding: 40px 32px 80px; }
         
         .page-header {
@@ -251,7 +231,6 @@
         .page-header p { color: var(--text-secondary); font-size: 18px; }
         .page-header .header-icon { font-size: 64px; display: block; margin-bottom: 20px; }
 
-        /* بطاقات الإحصائيات */
         .stats-row { 
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
@@ -286,7 +265,6 @@
             50% { box-shadow: 0 0 0 16px rgba(245, 158, 11, 0); } 
         }
 
-        /* علامات التبويب */
         .tabs-container {
             background: var(--bg-card); border-radius: var(--radius-xl); padding: 8px;
             margin-bottom: 36px; border: 1px solid var(--border-color);
@@ -312,7 +290,6 @@
         .tab-badge.success { background: var(--status-delivering); }
         .tab-badge.hidden { display: none; }
 
-        /* اللوحات */
         .panel { display: none; animation: fadeSlideIn 0.5s ease; }
         .panel.active { display: block; }
         @keyframes fadeSlideIn { 
@@ -320,7 +297,6 @@
             to { opacity: 1; transform: translateY(0); } 
         }
 
-        /* البطاقات */
         .card { 
             background: var(--bg-card); border-radius: var(--radius-xl); 
             padding: 32px; border: 1px solid var(--border-color); 
@@ -336,7 +312,6 @@
             display: flex; align-items: center; gap: 12px; 
         }
 
-        /* قائمة الطلبات */
         .orders-list { display: flex; flex-direction: column; gap: 20px; }
         .order-card { 
             background: var(--bg-tertiary); border-radius: var(--radius-lg); 
@@ -429,7 +404,6 @@
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-        /* شبكة المنتجات */
         .products-grid-admin { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
@@ -476,7 +450,6 @@
         
         .product-actions { display: flex; gap: 12px; margin-top: 16px; }
 
-        /* المودالات */
         .modal-overlay { 
             display: none; position: fixed; inset: 0; 
             background: rgba(0, 0, 0, 0.85); z-index: 2000; 
@@ -512,7 +485,6 @@
         
         .modal-actions { display: flex; gap: 14px; margin-top: 32px; justify-content: center; }
 
-        /* منطقة الرفع */
         .upload-area { 
             border: 2px dashed var(--border-light); border-radius: var(--radius-lg); 
             padding: 40px 20px; text-align: center; cursor: pointer; 
@@ -530,7 +502,6 @@
         }
         .img-preview.show { display: block; }
 
-        /* سجل الرسائل */
         .message-log { 
             background: var(--bg-tertiary); border-radius: var(--radius-lg); 
             padding: 20px; max-height: 500px; overflow-y: auto; 
@@ -545,7 +516,6 @@
         .message-item.success { border-right: 4px solid var(--status-delivering); }
         .message-item.failed { border-right: 4px solid var(--status-rejected); }
 
-        /* التوست */
         .toast-container { 
             position: fixed; top: 24px; right: 24px; z-index: 9999; 
             display: flex; flex-direction: column; gap: 12px; 
@@ -564,14 +534,12 @@
         .toast-warning { background: var(--status-pending); color: #000; }
         .toast-info { background: var(--status-accepted); color: white; }
 
-        /* حالة فارغة */
         .empty-state { 
             text-align: center; padding: 80px 20px; color: var(--text-muted); 
         }
         .empty-state i { font-size: 72px; opacity: 0.3; margin-bottom: 20px; display: block; }
         .empty-state h3 { font-size: 20px; margin-bottom: 8px; color: var(--text-secondary); }
 
-        /* تجاوب */
         @media (max-width: 768px) {
             .stats-row { grid-template-columns: repeat(2, 1fr); }
             .products-grid-admin { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
@@ -909,6 +877,9 @@
         const CLOUDINARY_API_KEY = '671577839241732';
         const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
+        // ============ إعدادات Convobest مع CORS Proxy ============
+        const CORS_PROXY = 'https://corsproxy.io/?';
+        
         const CONVOBEST_CONFIG = {
             instanceId: 'aa7a2d79-0d6b-4320-a16d-6147035e2989',
             apiToken: '979f73cd13bc0153b326f95f28f376f3',
@@ -988,17 +959,29 @@
             return cleaned;
         }
 
+        // ===== دالة إرسال واتساب عبر Convobest مع CORS Proxy =====
         async function sendWhatsApp(phone, message, type = 'واتساب') {
             if (!phone || !message) {
                 addToMessageLog(phone || 'غير معروف', type, false, 'بيانات غير مكتملة');
                 return false;
             }
+            
             const cleanPhone = formatPhoneNumber(phone);
             
             try {
-                const response = await fetch(CONVOBEST_CONFIG.apiUrl, {
+                // استخدام CORS Proxy لحل مشكلة CORS
+                const apiUrl = `${CORS_PROXY}${encodeURIComponent(CONVOBEST_CONFIG.apiUrl)}`;
+                
+                console.log('🔄 جاري الإرسال عبر Convobest...');
+                console.log('📱 الرقم:', cleanPhone);
+                console.log('🔗 API URL:', CONVOBEST_CONFIG.apiUrl);
+                
+                const response = await fetch(apiUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                     body: JSON.stringify({
                         instance_id: CONVOBEST_CONFIG.instanceId,
                         access_token: CONVOBEST_CONFIG.apiToken,
@@ -1006,26 +989,32 @@
                         message: message
                     })
                 });
+                
                 const result = await response.json();
+                console.log('📥 استجابة Convobest:', result);
+                
                 const isSuccess = response.ok && (result.success || result.status === 'success' || result.status === 'sent' || result.id);
                 
                 if (isSuccess) {
+                    console.log('✅ تم الإرسال بنجاح');
                     addToMessageLog(cleanPhone, type, true, 'Convobest ✓');
                     return true;
                 } else {
+                    console.warn('⚠️ فشل الإرسال:', result);
                     addToMessageLog(cleanPhone, type, false, `Convobest: ${result.message || result.error || 'فشل'}`);
                 }
             } catch (error) {
+                console.error('❌ خطأ:', error);
                 addToMessageLog(cleanPhone, type, false, `خطأ: ${error.message}`);
             }
             
-            // محاولة احتياطية
+            // محاولة احتياطية عبر wa.me
             try {
                 const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
                 window.open(waUrl, '_blank', 'noopener,noreferrer');
                 addToMessageLog(cleanPhone, type, true, 'wa.me احتياطي');
                 return true;
-            } catch (e) {}
+            } catch(e) {}
             
             return false;
         }
@@ -1545,7 +1534,6 @@
         function init() {
             loadStoredAnalytics();
             
-            // تعريض الدوال للنافذة
             window.switchTab = window.switchTab;
             window.forceRefreshOrders = window.forceRefreshOrders;
             window.filterOrders = window.filterOrders;
@@ -1564,7 +1552,6 @@
             window.printReceiptForOrder = window.printReceiptForOrder;
             window.resetAddProductForm = window.resetAddProductForm;
 
-            // مستمع رفع صورة المنتج
             document.getElementById('prodImageInput')?.addEventListener('change', function(e) {
                 const f = e.target.files[0];
                 if (!f) return;
@@ -1579,7 +1566,6 @@
                 r.readAsDataURL(f);
             });
 
-            // زر إضافة منتج
             document.getElementById('addProductBtn')?.addEventListener('click', async function() {
                 const name = document.getElementById('prodName')?.value?.trim();
                 const price = parseFloat(document.getElementById('prodPrice')?.value);
@@ -1616,7 +1602,6 @@
                 }
             });
 
-            // مستمع رفع الشعار
             document.getElementById('logoFileInput')?.addEventListener('change', function(e) {
                 const f = e.target.files[0];
                 if (!f?.type?.startsWith('image/')) return;
@@ -1629,7 +1614,6 @@
                 r.readAsDataURL(f);
             });
 
-            // زر حفظ الشعار
             document.getElementById('uploadLogoBtn')?.addEventListener('click', async function() {
                 const f = selectedLogoImage;
                 if (!f) { showToast('⚠️ اختر صورة الشعار أولاً', 'error'); return; }
@@ -1658,7 +1642,6 @@
                 }
             });
 
-            // دعم السحب والإفلات لمنطقة رفع الصور
             const uploadArea = document.getElementById('imgUploadArea');
             if (uploadArea) {
                 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
