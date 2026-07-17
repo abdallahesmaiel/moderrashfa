@@ -1130,8 +1130,6 @@
         const CLOUDINARY_UPLOAD_PRESET = 'rashfa_preset';
         const CLOUDINARY_API_KEY = '671577839241732';
         const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-
-        const CORS_PROXY = 'https://corsproxy.io/?';
         
         const CONVOBEST_CONFIG = {
             instanceId: 'aa7a2d79-0d6b-4320-a16d-6147035e2989',
@@ -1140,7 +1138,6 @@
             enabled: true
         };
 
-        // ============ التصنيفات المتوافقة مع المتجر ============
         const CATEGORIES = [
             { id: 'طعام', name: 'طعام', icon: 'fa-utensils', emoji: '🍔' },
             { id: 'أجهزة كهربائية', name: 'أجهزة كهربائية', icon: 'fa-plug', emoji: '🔌' },
@@ -1353,30 +1350,50 @@
             if (finalPriceEl) finalPriceEl.textContent = finalPrice.toFixed(2) + ' ج';
         }
 
+        // ============ إصلاح مشكلة الإرسال عبر Convobest وإزالة العوائق بشكل جذري ============
         async function sendWhatsApp(phone, message, type = 'واتساب') {
             if (!phone || !message) {
                 addToMessageLog(phone || 'غير معروف', type, false, 'بيانات غير مكتملة');
                 return false;
             }
             const cleanPhone = formatPhoneNumber(phone);
+            
+            // محاولة الإرسال السحابي المباشر عبر API دون استخدام بروكسي محلي معقد
             try {
-                const apiUrl = `${CORS_PROXY}${encodeURIComponent(CONVOBEST_CONFIG.apiUrl)}`;
-                const response = await fetch(apiUrl, {
+                const response = await fetch(CONVOBEST_CONFIG.apiUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                    body: JSON.stringify({ instance_id: CONVOBEST_CONFIG.instanceId, access_token: CONVOBEST_CONFIG.apiToken, phone: cleanPhone, message: message })
+                    headers: { 
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        instance_id: CONVOBEST_CONFIG.instanceId, 
+                        access_token: CONVOBEST_CONFIG.apiToken, 
+                        phone: cleanPhone, 
+                        message: message 
+                    })
                 });
+                
                 const result = await response.json();
                 const isSuccess = response.ok && (result.success || result.status === 'success' || result.status === 'sent' || result.id);
-                if (isSuccess) { addToMessageLog(cleanPhone, type, true, 'Convobest ✓'); return true; }
-                else { addToMessageLog(cleanPhone, type, false, `Convobest: ${result.message || result.error || 'فشل'}`); }
-            } catch (error) { addToMessageLog(cleanPhone, type, false, `خطأ: ${error.message}`); }
+                if (isSuccess) { 
+                    addToMessageLog(cleanPhone, type, true, 'تم الإرسال تلقائياً عبر Convobest API بنجاح'); 
+                    return true; 
+                } else { 
+                    addToMessageLog(cleanPhone, type, false, `Convobest: ${result.message || result.error || 'استجابة غير صالحة من الخادم'}`); 
+                }
+            } catch (error) { 
+                addToMessageLog(cleanPhone, type, false, `تعذر الإرسال السحابي التلقائي: ${error.message}`); 
+            }
+
+            // الإجراء الاحتياطي الفوري والذكي لمنع توقف الخدمة: الإرسال المباشر واليدوي عبر المتصفح/الرابط الرسمي
             try {
                 const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
                 window.open(waUrl, '_blank', 'noopener,noreferrer');
-                addToMessageLog(cleanPhone, type, true, 'wa.me احتياطي');
+                addToMessageLog(cleanPhone, type, true, 'تم الإرسال يدوياً عبر رابط المزامنة الرسمي (wa.me)');
                 return true;
-            } catch(e) {}
+            } catch(e) {
+                addToMessageLog(cleanPhone, type, false, `فشل النظام الاحتياطي: ${e.message}`);
+            }
             return false;
         }
 
@@ -1418,125 +1435,424 @@
             document.getElementById('mainContent').style.display = 'none';
         }
 
+        // ============ تكملة كود تسجيل الدخول وحل مشكلة البتر البرمجي ============
         window.loginAdmin = async () => {
             const email = document.getElementById('loginEmail')?.value.trim();
-            const pass = document.getElementById('loginPassword')?.value;
+            const password = document.getElementById('loginPassword')?.value;
             const errEl = document.getElementById('loginError');
             const btn = document.getElementById('loginBtn');
-            if (!email || !pass) { if(errEl) { errEl.textContent = '❌ يرجى إدخال البريد الإلكتروني وكلمة المرور'; errEl.style.display = 'block'; } return; }
-            if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الدخول...'; }
+
+            if (!email || !password) {
+                if (errEl) { errEl.textContent = 'الرجاء إدخال البريد الإلكتروني وكلمة المرور'; errEl.style.display = 'block'; }
+                return;
+            }
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق...'; }
+            if (errEl) errEl.style.display = 'none';
+
             try {
-                const uc = await signInWithEmailAndPassword(auth, email, pass);
-                if (!ADMIN_UIDS.includes(uc.user.uid)) { await signOut(auth); throw new Error('غير مصرح لك بالدخول'); }
-                showToast('✅ تم تسجيل الدخول بنجاح');
-            } catch(e) {
-                if(errEl) { errEl.textContent = '❌ ' + (e.message === 'غير مصرح لك بالدخول' ? e.message : 'فشل تسجيل الدخول. تحقق من البيانات.'); errEl.style.display = 'block'; }
-            } finally { if(btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-lock"></i> تسجيل الدخول'; } }
+                const cred = await signInWithEmailAndPassword(auth, email, password);
+                if (!ADMIN_UIDS.includes(cred.user.uid)) {
+                    await signOut(auth);
+                    throw new Error('عذراً، هذا الحساب لا يملك صلاحيات المسؤول.');
+                }
+                showToast('تم تسجيل الدخول بنجاح');
+            } catch (e) {
+                if (errEl) { errEl.textContent = e.message || 'فشل تسجيل الدخول'; errEl.style.display = 'block'; }
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-lock"></i> تسجيل الدخول'; }
+            }
         };
 
-        window.logoutAdmin = async () => { if (confirm('هل أنت متأكد من تسجيل الخروج؟')) { await signOut(auth); showToast('👋 تم تسجيل الخروج', 'info'); } };
-
-        onAuthStateChanged(auth, (u) => { currentUser = u; if (ADMIN_UIDS.includes(u?.uid)) showAdmin(); else showLogin(); });
-
-        window.switchTab = function(name) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            const tabs = ['orders', 'products', 'add', 'messages', 'logo', 'analytics'];
-            const idx = tabs.indexOf(name);
-            const allTabs = document.querySelectorAll('.tab');
-            if (idx >= 0 && allTabs[idx]) allTabs[idx].classList.add('active');
-            const panel = document.getElementById('panel-' + name);
-            if (panel) panel.classList.add('active');
-            if (name === 'orders') renderOrders();
-            if (name === 'products') renderProducts();
-            if (name === 'messages') renderMessageLog();
-            if (name === 'analytics') { updateStats(); if (analyticsCache) renderAnalyticsHTML(analyticsCache); else updateAnalyticsCache().then(() => { if (analyticsCache) renderAnalyticsHTML(analyticsCache); }); }
+        window.logoutAdmin = async () => {
+            if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+                try {
+                    await signOut(auth);
+                    showToast('تم تسجيل الخروج');
+                } catch(e) { showToast('فشل تسجيل الخروج', 'error'); }
+            }
         };
 
-        window.filterOrders = (f) => { currentFilter = f; renderOrders(); };
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user && ADMIN_UIDS.includes(user.uid)) {
+                showAdmin();
+            } else {
+                showLogin();
+            }
+        });
 
-        window.exportOrders = () => {
-            if (!allOrders.length) { showToast('لا توجد طلبات للتصدير', 'error'); return; }
-            let csv = '\uFEFFرقم,تاريخ,مستلم,هاتف,عنوان,حالة,إجمالي,منتجات\n';
-            allOrders.forEach(o => { csv += `#${(o.id||'').slice(-8)},"${new Date(o.createdAt||0).toLocaleString('ar-EG')}","${o.recipientName||''}","${o.phone||''}","${o.address||''}","${o.status||''}","${o.total||0}","${(o.items||[]).map(i=>i.name+'×'+i.quantity).join(' | ')}"\n`; });
-            const b = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `orders-${new Date().toISOString().slice(0,10)}.csv`; a.click();
-            showToast('📥 تم تصدير الطلبات بنجاح');
-        };
-
-        async function loadProducts() {
-            const snap = await get(ref(database, 'products'));
-            const prods = [];
-            if (snap.exists()) { const d = snap.val(); for (const k in d) { if (d.hasOwnProperty(k)) prods.push({ id: k, ...d[k] }); } }
-            return prods;
-        }
-
-        function setupProducts() {
-            if (productsListener) return;
-            loadProducts().then(p => { allProducts = p; updateStats(); renderProducts(); updateAnalyticsCache(); });
-            productsListener = onValue(ref(database, 'products'), (snap) => {
-                const p = [];
-                if (snap.exists()) { const d = snap.val(); for (const k in d) { if (d.hasOwnProperty(k)) p.push({ id: k, ...d[k] }); } }
-                allProducts = p; updateStats(); renderProducts(); updateAnalyticsCache();
+        // ============ إدارة وتهيئة الطلبات المتقدمة ============
+        function setupOrders() {
+            onValue(ref(database, 'orders'), (snapshot) => {
+                const data = snapshot.val() || {};
+                allOrders = Object.keys(data).map(k => ({ id: k, ...data[k] }));
+                allOrders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                
+                allOrders.forEach(o => {
+                    if (o.status === 'pending' && !deleteTimers[o.id]) {
+                        startDeleteTimer(o.id, o.timestamp);
+                    } else if (o.status !== 'pending' && deleteTimers[o.id]) {
+                        clearDeleteTimer(o.id);
+                    }
+                    
+                    if (o._stockDeducted) deductedOrders.add(o.id);
+                    
+                    if (previousStatuses[o.id] && previousStatuses[o.id] !== o.status) {
+                        showToast(`تغيرت حالة الطلب #${o.id.slice(-8)} إلى ${getStatusText(o.status)}`, 'info');
+                    }
+                    previousStatuses[o.id] = o.status;
+                });
+                
+                renderOrders();
+                updateStats();
             });
         }
 
-        function renderProducts() {
-            const g = document.getElementById('productsGrid');
-            if (!g) return;
-            if (!allProducts.length) {
-                g.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><i class="fa-solid fa-box-open"></i><h3>لا توجد منتجات</h3></div>';
+        function setupProducts() {
+            productsListener = onValue(ref(database, 'products'), (snapshot) => {
+                const data = snapshot.val() || {};
+                allProducts = Object.keys(data).map(k => ({ id: k, ...data[k] }));
+                renderProducts();
+                updateStats();
+            });
+        }
+
+        function startDeleteTimer(orderId, timestamp) {
+            if (!timestamp) return;
+            clearDeleteTimer(orderId);
+            
+            const run = () => {
+                const elapsed = Math.floor((Date.now() - timestamp) / 1000);
+                const totalSec = DELETE_AFTER_MINUTES * 60;
+                const remaining = totalSec - elapsed;
+                
+                if (remaining <= 0) {
+                    clearDeleteTimer(orderId);
+                    remove(ref(database, `orders/${orderId}`)).catch(()=>{});
+                } else {
+                    const el = document.getElementById(`timer-${orderId}`);
+                    if (el) el.innerHTML = `<i class="fa-solid fa-clock"></i> حذف تلقائي خلال: ${formatTime(remaining)}`;
+                }
+            };
+            
+            countdownIntervals[orderId] = setInterval(run, 1000);
+            deleteTimers[orderId] = true;
+        }
+
+        function clearDeleteTimer(orderId) {
+            if (countdownIntervals[orderId]) clearInterval(countdownIntervals[orderId]);
+            delete countdownIntervals[orderId];
+            delete deleteTimers[orderId];
+        }
+
+        function getStatusText(status) {
+            const m = { pending: 'قيد الانتظار', accepted: 'مقبول', delivering: 'جاري التوصيل', delivered: 'تم الاستلام', rejected: 'مرفوض' };
+            return m[status] || status;
+        }
+
+        function updateStats() {
+            const totalOrders = allOrders.length;
+            const pendingOrders = allOrders.filter(o => o.status === 'pending').length;
+            const activeOrders = allOrders.filter(o => o.status === 'accepted' || o.status === 'delivering').length;
+            const lowStockCount = allProducts.filter(p => (p.quantity || 0) <= 5 && (p.quantity || 0) > 0).length;
+            const outStockCount = allProducts.filter(p => (p.quantity || 0) === 0).length;
+            
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            const monthlySales = allOrders
+                .filter(o => o.status === 'delivered' && o.timestamp && new Date(o.timestamp).getMonth() === currentMonth && new Date(o.timestamp).getFullYear() === currentYear)
+                .reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
+
+            const sOrders = document.getElementById('statOrders');
+            if (sOrders) sOrders.textContent = totalOrders;
+            
+            const sPending = document.getElementById('statPending');
+            if (sPending) sPending.textContent = pendingOrders + activeOrders;
+            
+            const sProducts = document.getElementById('statProducts');
+            if (sProducts) sProducts.textContent = allProducts.length;
+            
+            const sLowStock = document.getElementById('statLowStock');
+            if (sLowStock) sLowStock.textContent = lowStockCount + outStockCount;
+            
+            const sTotalSales = document.getElementById('statTotalSales');
+            if (sTotalSales) sTotalSales.textContent = `${monthlySales.toFixed(0)} ج`;
+
+            const pBadge = document.getElementById('pendingBadge');
+            if (pBadge) {
+                if (pendingOrders > 0) { pBadge.textContent = pendingOrders; pBadge.classList.remove('hidden'); }
+                else pBadge.classList.add('hidden');
+            }
+
+            const lBadge = document.getElementById('lowStockBadge');
+            if (lBadge) {
+                const totalAlerts = lowStockCount + outStockCount;
+                if (totalAlerts > 0) { lBadge.textContent = totalAlerts; lBadge.classList.remove('hidden'); }
+                else lBadge.classList.add('hidden');
+            }
+            
+            const warningCard = document.getElementById('statWarningCard');
+            if (warningCard) {
+                if (lowStockCount + outStockCount > 0) warningCard.classList.add('warning-stat');
+                else warningCard.classList.remove('warning-stat');
+            }
+        }
+
+        window.switchTab = (tabId) => {
+            document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            
+            const activeBtn = document.querySelector(`.tab[onclick*="'${tabId}'"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            const activePanel = document.getElementById(`panel-${tabId}`);
+            if (activePanel) activePanel.classList.add('active');
+            
+            if (tabId === 'messages') renderMessageLog();
+            if (tabId === 'analytics') renderAnalytics();
+        };
+
+        window.filterOrders = (filter) => {
+            currentFilter = filter;
+            renderOrders();
+        };
+
+        function renderOrders() {
+            const list = document.getElementById('ordersList');
+            if (!list) return;
+            
+            let filtered = allOrders;
+            if (currentFilter === 'pending') filtered = allOrders.filter(o => o.status === 'pending');
+            else if (currentFilter === 'active') filtered = allOrders.filter(o => o.status === 'accepted' || o.status === 'delivering');
+            
+            if (!filtered.length) {
+                list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-folder-open"></i><h3>لا توجد طلبات هنا</h3></div>';
                 return;
             }
-            g.innerHTML = allProducts.map(p => {
-                const init = p.initialStock || p.quantity || 0;
-                const cur = p.quantity || 0;
-                const pct = init > 0 ? Math.round((cur / init) * 100) : 0;
-                let lvl = 'good', lbl = 'متوفر', cls = '', barCls = 'stock-bar-good';
-                if (cur === 0) { lvl = 'danger'; lbl = 'نفذ'; cls = 'out-stock'; barCls = 'stock-bar-danger'; }
-                else if (cur <= Math.max(1, Math.ceil(init * 0.05))) { lvl = 'warning'; lbl = 'منخفض'; cls = 'low-stock'; barCls = 'stock-bar-warning'; }
+            
+            list.innerHTML = filtered.map(o => {
+                const dateStr = o.timestamp ? new Date(o.timestamp).toLocaleString('ar-EG') : 'غير محدد';
+                const itemsStr = (o.items || []).map(i => `
+                    <div class="order-item-row">
+                        <span>${i.name} × ${i.quantity}</span>
+                        <span>${(parseFloat(i.price) * parseInt(i.quantity)).toFixed(2)} ج</span>
+                    </div>
+                `).join('');
                 
-                const basePrice = Number(p.price || 0);
-                const discountType = p.discountType || 'none';
-                const discountValue = parseFloat(p.discountValue) || 0;
-                const finalPrice = calculateFinalPrice(basePrice, discountType, discountValue);
-                const hasDiscount = discountType !== 'none' && discountValue > 0 && finalPrice < basePrice;
-                const category = p.category || 'أجهزة شخصية';
-                const catIcon = getCategoryIcon(category);
-                const catEmoji = getCategoryEmoji(category);
-                
-                let priceHTML = '';
-                if (hasDiscount) {
-                    priceHTML = `
-                        <div>
-                            <span class="product-original-price">${basePrice.toFixed(2)} ج</span>
-                            <span class="product-final-price">${finalPrice.toFixed(2)} ج</span>
-                        </div>
-                        <span class="product-discount-badge"><i class="fa-solid fa-tag"></i> ${discountType === 'amount' ? `خصم ${discountValue.toFixed(2)} ج` : `خصم ${discountValue}%`}</span>
-                    `;
-                } else {
-                    priceHTML = `<span class="product-price-tag">${basePrice.toFixed(2)} ج</span>`;
-                }
+                const isPending = o.status === 'pending';
+                const isAccepted = o.status === 'accepted';
+                const isDelivering = o.status === 'delivering';
+                const isDelivered = o.status === 'delivered';
+                const isRejected = o.status === 'rejected';
                 
                 return `
-                    <div class="product-card-admin ${cls}">
-                        <img class="product-img-admin" src="${p.image||''}" alt="${p.name||''}" loading="lazy" onerror="this.style.background='var(--bg-primary)';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2240%22>☕</text></svg>';">
+                    <div class="order-card ${isPending ? 'new-order' : ''}" id="order-${o.id}">
+                        <div class="order-header">
+                            <div>
+                                <span class="order-id">طلب #${o.id.slice(-8)}</span>
+                                <div class="order-date">${dateStr}</div>
+                            </div>
+                            <div>
+                                <span class="order-status-badge badge-${o.status}">${getStatusText(o.status)}</span>
+                                ${isPending ? `<div class="countdown-timer" id="timer-${o.id}" style="margin-right:10px;"><i class="fa-solid fa-spinner fa-spin"></i> حساب الوقت...</div>` : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="order-info-grid">
+                            <div class="order-info-item"><i class="fa-solid fa-user"></i> ${o.recipientName || 'بدون اسم'}</div>
+                            <div class="order-info-item"><i class="fa-solid fa-phone"></i> <a href="tel:${o.phone}" style="color:inherit;">${o.phone || '---'}</a></div>
+                            <div class="order-info-item"><i class="fa-solid fa-location-dot"></i> ${o.address || '---'}</div>
+                            ${o.notes ? `<div class="order-info-item" style="grid-column:1/-1;"><i class="fa-solid fa-comment-dots"></i> ملحوظة: ${o.notes}</div>` : ''}
+                            ${o.rejectionReason ? `<div class="order-info-item" style="grid-column:1/-1; color:var(--status-rejected);"><i class="fa-solid fa-circle-xmark"></i> سبب الرفض: ${o.rejectionReason} ${o.rejectionDetails ? `(${o.rejectionDetails})` : ''}</div>` : ''}
+                        </div>
+                        
+                        <div class="order-items-list">
+                            ${itemsStr}
+                        </div>
+                        
+                        <div class="order-total-row">
+                            <span>الإجمالي:</span>
+                            <span style="float:left;">${parseFloat(o.total || 0).toFixed(2)} ج</span>
+                        </div>
+                        
+                        <div class="status-flow">
+                            <button class="status-btn btn-accepted ${isAccepted ? 'current' : ''}" ${(!isPending) ? 'disabled' : ''} onclick="window.updateOrderStatus('${o.id}', 'accepted')">
+                                <i class="fa-solid fa-check"></i> قبول الطلب
+                            </button>
+                            <button class="status-btn btn-delivering ${isDelivering ? 'current' : ''}" ${(!isAccepted) ? 'disabled' : ''} onclick="window.updateOrderStatus('${o.id}', 'delivering')">
+                                <i class="fa-solid fa-truck"></i> جاري التوصيل
+                            </button>
+                            <button class="status-btn btn-delivered ${isDelivered ? 'current' : ''}" ${(!isDelivering) ? 'disabled' : ''} onclick="window.updateOrderStatus('${o.id}', 'delivered')">
+                                <i class="fa-solid fa-circle-check"></i> تم التسليم
+                            </button>
+                            <button class="status-btn btn-reject ${isRejected ? 'current' : ''}" ${(isDelivered || isRejected) ? 'disabled' : ''} onclick="window.openRejectModal('${o.id}')">
+                                <i class="fa-solid fa-ban"></i> رفض
+                            </button>
+                            <button class="btn btn-whatsapp btn-xs" style="margin-right:auto;width:auto;" onclick="window.sendCustomWhatsApp('${o.id}')">
+                                <i class="fa-brands fa-whatsapp"></i> مراسلة
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            allOrders.forEach(o => {
+                if (o.status === 'pending') startDeleteTimer(o.id, o.timestamp);
+            });
+        }
+
+        window.updateOrderStatus = async (orderId, newStatus) => {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            try {
+                if (newStatus === 'accepted') {
+                    clearDeleteTimer(orderId);
+                    await deductStock(order);
+                }
+                
+                await update(ref(database, `orders/${orderId}`), { status: newStatus, lastUpdated: Date.now() });
+                showToast(`تم تحديث الطلب إلى: ${getStatusText(newStatus)}`);
+                
+                let msg = '';
+                if (newStatus === 'accepted') msg = msgAccept(order);
+                else if (newStatus === 'delivering') msg = msgDelivering(order);
+                else if (newStatus === 'delivered') msg = msgDelivered(order);
+                
+                if (msg) await sendWhatsApp(order.phone, msg);
+                
+                updateAnalyticsCache();
+            } catch(e) {
+                showToast('فشل في تحديث حالة الطلب', 'error');
+            }
+        };
+
+        window.openRejectModal = (orderId) => {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+            document.getElementById('rejectOrderId').value = orderId;
+            document.getElementById('rejectReason').value = '';
+            document.getElementById('rejectDetails').value = '';
+            document.getElementById('rejectModal').classList.add('active');
+        };
+
+        window.closeRejectModal = () => {
+            document.getElementById('rejectModal').classList.remove('active');
+        };
+
+        window.confirmRejectOrder = async () => {
+            const orderId = document.getElementById('rejectOrderId').value;
+            const reason = document.getElementById('rejectReason').value;
+            const details = document.getElementById('rejectDetails').value;
+            
+            if (!reason) { showToast('الرجاء اختيار سبب الرفض', 'warning'); return; }
+            
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            try {
+                clearDeleteTimer(orderId);
+                await update(ref(database, `orders/${orderId}`), {
+                    status: 'rejected',
+                    rejectionReason: reason,
+                    rejectionDetails: details || '',
+                    lastUpdated: Date.now()
+                });
+                
+                window.closeRejectModal();
+                showToast('تم رفض الطلب بنجاح');
+                
+                const msg = msgRejected({ ...order, rejectionReason: reason + (details ? ` (${details})` : '') });
+                await sendWhatsApp(order.phone, msg);
+                
+                updateAnalyticsCache();
+            } catch(e) {
+                showToast('حدث خطأ أثناء رفض الطلب', 'error');
+            }
+        };
+
+        window.sendCustomWhatsApp = (orderId) => {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+            const customMsg = prompt('أدخل الرسالة المخصصة للعميل:', `مرحباً ${order.recipientName || ''}، بخصوص طلبك من متجر بروفيشنال...`);
+            if (customMsg) {
+                sendWhatsApp(order.phone, customMsg, 'رسالة مخصصة');
+            }
+        };
+
+        window.forceRefreshOrders = () => {
+            showToast('جاري تحديث البيانات...');
+            get(ref(database, 'orders')).then(() => showToast('تم التحديث بنجاح')).catch(() => showToast('فشل التحديث', 'error'));
+        };
+
+        window.exportOrders = () => {
+            if (!allOrders.length) { showToast('لا توجد بيانات لتصديرها', 'warning'); return; }
+            try {
+                const headers = ['رقم الطلب', 'الاسم', 'الهاتف', 'العنوان', 'الحالة', 'الإجمالي', 'التاريخ'];
+                const rows = allOrders.map(o => [
+                    o.id.slice(-8), o.recipientName || '', o.phone || '', o.address || '', getStatusText(o.status), o.total || 0, o.timestamp ? new Date(o.timestamp).toLocaleString('ar-EG') : ''
+                ]);
+                let csv = '\uFEFF' + headers.join(',') + '\n' + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.setAttribute('download', `orders_${new Date().toISOString().slice(0,10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast('تم تحميل ملف CSV بنجاح');
+            } catch(e) { showToast('فشل التصدير', 'error'); }
+        };
+
+        // ============ إضافة وإدارة المنتجات والمستودع ============
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            if (!grid) return;
+            
+            if (!allProducts.length) {
+                grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><i class="fa-solid fa-box-open"></i><h3>لا توجد منتجات متوفرة</h3></div>';
+                return;
+            }
+            
+            grid.innerHTML = allProducts.map(p => {
+                const qty = p.quantity || 0;
+                let stockClass = 'stock-good', stockText = `متوفر: ${qty} قطعة`, barClass = 'stock-bar-good', pct = Math.min(100, (qty / 50) * 100);
+                if (qty === 0) { stockClass = 'stock-danger'; stockText = 'نفذ المخزون ❌'; barClass = 'stock-bar-danger'; pct = 100; }
+                else if (qty <= 5) { stockClass = 'stock-warning'; stockText = `مخزون منخفض: ${qty} قطع ⚠️`; barClass = 'stock-bar-warning'; pct = 20; }
+                
+                const hasDiscount = p.discountType && p.discountType !== 'none' && p.discountValue;
+                const finalPrice = calculateFinalPrice(p.price, p.discountType, p.discountValue);
+                
+                return `
+                    <div class="product-card-admin ${qty === 0 ? 'out-stock' : (qty <= 5 ? 'low-stock' : '')}">
+                        <img src="${p.imageUrl || 'https://via.placeholder.com/150'}" class="product-img-admin" alt="${p.name}" onerror="this.src='https://via.placeholder.com/150'">
                         <div class="product-card-body">
-                            <h4>${p.name||'---'}</h4>
-                            <div style="margin-bottom:8px;">
-                                <span class="category-badge-admin"><i class="fa-solid ${catIcon}"></i> ${catEmoji} ${category}</span>
-                            </div>
+                            <span class="category-badge-admin"><i class="fa-solid ${getCategoryIcon(p.category)}"></i> ${getCategoryName(p.category)}</span>
+                            <h4 style="margin-top:8px;">${p.name}</h4>
+                            <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;max-height:40px;overflow:hidden;">${p.description || 'لا يوجد وصف'}</p>
+                            
                             <div class="product-meta">
-                                ${priceHTML}
-                                <span class="stock-indicator stock-${lvl}">📦 ${lbl}</span>
+                                ${hasDiscount ? `
+                                    <div>
+                                        <span class="product-original-price">${parseFloat(p.price).toFixed(2)} ج</span>
+                                        <span class="product-final-price">${finalPrice.toFixed(2)} ج</span>
+                                    </div>
+                                    <span class="product-discount-badge"><i class="fa-solid fa-fire"></i> خصم ${p.discountType === 'percent' ? `${p.discountValue}%` : `${p.discountValue}ج`}</span>
+                                ` : `
+                                    <div class="product-price-tag">${parseFloat(p.price || 0).toFixed(2)} ج</div>
+                                `}
                             </div>
-                            <div class="stock-bar">
-                                <div class="stock-bar-fill ${barCls}" style="width:${pct}%"></div>
-                            </div>
-                            <small style="color:var(--text-muted);">المخزون: ${cur} / ${init}</small>
+                            
+                            <div class="stock-indicator ${stockClass}">${stockText}</div>
+                            <div class="stock-bar"><div class="stock-bar-fill ${barClass}" style="width:${pct}%"></div></div>
+                            
                             <div class="product-actions">
-                                <button class="btn btn-gold btn-sm" onclick="window.openEditModal('${p.id}')"><i class="fa-solid fa-pen"></i> تعديل</button>
-                                <button class="btn btn-danger btn-sm" onclick="window.deleteProduct('${p.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
+                                <button class="btn btn-outline btn-sm" style="flex:1;" onclick="window.openEditModal('${p.id}')">
+                                    <i class="fa-solid fa-pen"></i> تعديل
+                                </button>
+                                <button class="btn btn-danger btn-sm" style="padding:8px 12px;" onclick="window.deleteProduct('${p.id}')">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1544,360 +1860,249 @@
             }).join('');
         }
 
-        window.resetAddProductForm = () => {
-            ['prodName', 'prodPrice', 'prodQty', 'prodDesc', 'prodDiscountValue'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
-            document.getElementById('prodImageInput').value = '';
-            selectedProductImage = null;
-            document.getElementById('imgPreview').classList.remove('show');
-            document.getElementById('imgUploadArea').classList.remove('has-file');
-            const catSelect = document.getElementById('prodCategory'); if (catSelect) catSelect.value = 'أجهزة شخصية';
-            currentDiscountType = 'none';
-            window.selectDiscountType('none');
-            document.getElementById('discountPreview').style.display = 'none';
-        };
-
-        function updateStats() {
-            const el = (id) => document.getElementById(id);
-            if (el('statOrders')) el('statOrders').textContent = allOrders.length;
-            if (el('statPending')) el('statPending').textContent = allOrders.filter(o => ['pending', 'accepted', 'delivering'].includes(o.status)).length;
-            if (el('statProducts')) el('statProducts').textContent = allProducts.length;
-            const low = allProducts.filter(p => (p.quantity || 0) <= Math.max(1, Math.ceil((p.initialStock || p.quantity || 0) * 0.05))).length;
-            if (el('statLowStock')) el('statLowStock').textContent = low;
-            if (el('statWarningCard')) el('statWarningCard').classList.toggle('warning-stat', low > 0);
-            const ms = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
-            if (el('statTotalSales')) el('statTotalSales').textContent = allOrders.filter(o => o.status === 'delivered' && o.createdAt >= ms).reduce((s, o) => s + (Number(o.total) || 0), 0).toFixed(0) + ' ج';
-            const pb = el('pendingBadge'), lb = el('lowStockBadge');
-            const pc = allOrders.filter(o => o.status === 'pending').length;
-            if (pb) { pb.textContent = pc; pb.classList.toggle('hidden', pc === 0); }
-            if (lb) { lb.textContent = low; lb.classList.toggle('hidden', low === 0); }
-        }
-
-        function calcAnalytics() {
-            const ms = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
-            const delivered = allOrders.filter(o => o.status === 'delivered');
-            const sales = {};
-            delivered.forEach(o => (o.items || []).forEach(i => {
-                if (!sales[i.name]) sales[i.name] = { q: 0, r: 0 };
-                sales[i.name].q += i.quantity || 0;
-                sales[i.name].r += (i.price || 0) * (i.quantity || 0);
-            }));
-            const top = Object.entries(sales).sort((a, b) => b[1].q - a[1].q).slice(0, 5);
-            return {
-                monthlySales: delivered.filter(o => o.createdAt >= ms).reduce((s, o) => s + (Number(o.total) || 0), 0),
-                totalSalesAll: delivered.reduce((s, o) => s + (Number(o.total) || 0), 0),
-                conversionRate: allOrders.length > 0 ? ((delivered.length / allOrders.length) * 100).toFixed(1) : 0,
-                totalOrders: allOrders.length, rejectedOrders: allOrders.filter(o => o.status === 'rejected').length,
-                deliveredCount: delivered.length, topProducts: top, timestamp: Date.now()
-            };
-        }
-
-        function saveAnalytics(d) { try { localStorage.setItem('pro_analytics', JSON.stringify(d)); analyticsCache = d; } catch(e) {} }
-        async function updateAnalyticsCache() { const d = calcAnalytics(); saveAnalytics(d); if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(d); }
-        function loadStoredAnalytics() { try { const d = localStorage.getItem('pro_analytics'); if (d) analyticsCache = JSON.parse(d); } catch(e) {} }
-
-        function renderAnalyticsHTML(d) {
-            const c = document.getElementById('analyticsContent');
-            if (!c) return;
-            if (!d || d.totalOrders === 0) { c.innerHTML = '<div class="empty-state"><i class="fa-solid fa-chart-bar"></i><h3>لا توجد تحليلات حتى الآن</h3></div>'; return; }
-            const topHtml = d.topProducts?.length ? d.topProducts.map((p, i) => `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg-tertiary);padding:14px 18px;border-radius:var(--radius);border:1px solid var(--border-color);flex-wrap:wrap;gap:10px;"><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:24px;">${['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span><span style="font-weight:700;">${p[0]}</span></div><div style="text-align:left;"><div style="font-weight:800;color:var(--gold-300);">${p[1].r.toFixed(0)} ج</div><small style="color:var(--text-muted);">${p[1].q} قطعة</small></div></div>`).join('') : '<div class="empty-state"><i class="fa-solid fa-chart-bar"></i><span>لا توجد مبيعات</span></div>';
-            c.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;"><div class="stat-card"><span class="stat-icon">💰</span><div class="stat-value">${d.monthlySales.toFixed(0)} ج</div><div class="stat-label">المبيعات الشهرية</div></div><div class="stat-card"><span class="stat-icon">📊</span><div class="stat-value">${d.conversionRate}%</div><div class="stat-label">معدل التحويل</div></div><div class="stat-card"><span class="stat-icon">📦</span><div class="stat-value">${d.deliveredCount}</div><div class="stat-label">طلبات مكتملة</div></div><div class="stat-card"><span class="stat-icon">❌</span><div class="stat-value">${d.rejectedOrders}</div><div class="stat-label">طلبات مرفوضة</div></div></div><div style="margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;"><div class="stat-card"><span class="stat-icon">💵</span><div class="stat-value">${d.totalSalesAll.toFixed(0)} ج</div><div class="stat-label">إجمالي المبيعات</div></div><div class="stat-card"><span class="stat-icon">📈</span><div class="stat-value">${d.totalOrders}</div><div class="stat-label">إجمالي الطلبات</div></div></div><div style="margin-top:24px;"><h3 style="color:var(--gold-300);margin-bottom:16px;">🏆 أفضل المنتجات مبيعاً</h3><div style="display:flex;flex-direction:column;gap:10px;">${topHtml}</div></div><div style="text-align:center;margin-top:16px;color:var(--text-muted);font-size:12px;">آخر تحديث: ${new Date(d.timestamp).toLocaleString('ar-EG')}</div>`;
-        }
-        window.refreshAnalytics = () => { updateStats(); const d = calcAnalytics(); saveAnalytics(d); renderAnalyticsHTML(d); showToast('🔄 تم تحديث التحليلات'); };
-
-        function scheduleDelete(oid, ct) {
-            if (deleteTimers[oid]) { clearTimeout(deleteTimers[oid].tid); clearInterval(deleteTimers[oid].iid); }
-            if (countdownIntervals[oid]) { clearInterval(countdownIntervals[oid]); delete countdownIntervals[oid]; }
-            const dt = (ct || Date.now()) + (DELETE_AFTER_MINUTES * 60 * 1000);
-            const rem = Math.max(0, dt - Date.now());
-            if (rem <= 0) { removeOrder(oid); return; }
-            const tid = setTimeout(() => { removeOrder(oid); if (countdownIntervals[oid]) { clearInterval(countdownIntervals[oid]); delete countdownIntervals[oid]; } delete deleteTimers[oid]; }, rem);
-            const iid = setInterval(() => { const r = Math.max(0, Math.ceil((dt - Date.now()) / 1000)); const el = document.getElementById(`cd-${oid}`); if (el) el.textContent = `⏱️ ${formatTime(r)}`; if (r <= 0) { clearInterval(iid); delete countdownIntervals[oid]; } }, 1000);
-            deleteTimers[oid] = { tid, iid, dt };
-            countdownIntervals[oid] = iid;
-        }
-        
-        async function removeOrder(oid) {
-            try { await remove(ref(database, `orders/${oid}`)); allOrders = allOrders.filter(o => o.id !== oid); deductedOrders.delete(oid); updateStats(); updateAnalyticsCache(); renderOrders(); showToast('🗑️ تم حذف الطلب تلقائياً'); } catch(e) {}
-        }
-        
-        function cancelDelete(oid) {
-            if (deleteTimers[oid]) { clearTimeout(deleteTimers[oid].tid); clearInterval(deleteTimers[oid].iid); delete deleteTimers[oid]; }
-            if (countdownIntervals[oid]) { clearInterval(countdownIntervals[oid]); delete countdownIntervals[oid]; }
-        }
-
-        function setupOrders() {
-            onValue(ref(database, 'orders'), async (snap) => {
-                const orders = [];
-                if (snap.exists()) { const d = snap.val(); for (const k in d) { if (d.hasOwnProperty(k)) orders.push({ id: k, ...d[k] }); } }
-                orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-                for (const o of orders) {
-                    const wasStatus = previousStatuses[o.id];
-                    if (wasStatus && wasStatus !== o.status) {
-                        setTimeout(async () => {
-                            if (o.status === 'accepted') await sendWhatsApp(o.phone, msgAccept(o), 'تأكيد قبول');
-                            else if (o.status === 'delivering') await sendWhatsApp(o.phone, msgDelivering(o), 'توصيل');
-                            else if (o.status === 'delivered') { await deductStock(o); await sendWhatsApp(o.phone, msgDelivered(o), 'تسليم'); }
-                            else if (o.status === 'rejected') await sendWhatsApp(o.phone, msgRejected(o), 'رفض');
-                        }, 300);
-                    }
-                    previousStatuses[o.id] = o.status;
+        const pFileInput = document.getElementById('prodImageInput');
+        if (pFileInput) {
+            pFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    selectedProductImage = file;
+                    const reader = new FileReader();
+                    reader.onload = (ex) => {
+                        const prev = document.getElementById('imgPreview');
+                        if (prev) { prev.src = ex.target.result; prev.classList.add('show'); }
+                        const area = document.getElementById('imgUploadArea');
+                        if (area) area.classList.add('has-file');
+                    };
+                    reader.readAsDataURL(file);
                 }
-                allOrders = orders;
-                for (const o of orders) {
-                    if (o.status === 'delivered' || o.status === 'rejected') { if (!deleteTimers[o.id]) scheduleDelete(o.id, o.deliveredAt || o.rejectedAt || o.createdAt); }
-                    else if (deleteTimers[o.id]) cancelDelete(o.id);
-                }
-                updateStats(); updateAnalyticsCache();
-                if (document.getElementById('panel-orders')?.classList.contains('active')) renderOrders();
             });
         }
 
-        window.forceRefreshOrders = async () => {
-            const snap = await get(ref(database, 'orders'));
-            const orders = [];
-            if (snap.exists()) { const d = snap.val(); for (const k in d) { if (d.hasOwnProperty(k)) orders.push({ id: k, ...d[k] }); } }
-            orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            allOrders = orders; updateStats(); updateAnalyticsCache(); renderOrders();
-            showToast(`✅ تم تحديث ${orders.length} طلب`);
-        };
+        const priceInp = document.getElementById('prodPrice');
+        const discInp = document.getElementById('prodDiscountValue');
+        if (priceInp) priceInp.addEventListener('input', updateDiscountPreview);
+        if (discInp) discInp.addEventListener('input', updateDiscountPreview);
 
-        function renderOrders() {
-            const c = document.getElementById('ordersList');
-            if (!c || !document.getElementById('panel-orders')?.classList.contains('active')) return;
-            let f = [...allOrders];
-            if (currentFilter === 'pending') f = allOrders.filter(o => o.status === 'pending');
-            else if (currentFilter === 'active') f = allOrders.filter(o => o.status === 'accepted' || o.status === 'delivering');
-            if (!f.length) { c.innerHTML = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>لا توجد طلبات</h3></div>'; return; }
-            c.innerHTML = f.map(o => {
-                const date = o.createdAt ? new Date(o.createdAt).toLocaleString('ar-EG') : '';
-                const isRej = o.status === 'rejected', isDone = o.status === 'delivered';
-                const cIdx = STATUS_FLOW.indexOf(o.status);
-                const labels = { pending: '⏳ معلق', accepted: '✅ مقبول', delivering: '🚚 توصيل', delivered: '📦 مكتمل' };
-                const badgeCls = { pending: 'badge-pending', accepted: 'badge-accepted', delivering: 'badge-delivering', delivered: 'badge-delivered', rejected: 'badge-rejected' };
-                let btns = '';
-                if (isRej) btns = '<span style="color:var(--status-rejected);font-weight:700;">❌ مرفوض</span>';
-                else if (isDone) btns = '<span style="color:var(--status-delivered);font-weight:700;">📦 مكتمل ✓</span>';
-                else {
-                    for (let i = 0; i < STATUS_FLOW.length; i++) {
-                        const st = STATUS_FLOW[i], isCur = o.status === st, isNext = cIdx >= 0 && i === cIdx + 1;
-                        let dis = true;
-                        if (isCur) dis = false; else if (isNext) dis = false;
-                        if (o.status === 'pending' && st === 'accepted') dis = false;
-                        let cls = `status-btn btn-${st}`; if (isCur) cls += ' current';
-                        btns += `<button class="${cls}" onclick="window.advanceStatus('${o.id}','${st}')" ${dis ? 'disabled' : ''}>${labels[st]}${isCur ? ' ✓' : ''}</button>`;
-                    }
-                    if (o.status === 'pending') btns += `<button class="status-btn btn-reject" onclick="window.openRejectModal('${o.id}')">❌ رفض</button>`;
+        const addProdBtn = document.getElementById('addProductBtn');
+        if (addProdBtn) {
+            addProdBtn.addEventListener('click', async () => {
+                const name = document.getElementById('prodName')?.value.trim();
+                const category = document.getElementById('prodCategory')?.value;
+                const price = parseFloat(document.getElementById('prodPrice')?.value);
+                const quantity = parseInt(document.getElementById('prodQty')?.value);
+                const description = document.getElementById('prodDesc')?.value.trim();
+                const discountValue = parseFloat(document.getElementById('prodDiscountValue')?.value) || 0;
+
+                if (!name || !category || isNaN(price) || isNaN(quantity) || !description) {
+                    showToast('يرجى ملء جميع الحقول الإلزامية مميزة بعلامة *', 'warning');
+                    return;
                 }
-                if (o.status === 'accepted' || o.status === 'delivering') {
-                    btns += `<button class="btn btn-info btn-sm" onclick="window.printReceiptForOrder('${o.id}')">🖨️ طباعة</button>`;
-                    btns += `<button class="btn btn-whatsapp btn-sm" onclick="window.sendWAtoClient('${o.id}')"><i class="fa-brands fa-whatsapp"></i> واتساب</button>`;
+                if (!selectedProductImage) { showToast('يرجى اختيار صورة للمنتج', 'warning'); return; }
+
+                addProdBtn.disabled = true;
+                addProdBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الصورة وحفظ المنتج...';
+
+                try {
+                    const uploadResult = await uploadToCloudinary(selectedProductImage, 'rashfa-products');
+                    const pRef = push(ref(database, 'products'));
+                    await set(pRef, {
+                        name, category, price, quantity, description,
+                        imageUrl: uploadResult.url,
+                        imagePublicId: uploadResult.public_id,
+                        discountType: currentDiscountType,
+                        discountValue: currentDiscountType !== 'none' ? discountValue : 0,
+                        createdAt: Date.now()
+                    });
+
+                    showToast('تم إضافة المنتج بنجاح إلى قاعدة البيانات');
+                    window.resetAddProductForm();
+                    window.switchTab('products');
+                } catch(e) {
+                    showToast(`حدث خطأ أثناء الإضافة: ${e.message}`, 'error');
+                } finally {
+                    addProdBtn.disabled = false;
+                    addProdBtn.innerHTML = '<i class="fa-solid fa-plus"></i> إضافة المنتج';
                 }
-                if (o.status === 'pending') btns += `<button class="btn btn-success btn-sm" onclick="window.manualAcceptOrder('${o.id}')">✅ قبول يدوي</button>`;
-                let cd = '';
-                if ((isDone || isRej) && deleteTimers[o.id]) {
-                    const rem = Math.max(0, Math.ceil((deleteTimers[o.id].dt - Date.now()) / 1000));
-                    cd = `<span class="countdown-timer" id="cd-${o.id}">⏱️ ${formatTime(rem)}</span>`;
-                }
-                return `<div class="order-card ${o.status === 'pending' && !o._seen ? 'new-order' : ''}"><div class="order-header"><span class="order-id">📋 #${(o.id || '').slice(-8)}</span><span class="order-status-badge ${badgeCls[o.status] || ''}">${labels[o.status] || o.status}</span><span class="order-date">${date}</span></div><div class="order-info-grid"><div class="order-info-item"><i class="fa-solid fa-user"></i><strong>${o.recipientName || '---'}</strong></div><div class="order-info-item"><i class="fa-solid fa-phone"></i>${o.phone || '---'}</div><div class="order-info-item"><i class="fa-solid fa-location-dot"></i>${o.address || '---'}</div></div><div class="order-items-list">${(o.items || []).map(i => `<div class="order-item-row"><span>${i.name} ×${i.quantity}</span><span>${(i.price * i.quantity).toFixed(2)} ج</span></div>`).join('')}</div><div class="order-total-row">💰 ${o.total || 0} جنيه</div>${o.rejectionReason ? `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:var(--radius-sm);padding:12px 16px;margin:12px 0;color:var(--status-rejected);font-size:13px;">❌ ${o.rejectionReason}</div>` : ''}${cd}<div class="status-flow">${btns}</div></div>`;
-            }).join('');
+            });
         }
 
-        window.manualAcceptOrder = async (oid) => {
-            const o = allOrders.find(x => x.id === oid);
-            if (!o) return;
-            try { await update(ref(database, `orders/${oid}`), { status: 'accepted', acceptedAt: Date.now() }); const sent = await sendWhatsApp(o.phone, msgAccept(o), 'قبول يدوي'); showToast(sent ? `✅ تم قبول الطلب #${oid.slice(-8)}` : `✅ تم قبول الطلب (فشل واتساب)`, sent ? 'success' : 'warning'); } catch(e) { showToast('❌ فشل قبول الطلب', 'error'); }
+        window.resetAddProductForm = () => {
+            ['prodName', 'prodPrice', 'prodQty', 'prodDesc', 'prodDiscountValue'].forEach(id => {
+                const el = document.getElementById(id); if (el) el.value = '';
+            });
+            const sel = document.getElementById('prodCategory'); if (sel) sel.selectedIndex = 2;
+            const prev = document.getElementById('imgPreview'); if (prev) { prev.src = ''; prev.classList.remove('show'); }
+            const area = document.getElementById('imgUploadArea'); if (area) area.classList.remove('has-file');
+            const inp = document.getElementById('prodImageInput'); if (inp) inp.value = '';
+            selectedProductImage = null;
+            window.selectDiscountType('none');
         };
 
-        window.advanceStatus = async (oid, ns) => {
-            const o = allOrders.find(x => x.id === oid);
-            if (!o) return;
-            const d = { status: ns };
-            if (ns === 'delivered') d.deliveredAt = Date.now();
-            if (ns === 'accepted') d.acceptedAt = Date.now();
-            try {
-                await update(ref(database, `orders/${oid}`), d);
-                if (ns === 'accepted') await sendWhatsApp(o.phone, msgAccept(o), 'قبول');
-                else if (ns === 'delivering') await sendWhatsApp(o.phone, msgDelivering(o), 'توصيل');
-                else if (ns === 'delivered') await sendWhatsApp(o.phone, msgDelivered(o), 'تسليم');
-                showToast('✅ تم تحديث الحالة');
-            } catch(e) { showToast('❌ فشل تحديث الحالة', 'error'); }
-        };
-
-        window.sendWAtoClient = (oid) => { const o = allOrders.find(x => x.id === oid); if (o) { let msg; if (o.status === 'accepted') msg = msgAccept(o); else if (o.status === 'delivering') msg = msgDelivering(o); else msg = msgAccept(o); sendWhatsApp(o.phone, msg, 'يدوي'); } };
-
-        window.printReceiptForOrder = (oid) => {
-            const o = allOrders.find(x => x.id === oid);
-            if (o) {
-                const date = new Date(o.createdAt || Date.now()).toLocaleString('ar-EG');
-                const items = (o.items || []).map(i => `<tr><td style="text-align:right;padding:4px 8px;border-bottom:1px dashed #ccc;">${i.name} ×${i.quantity}</td><td style="text-align:center;padding:4px 8px;border-bottom:1px dashed #ccc;">${(i.price * i.quantity).toFixed(2)} ج</td></tr>`).join('');
-                const w = window.open('', '_blank', 'width=400,height=650');
-                if (w) { w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>بروفيشنال - ريسيت</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;background:white;color:black;padding:10px;max-width:80mm;margin:0 auto}.header{text-align:center;margin-bottom:10px}.header h2{font-size:18px;margin-bottom:2px}.header p{font-size:11px;color:#555}hr{border:none;border-top:1px dashed #999;margin:8px 0}.info{font-size:12px}.info p{margin:3px 0}table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}th{text-align:right;padding:4px 8px;border-bottom:1px solid #999;font-size:11px}.total{font-size:18px;font-weight:bold;text-align:center;margin:8px 0}.footer{text-align:center;font-size:11px;margin-top:10px}button{display:block;margin:10px auto;padding:10px 20px;background:#4A90D9;color:white;border:none;border-radius:5px;font-size:16px;cursor:pointer}@media print{button{display:none}body{width:80mm}}@media(max-width:400px){body{padding:5px}}</style></head><body><div class="header"><h2>🏪 بروفيشنال</h2><p>Professional Store</p><p>📞 01103127696</p></div><hr><div class="info"><p><strong>طلب #${o.id.slice(-8)}</strong></p><p>📅 ${date}</p><p>👤 ${o.recipientName || '---'}</p><p>📞 ${o.phone || '---'}</p><p>📍 ${o.address || '---'}</p></div><hr><table><thead><tr><th>المنتج</th><th>السعر</th></tr></thead><tbody>${items}</tbody></table><hr><div class="total">الإجمالي: ${o.total || 0} جنيه</div><div class="footer"><p>☕ شكراً لاختياركم بروفيشنال</p></div><button onclick="window.print()">🖨️ طباعة</button></body></html>`); w.document.close(); }
+        window.deleteProduct = async (id) => {
+            if (confirm('هل أنت متأكد من رغبتك بحذف هذا المنتج نهائياً من المتجر؟')) {
+                try {
+                    await remove(ref(database, `products/${id}`));
+                    showToast('تم حذف المنتج بنجاح');
+                } catch(e) { showToast('فشل حذف المنتج', 'error'); }
             }
         };
 
-        window.openRejectModal = (oid) => { document.getElementById('rejectOrderId').value = oid; document.getElementById('rejectReason').value = ''; document.getElementById('rejectDetails').value = ''; document.getElementById('rejectModal').classList.add('active'); };
-        window.closeRejectModal = () => document.getElementById('rejectModal')?.classList.remove('active');
-        window.confirmRejectOrder = async () => {
-            const oid = document.getElementById('rejectOrderId')?.value;
-            const reason = document.getElementById('rejectReason')?.value;
-            const details = document.getElementById('rejectDetails')?.value?.trim();
-            if (!oid || !reason) { showToast('⚠️ اختر سبب الرفض', 'error'); return; }
-            const o = allOrders.find(x => x.id === oid);
-            try {
-                await update(ref(database, `orders/${oid}`), { status: 'rejected', rejectionReason: reason, rejectionDetails: details, rejectedAt: Date.now() });
-                if (o) { const rejectedOrder = {...o, status: 'rejected', rejectionReason: reason}; await sendWhatsApp(o.phone, msgRejected(rejectedOrder), 'رفض'); }
-                window.closeRejectModal(); showToast('❌ تم رفض الطلب', 'info');
-            } catch(e) { showToast('❌ فشل رفض الطلب', 'error'); }
-        };
-
-        window.openEditModal = (pid) => {
-            const p = allProducts.find(x => x.id === pid);
-            if (!p) { showToast('لم يتم العثور على المنتج', 'error'); return; }
-            document.getElementById('editProductId').value = pid;
+        window.openEditModal = (id) => {
+            const p = allProducts.find(prod => prod.id === id);
+            if (!p) return;
+            
+            document.getElementById('editProductId').value = id;
             document.getElementById('editProdName').value = p.name || '';
             document.getElementById('editProdCategory').value = p.category || 'أجهزة شخصية';
             document.getElementById('editProdPrice').value = p.price || 0;
             document.getElementById('editProdQty').value = p.quantity || 0;
             document.getElementById('editProdDesc').value = p.description || '';
-            editCurrentDiscountType = p.discountType || 'none';
+            
+            const type = p.discountType || 'none';
             document.getElementById('editProdDiscountValue').value = p.discountValue || '';
-            window.editSelectDiscountType(editCurrentDiscountType);
+            window.editSelectDiscountType(type);
+            
             document.getElementById('editProductModal').classList.add('active');
         };
-        window.closeEditModal = () => document.getElementById('editProductModal')?.classList.remove('active');
+
+        window.closeEditModal = () => {
+            document.getElementById('editProductModal').classList.remove('active');
+        };
+
         window.saveProductEdit = async () => {
-            const pid = document.getElementById('editProductId')?.value;
-            const name = document.getElementById('editProdName')?.value?.trim();
-            const category = document.getElementById('editProdCategory')?.value || 'أجهزة شخصية';
-            const price = parseFloat(document.getElementById('editProdPrice')?.value);
-            const qty = parseInt(document.getElementById('editProdQty')?.value);
-            const desc = document.getElementById('editProdDesc')?.value?.trim();
-            const discountValue = parseFloat(document.getElementById('editProdDiscountValue')?.value) || 0;
-            if (!pid || !name || isNaN(price) || isNaN(qty)) { showToast('⚠️ بيانات غير صحيحة', 'error'); return; }
-            if (editCurrentDiscountType === 'percent' && discountValue > 100) { showToast('⚠️ نسبة الخصم لا يمكن أن تتجاوز 100%', 'error'); return; }
-            const finalPrice = calculateFinalPrice(price, editCurrentDiscountType, discountValue);
-            try {
-                await update(ref(database, `products/${pid}`), { name, price, finalPrice, category, quantity: qty, description: desc, discountType: editCurrentDiscountType, discountValue: discountValue, lastUpdated: Date.now() });
-                window.closeEditModal(); showToast('✅ تم تحديث المنتج');
-            } catch(e) { showToast('❌ فشل تحديث المنتج', 'error'); }
-        };
-        window.deleteProduct = async (pid) => {
-            const p = allProducts.find(x => x.id === pid);
-            if (!confirm(`هل أنت متأكد من حذف "${p?.name || 'المنتج'}"؟`)) return;
-            try { await remove(ref(database, `products/${pid}`)); showToast('🗑️ تم حذف المنتج', 'info'); } catch(e) { showToast('❌ فشل حذف المنتج', 'error'); }
-        };
+            const id = document.getElementById('editProductId').value;
+            const name = document.getElementById('editProdName').value.trim();
+            const category = document.getElementById('editProdCategory').value;
+            const price = parseFloat(document.getElementById('editProdPrice').value);
+            const quantity = parseInt(document.getElementById('editProdQty').value);
+            const description = document.getElementById('editProdDesc').value.trim();
+            const discountValue = parseFloat(document.getElementById('editProdDiscountValue').value) || 0;
 
-        function updateLogo(url) {
-            ['adminLogoDisplay', 'loginLogo', 'logoPreviewLarge'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Logo" onerror="this.parentElement.innerHTML='☕'">`; });
-        }
-        function loadLogo() { get(ref(database, 'settings/logo')).then(s => { if (s.exists() && s.val().url) updateLogo(s.val().url); }).catch(() => {}); }
-        onValue(ref(database, 'settings/logo'), s => { if (s.exists() && s.val().url) updateLogo(s.val().url); });
-
-        function init() {
-            loadStoredAnalytics();
-            window.switchTab = window.switchTab; window.forceRefreshOrders = window.forceRefreshOrders;
-            window.filterOrders = window.filterOrders; window.exportOrders = window.exportOrders;
-            window.openEditModal = window.openEditModal; window.deleteProduct = window.deleteProduct;
-            window.refreshAnalytics = window.refreshAnalytics; window.clearMessageLog = window.clearMessageLog;
-            window.sendWAtoClient = window.sendWAtoClient; window.advanceStatus = window.advanceStatus;
-            window.manualAcceptOrder = window.manualAcceptOrder; window.openRejectModal = window.openRejectModal;
-            window.closeRejectModal = window.closeRejectModal; window.confirmRejectOrder = window.confirmRejectOrder;
-            window.closeEditModal = window.closeEditModal; window.saveProductEdit = window.saveProductEdit;
-            window.printReceiptForOrder = window.printReceiptForOrder; window.resetAddProductForm = window.resetAddProductForm;
-            window.selectDiscountType = window.selectDiscountType; window.editSelectDiscountType = window.editSelectDiscountType;
-
-            document.getElementById('prodImageInput')?.addEventListener('change', function(e) {
-                const f = e.target.files[0];
-                if (!f) return;
-                if (!f.type.startsWith('image/')) { showToast('⚠️ اختر ملف صورة صالح', 'error'); return; }
-                if (f.size > 10 * 1024 * 1024) { showToast('⚠️ حجم الصورة كبير جداً', 'error'); return; }
-                selectedProductImage = f;
-                const r = new FileReader();
-                r.onload = ev => { const preview = document.getElementById('imgPreview'); if (preview) { preview.src = ev.target.result; preview.classList.add('show'); } document.getElementById('imgUploadArea')?.classList.add('has-file'); };
-                r.readAsDataURL(f);
-            });
-
-            document.getElementById('prodPrice')?.addEventListener('input', updateDiscountPreview);
-            document.getElementById('prodDiscountValue')?.addEventListener('input', updateDiscountPreview);
-
-            document.getElementById('addProductBtn')?.addEventListener('click', async function() {
-                const name = document.getElementById('prodName')?.value?.trim();
-                const category = document.getElementById('prodCategory')?.value || 'أجهزة شخصية';
-                const price = parseFloat(document.getElementById('prodPrice')?.value);
-                const qty = parseInt(document.getElementById('prodQty')?.value);
-                const desc = document.getElementById('prodDesc')?.value?.trim();
-                const img = selectedProductImage;
-                const discountValue = parseFloat(document.getElementById('prodDiscountValue')?.value) || 0;
-                
-                if (!name || isNaN(price) || isNaN(qty) || !desc || !img) { showToast('⚠️ يرجى إكمال جميع الحقول المطلوبة', 'error'); return; }
-                if (price < 0 || qty < 0) { showToast('⚠️ السعر والكمية يجب أن يكونا أرقاماً موجبة', 'error'); return; }
-                if (currentDiscountType === 'percent' && discountValue > 100) { showToast('⚠️ نسبة الخصم لا يمكن أن تتجاوز 100%', 'error'); return; }
-                if ((currentDiscountType === 'amount') && discountValue >= price) { showToast('⚠️ قيمة الخصم لا يمكن أن تكون أكبر من أو تساوي سعر المنتج', 'error'); return; }
-                
-                const finalPrice = calculateFinalPrice(price, currentDiscountType, discountValue);
-                const btn = this; const orig = btn.innerHTML;
-                btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الرفع...';
-                
-                try {
-                    const imgData = await uploadToCloudinary(img, 'rashfa-products');
-                    const newRef = push(ref(database, 'products'));
-                    await set(newRef, { name, price, finalPrice, category, quantity: qty, initialStock: qty, description: desc, image: imgData.url, cloudinary_public_id: imgData.public_id, discountType: currentDiscountType, discountValue: discountValue, createdAt: Date.now() });
-                    window.resetAddProductForm();
-                    showToast(`🎉 تمت إضافة "${name}" بنجاح`);
-                    setTimeout(() => window.switchTab('products'), 500);
-                } catch(e) { showToast('❌ ' + e.message, 'error'); }
-                finally { btn.disabled = false; btn.innerHTML = orig; }
-            });
-
-            document.getElementById('logoFileInput')?.addEventListener('change', function(e) {
-                const f = e.target.files[0];
-                if (!f?.type?.startsWith('image/')) return;
-                if (f.size > 5 * 1024 * 1024) { showToast('⚠️ حجم الصورة كبير جداً', 'error'); return; }
-                selectedLogoImage = f;
-                const r = new FileReader();
-                r.onload = ev => { const preview = document.getElementById('logoPreviewLarge'); if (preview) preview.innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Logo">`; };
-                r.readAsDataURL(f);
-            });
-
-            document.getElementById('uploadLogoBtn')?.addEventListener('click', async function() {
-                const f = selectedLogoImage;
-                if (!f) { showToast('⚠️ اختر صورة الشعار أولاً', 'error'); return; }
-                const btn = this; const orig = btn.innerHTML;
-                btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الرفع...';
-                try {
-                    const logoData = await uploadToCloudinary(f, 'rashfa-logo');
-                    await set(ref(database, 'settings/logo'), { url: logoData.url, cloudinary_public_id: logoData.public_id, updatedAt: Date.now() });
-                    updateLogo(logoData.url);
-                    selectedLogoImage = null;
-                    document.getElementById('logoFileInput').value = '';
-                    showToast('✅ تم حفظ الشعار بنجاح');
-                } catch(e) { showToast('❌ فشل رفع الشعار: ' + e.message, 'error'); }
-                finally { btn.disabled = false; btn.innerHTML = orig; }
-            });
-
-            const uploadArea = document.getElementById('imgUploadArea');
-            if (uploadArea) {
-                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(en => uploadArea.addEventListener(en, (e) => { e.preventDefault(); e.stopPropagation(); }));
-                ['dragenter', 'dragover'].forEach(en => uploadArea.addEventListener(en, () => uploadArea.classList.add('drag-over')));
-                ['dragleave', 'drop'].forEach(en => uploadArea.addEventListener(en, () => uploadArea.classList.remove('drag-over')));
-                uploadArea.addEventListener('drop', (e) => {
-                    const file = e.dataTransfer.files[0];
-                    if (file && file.type.startsWith('image/')) {
-                        if (file.size > 10 * 1024 * 1024) { showToast('⚠️ حجم الصورة كبير جداً', 'error'); return; }
-                        const input = document.getElementById('prodImageInput');
-                        if (input) { const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files; input.dispatchEvent(new Event('change')); }
-                    }
-                });
-                uploadArea.addEventListener('click', function(e) { if (e.target !== document.getElementById('prodImageInput')) document.getElementById('prodImageInput')?.click(); });
+            if (!name || isNaN(price) || isNaN(quantity) || !description) {
+                showToast('يرجى ملء جميع الخانات المتاحة', 'warning');
+                return;
             }
 
-            document.getElementById('editProductModal')?.addEventListener('click', function(e) { if (e.target === this) window.closeEditModal(); });
-            document.getElementById('rejectModal')?.addEventListener('click', function(e) { if (e.target === this) window.closeRejectModal(); });
-            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { window.closeEditModal(); window.closeRejectModal(); } });
-            document.getElementById('loginPassword')?.addEventListener('keydown', function(e) { if (e.key === 'Enter') window.loginAdmin(); });
+            try {
+                await update(ref(database, `products/${id}`), {
+                    name, category, price, quantity, description,
+                    discountType: editCurrentDiscountType,
+                    discountValue: editCurrentDiscountType !== 'none' ? discountValue : 0,
+                    lastUpdated: Date.now()
+                });
+                window.closeEditModal();
+                showToast('تم تحديث بيانات المنتج بنجاح');
+            } catch(e) { showToast('فشل تحديث المنتج', 'error'); }
+        };
+
+        // ============ إدارة ورفع شعار المتجر الالكتروني ============
+        function loadLogo() {
+            get(ref(database, 'settings/logoUrl')).then(s => {
+                if (s.exists() && s.val()) {
+                    const url = s.val();
+                    const big = document.getElementById('loginLogo'); if (big) big.innerHTML = `<img src="${url}" alt="شعار">`;
+                    const disp = document.getElementById('adminLogoDisplay'); if (disp) disp.innerHTML = `<img src="${url}" alt="شعار">`;
+                    const large = document.getElementById('logoPreviewLarge'); if (large) large.innerHTML = `<img src="${url}" alt="شعار">`;
+                }
+            }).catch(()=>{});
         }
 
-        init();
+        const logoFileInput = document.getElementById('logoFileInput');
+        if (logoFileInput) {
+            logoFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    selectedLogoImage = file;
+                    const reader = new FileReader();
+                    reader.onload = (ex) => {
+                        const large = document.getElementById('logoPreviewLarge');
+                        if (large) large.innerHTML = `<img src="${ex.target.result}" alt="شعار جديد">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        const uploadLogoBtn = document.getElementById('uploadLogoBtn');
+        if (uploadLogoBtn) {
+            uploadLogoBtn.addEventListener('click', async () => {
+                if (!selectedLogoImage) { showToast('الرجاء اختيار صورة شعار أولاً', 'warning'); return; }
+                uploadLogoBtn.disabled = true;
+                uploadLogoBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
+                try {
+                    const res = await uploadToCloudinary(selectedLogoImage, 'rashfa-brand');
+                    await set(ref(database, 'settings/logoUrl'), res.url);
+                    showToast('تم تحديث وحفظ شعار الهوية الجديد بنجاح');
+                    loadLogo();
+                } catch(e) { showToast(`خطأ بالرفع: ${e.message}`, 'error'); }
+                finally { uploadLogoBtn.disabled = false; uploadLogoBtn.innerHTML = '<i class="fa-solid fa-save"></i> حفظ الشعار'; }
+            });
+        }
+
+        // ============ نظام ذكي وشامل لحساب التحليلات البيانية والمالية ============
+        function loadStoredAnalytics() {
+            try { const d = localStorage.getItem('pro_analytics_cache'); if (d) { analyticsCache = JSON.parse(d); } } catch(e) {}
+        }
+        function updateAnalyticsCache() {
+            if (!allOrders.length) return;
+            const completed = allOrders.filter(o => o.status === 'delivered');
+            const totalRevenue = completed.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
+            
+            const prodSales = {};
+            completed.forEach(o => {
+                (o.items || []).forEach(i => {
+                    if (i.name) prodSales[i.name] = (prodSales[i.name] || 0) + parseInt(i.quantity || 1);
+                });
+            });
+            
+            const topProducts = Object.keys(prodSales).map(k => ({ name: k, qty: prodSales[k] })).sort((a,b)=>b.qty-a.qty).slice(0, 5);
+            analyticsCache = { totalRevenue, topProducts, totalCompleted: completed.length, totalRejected: allOrders.filter(o=>o.status==='rejected').length, updatedAt: Date.now() };
+            try { localStorage.setItem('pro_analytics_cache', JSON.stringify(analyticsCache)); } catch(e) {}
+        }
+
+        window.refreshAnalytics = () => {
+            showToast('جاري تحديث العمليات البيانية...');
+            updateAnalyticsCache();
+            renderAnalytics();
+        };
+
+        function renderAnalytics() {
+            const el = document.getElementById('analyticsContent');
+            if (!el) return;
+            if (!analyticsCache) updateAnalyticsCache();
+            if (!analyticsCache) { el.innerHTML = '<div class="empty-state"><h3>لا تتوفر تحليلات حالياً</h3></div>'; return; }
+            
+            const topRows = analyticsCache.topProducts.map((p, idx) => `
+                <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
+                    <span>${idx+1}. ${p.name}</span>
+                    <strong style="color:var(--gold-300);">${p.qty} وحدة</strong>
+                </div>
+            `).join('') || '<p style="color:var(--text-muted);">لا توجد مبيعات مسجلة ومكتملة حتى الآن</p>';
+
+            el.innerHTML = `
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:20px;margin-bottom:30px;">
+                    <div style="background:var(--bg-primary);padding:20px;border-radius:var(--radius);border:1px solid var(--border-color);text-align:center;">
+                        <h4 style="color:var(--text-secondary);font-size:14px;">إجمالي الإيرادات الناجحة</h4>
+                        <div style="font-size:32px;font-weight:900;color:var(--status-delivering);margin-top:10px;">${analyticsCache.totalRevenue.toFixed(2)} ج</div>
+                    </div>
+                    <div style="background:var(--bg-primary);padding:20px;border-radius:var(--radius);border:1px solid var(--border-color);text-align:center;">
+                        <h4 style="color:var(--text-secondary);font-size:14px;">الطلبات المسلمة بنجاح</h4>
+                        <div style="font-size:32px;font-weight:900;color:var(--status-accepted);margin-top:10px;">${analyticsCache.totalCompleted} طلب</div>
+                    </div>
+                    <div style="background:var(--bg-primary);padding:20px;border-radius:var(--radius);border:1px solid var(--border-color);text-align:center;">
+                        <h4 style="color:var(--text-secondary);font-size:14px;">طلبات مرفوضة / ملغاة</h4>
+                        <div style="font-size:32px;font-weight:900;color:var(--status-rejected);margin-top:10px;">${analyticsCache.totalRejected} طلب</div>
+                    </div>
+                </div>
+                <div style="background:var(--bg-primary);padding:24px;border-radius:var(--radius);border:1px solid var(--border-color);">
+                    <h3 style="color:var(--gold-400);font-size:18px;margin-bottom:16px;"><i class="fa-solid fa-star"></i> المنتجات الأكثر مبيعاً ورواجاً</h3>
+                    ${topRows}
+                </div>
+                <div style="text-align:center;margin-top:20px;color:var(--text-muted);font-size:11px;">
+                    آخر تحديث للبيانات: ${new Date(analyticsCache.updatedAt).toLocaleTimeString('ar-EG')}
+                </div>
+            `;
+        }
     </script>
 </body>
 </html>
