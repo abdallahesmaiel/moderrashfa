@@ -64,14 +64,19 @@
             overflow-x: hidden;
         }
 
+        /* تحسين شريط التمرير */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-primary); }
         ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--gold-500); }
 
+        /* صفحة تسجيل الدخول - تحسينات للتجاوب */
         .login-fullscreen {
-            display: flex; align-items: center; justify-content: center;
-            min-height: 100vh; padding: 20px;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            min-height: 100vh; 
+            padding: 20px;
             background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
         }
         .login-fullscreen.hidden { display: none; }
@@ -79,10 +84,11 @@
         .login-box {
             background: var(--bg-card);
             border-radius: var(--radius-2xl);
-            padding: 50px 40px;
+            padding: clamp(30px, 5vw, 50px) clamp(20px, 4vw, 40px);
             border: 1px solid var(--border-color);
             box-shadow: var(--shadow-xl);
-            max-width: 440px; width: 100%;
+            max-width: 440px; 
+            width: 100%;
             text-align: center;
             animation: fadeInUp 0.8s ease;
             position: relative;
@@ -101,10 +107,13 @@
         }
 
         .login-box .logo-big {
-            width: 110px; height: 110px; border-radius: 50%;
+            width: clamp(80px, 15vw, 110px); 
+            height: clamp(80px, 15vw, 110px); 
+            border-radius: 50%;
             border: 3px solid var(--gold-500);
             display: flex; align-items: center; justify-content: center;
-            font-size: 52px; margin: 0 auto 28px;
+            font-size: clamp(40px, 8vw, 52px); 
+            margin: 0 auto 28px;
             background: var(--bg-tertiary);
             box-shadow: 0 0 40px rgba(201, 169, 110, 0.2);
             overflow: hidden; transition: var(--transition);
@@ -112,7 +121,7 @@
         .login-box .logo-big:hover { transform: scale(1.05); }
         .login-box .logo-big img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
         .login-box h1 { 
-            font-size: 34px; 
+            font-size: clamp(28px, 6vw, 34px); 
             background: linear-gradient(135deg, var(--gold-300), var(--gold-500), var(--gold-300));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             margin-bottom: 8px; font-weight: 900;
@@ -120,10 +129,17 @@
         .login-box .subtitle { color: var(--text-secondary); margin-bottom: 32px; font-size: 14px; }
 
         .login-input {
-            width: 100%; padding: 16px 20px; background: var(--bg-tertiary);
-            border: 2px solid var(--border-color); border-radius: var(--radius-lg);
-            color: var(--text-primary); font-family: 'Cairo', sans-serif; font-size: 15px;
-            margin-bottom: 16px; transition: var(--transition); text-align: right;
+            width: 100%; 
+            padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 20px); 
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color); 
+            border-radius: var(--radius-lg);
+            color: var(--text-primary); 
+            font-family: 'Cairo', sans-serif; 
+            font-size: clamp(14px, 2.5vw, 15px);
+            margin-bottom: 16px; 
+            transition: var(--transition); 
+            text-align: right;
         }
         .login-input:focus { 
             outline: none; border-color: var(--gold-500); 
@@ -136,33 +152,48 @@
             background: rgba(239, 68, 68, 0.1); padding: 12px; border-radius: var(--radius);
         }
 
+        /* شريط الإدارة - تحسينات للتجاوب */
         .admin-bar {
             background: rgba(18, 18, 26, 0.95);
             backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
             border-bottom: 1px solid var(--border-color);
-            padding: 16px 32px; display: flex; align-items: center;
-            justify-content: space-between; position: sticky; top: 0;
+            padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 32px); 
+            display: flex; align-items: center;
+            justify-content: space-between; 
+            position: sticky; top: 0;
             z-index: 1000; flex-wrap: wrap; gap: 16px;
         }
-        .admin-logo-area { display: flex; align-items: center; gap: 16px; }
+        .admin-logo-area { display: flex; align-items: center; gap: clamp(10px, 2vw, 16px); }
         .admin-logo {
-            width: 50px; height: 50px; border-radius: 50%;
+            width: clamp(40px, 8vw, 50px); 
+            height: clamp(40px, 8vw, 50px); 
+            border-radius: 50%;
             border: 2px solid var(--gold-500);
             display: flex; align-items: center; justify-content: center;
-            font-size: 26px; background: var(--bg-tertiary); overflow: hidden;
+            font-size: clamp(20px, 4vw, 26px); 
+            background: var(--bg-tertiary); overflow: hidden;
             flex-shrink: 0; box-shadow: 0 0 20px rgba(201, 169, 110, 0.15);
         }
         .admin-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-        .admin-title { font-size: 24px; font-weight: 800; color: var(--gold-300); line-height: 1.2; }
+        .admin-title { 
+            font-size: clamp(18px, 4vw, 24px); 
+            font-weight: 800; color: var(--gold-300); line-height: 1.2; 
+        }
         .admin-title small { 
-            display: block; font-size: 10px; font-weight: 600; 
+            display: block; font-size: clamp(8px, 1.5vw, 10px); 
+            font-weight: 600; 
             color: var(--text-muted); letter-spacing: 3px; 
         }
-        .admin-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .admin-actions { display: flex; gap: clamp(8px, 1.5vw, 12px); align-items: center; flex-wrap: wrap; }
 
+        /* الأزرار - تحسينات للتجاوب */
         .btn {
-            padding: 12px 24px; border-radius: 50px; font-family: 'Cairo', sans-serif;
-            font-weight: 700; font-size: 14px; cursor: pointer; border: none;
+            padding: clamp(8px, 1.5vw, 12px) clamp(16px, 3vw, 24px); 
+            border-radius: 50px; 
+            font-family: 'Cairo', sans-serif;
+            font-weight: 700; 
+            font-size: clamp(11px, 2vw, 14px); 
+            cursor: pointer; border: none;
             display: inline-flex; align-items: center; gap: 8px;
             transition: var(--transition-fast); text-decoration: none; white-space: nowrap;
             position: relative; overflow: hidden;
@@ -204,40 +235,60 @@
         .btn-info { background: var(--status-accepted); color: white; }
         .btn-info:hover { background: #2563eb; transform: translateY(-2px); }
         
-        .btn-sm { padding: 8px 16px; font-size: 12px; border-radius: 20px; }
+        .btn-sm { padding: clamp(6px, 1vw, 8px) clamp(12px, 2vw, 16px); font-size: clamp(10px, 1.8vw, 12px); border-radius: 20px; }
         .btn-xs { padding: 5px 10px; font-size: 10px; border-radius: 15px; }
         .btn-whatsapp { background: #25d366; color: white; }
         .btn-whatsapp:hover { background: #1ebe5b; transform: translateY(-2px); }
         .btn-block { width: 100%; justify-content: center; }
 
-        .container { max-width: 1400px; margin: 0 auto; padding: 40px 32px 80px; }
+        /* الحاوية الرئيسية - تحسينات للتجاوب */
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            padding: clamp(20px, 4vw, 40px) clamp(16px, 3vw, 32px) 80px; 
+        }
         
+        /* رأس الصفحة - تحسينات للتجاوب */
         .page-header {
-            text-align: center; margin-bottom: 44px; padding: 50px 20px;
+            text-align: center; 
+            margin-bottom: clamp(30px, 5vw, 44px); 
+            padding: clamp(30px, 5vw, 50px) clamp(16px, 3vw, 20px);
             background: linear-gradient(180deg, rgba(201, 169, 110, 0.08) 0%, transparent 100%);
-            border-radius: var(--radius-2xl); border: 1px solid rgba(201, 169, 110, 0.1);
+            border-radius: var(--radius-2xl); 
+            border: 1px solid rgba(201, 169, 110, 0.1);
             position: relative; overflow: hidden;
         }
         .page-header::before {
             content: ''; position: absolute; top: 0; left: 0; right: 0;
-            height: 2px; background: linear-gradient(90deg, transparent, var(--gold-500), transparent);
+            height: 2px; 
+            background: linear-gradient(90deg, transparent, var(--gold-500), transparent);
         }
         .page-header h1 { 
-            font-size: 44px; 
+            font-size: clamp(28px, 6vw, 44px); 
             background: linear-gradient(135deg, var(--gold-200), var(--gold-500), var(--gold-200));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             font-weight: 900; margin-bottom: 12px;
         }
-        .page-header p { color: var(--text-secondary); font-size: 18px; }
-        .page-header .header-icon { font-size: 64px; display: block; margin-bottom: 20px; }
+        .page-header p { 
+            color: var(--text-secondary); 
+            font-size: clamp(14px, 2.5vw, 18px); 
+        }
+        .page-header .header-icon { 
+            font-size: clamp(48px, 10vw, 64px); 
+            display: block; margin-bottom: 20px; 
+        }
 
+        /* الإحصائيات - تحسينات للتجاوب */
         .stats-row { 
             display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
-            gap: 20px; margin-bottom: 40px; 
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+            gap: clamp(12px, 2vw, 20px); 
+            margin-bottom: clamp(30px, 5vw, 40px); 
         }
         .stat-card {
-            background: var(--bg-card); border-radius: var(--radius-xl); padding: 28px 24px;
+            background: var(--bg-card); 
+            border-radius: var(--radius-xl); 
+            padding: clamp(20px, 3vw, 28px) clamp(16px, 3vw, 24px);
             border: 1px solid var(--border-color); text-align: center;
             transition: var(--transition); position: relative; overflow: hidden;
             cursor: pointer;
@@ -252,9 +303,18 @@
             box-shadow: var(--shadow-lg); 
         }
         .stat-card:hover::before { opacity: 1; }
-        .stat-card .stat-icon { font-size: 40px; margin-bottom: 12px; display: block; }
-        .stat-card .stat-value { font-size: 36px; font-weight: 900; color: var(--gold-300); line-height: 1; }
-        .stat-card .stat-label { font-size: 14px; color: var(--text-muted); margin-top: 8px; font-weight: 600; }
+        .stat-card .stat-icon { 
+            font-size: clamp(32px, 6vw, 40px); 
+            margin-bottom: 12px; display: block; 
+        }
+        .stat-card .stat-value { 
+            font-size: clamp(28px, 5vw, 36px); 
+            font-weight: 900; color: var(--gold-300); line-height: 1; 
+        }
+        .stat-card .stat-label { 
+            font-size: clamp(12px, 2vw, 14px); 
+            color: var(--text-muted); margin-top: 8px; font-weight: 600; 
+        }
         
         .stat-card.warning-stat { 
             border-color: rgba(245, 158, 11, 0.4); 
@@ -265,17 +325,25 @@
             50% { box-shadow: 0 0 0 16px rgba(245, 158, 11, 0); } 
         }
 
+        /* التبويبات - تحسينات للتجاوب */
         .tabs-container {
-            background: var(--bg-card); border-radius: var(--radius-xl); padding: 8px;
-            margin-bottom: 36px; border: 1px solid var(--border-color);
+            background: var(--bg-card); 
+            border-radius: var(--radius-xl); 
+            padding: clamp(6px, 1vw, 8px);
+            margin-bottom: clamp(24px, 4vw, 36px); 
+            border: 1px solid var(--border-color);
             display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
         }
         .tab {
-            padding: 16px 32px; border: none; background: transparent; cursor: pointer;
-            font-weight: 700; font-family: 'Cairo', sans-serif; font-size: 15px;
+            padding: clamp(12px, 2vw, 16px) clamp(20px, 3vw, 32px); 
+            border: none; background: transparent; cursor: pointer;
+            font-weight: 700; font-family: 'Cairo', sans-serif; 
+            font-size: clamp(12px, 2vw, 15px);
             color: var(--text-muted); transition: var(--transition);
             border-radius: var(--radius-lg); display: flex; align-items: center;
-            gap: 10px; white-space: nowrap;
+            gap: clamp(6px, 1vw, 10px); white-space: nowrap;
+            flex: 1 1 auto;
+            justify-content: center;
         }
         .tab:hover { color: var(--text-primary); }
         .tab.active { 
@@ -284,7 +352,8 @@
         }
         .tab-badge { 
             background: var(--status-rejected); color: white; 
-            font-size: 11px; padding: 3px 10px; border-radius: 50px; font-weight: 800; 
+            font-size: clamp(9px, 1.5vw, 11px); 
+            padding: 3px 10px; border-radius: 50px; font-weight: 800; 
         }
         .tab-badge.warning { background: var(--status-pending); color: #000; }
         .tab-badge.success { background: var(--status-delivering); }
@@ -297,25 +366,35 @@
             to { opacity: 1; transform: translateY(0); } 
         }
 
+        /* البطاقات - تحسينات للتجاوب */
         .card { 
-            background: var(--bg-card); border-radius: var(--radius-xl); 
-            padding: 32px; border: 1px solid var(--border-color); 
-            margin-bottom: 28px; box-shadow: var(--shadow-md); 
+            background: var(--bg-card); 
+            border-radius: var(--radius-xl); 
+            padding: clamp(20px, 4vw, 32px); 
+            border: 1px solid var(--border-color); 
+            margin-bottom: clamp(20px, 3vw, 28px); 
+            box-shadow: var(--shadow-md); 
         }
         .card-header { 
             display: flex; align-items: center; justify-content: space-between; 
-            margin-bottom: 28px; padding-bottom: 20px; 
-            border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 16px; 
+            margin-bottom: clamp(20px, 3vw, 28px); 
+            padding-bottom: clamp(16px, 2vw, 20px); 
+            border-bottom: 1px solid var(--border-color); 
+            flex-wrap: wrap; gap: 16px; 
         }
         .card-title { 
-            font-size: 24px; font-weight: 800; color: var(--gold-300); 
+            font-size: clamp(20px, 4vw, 24px); 
+            font-weight: 800; color: var(--gold-300); 
             display: flex; align-items: center; gap: 12px; 
         }
 
-        .orders-list { display: flex; flex-direction: column; gap: 20px; }
+        /* قائمة الطلبات - تحسينات للتجاوب */
+        .orders-list { display: flex; flex-direction: column; gap: clamp(16px, 2vw, 20px); }
         .order-card { 
-            background: var(--bg-tertiary); border-radius: var(--radius-lg); 
-            padding: 24px; border: 1px solid var(--border-color); 
+            background: var(--bg-tertiary); 
+            border-radius: var(--radius-lg); 
+            padding: clamp(16px, 3vw, 24px); 
+            border: 1px solid var(--border-color); 
             transition: var(--transition); position: relative;
         }
         .order-card:hover { 
@@ -335,12 +414,18 @@
             gap: 12px; margin-bottom: 16px; padding-bottom: 14px; 
             border-bottom: 1px solid var(--border-color); 
         }
-        .order-id { font-weight: 800; color: var(--gold-300); font-size: 18px; }
-        .order-date { color: var(--text-muted); font-size: 13px; }
+        .order-id { 
+            font-weight: 800; color: var(--gold-300); 
+            font-size: clamp(16px, 3vw, 18px); 
+        }
+        .order-date { color: var(--text-muted); font-size: clamp(11px, 2vw, 13px); }
         
         .order-status-badge { 
             display: inline-flex; align-items: center; gap: 6px; 
-            padding: 7px 16px; border-radius: 50px; font-size: 13px; font-weight: 700; 
+            padding: clamp(5px, 1vw, 7px) clamp(12px, 2vw, 16px); 
+            border-radius: 50px; 
+            font-size: clamp(11px, 2vw, 13px); 
+            font-weight: 700; 
         }
         .badge-pending { background: rgba(245, 158, 11, 0.15); color: var(--status-pending); border: 1px solid rgba(245, 158, 11, 0.3); }
         .badge-accepted { background: rgba(59, 130, 246, 0.15); color: var(--status-accepted); border: 1px solid rgba(59, 130, 246, 0.3); }
@@ -349,36 +434,43 @@
         .badge-rejected { background: rgba(239, 68, 68, 0.15); color: var(--status-rejected); border: 1px solid rgba(239, 68, 68, 0.3); }
 
         .order-info-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
             gap: 12px; margin: 16px 0; 
         }
         .order-info-item { 
             display: flex; align-items: center; gap: 10px; 
-            color: var(--text-secondary); font-size: 14px; 
+            color: var(--text-secondary); 
+            font-size: clamp(12px, 2vw, 14px); 
         }
         .order-info-item i { color: var(--gold-500); width: 20px; text-align: center; }
         
         .order-items-list { margin: 16px 0; }
         .order-item-row { 
             display: flex; justify-content: space-between; padding: 8px 0; 
-            color: var(--text-secondary); font-size: 14px; 
+            color: var(--text-secondary); 
+            font-size: clamp(12px, 2vw, 14px); 
             border-bottom: 1px dashed rgba(201, 169, 110, 0.08); 
         }
         .order-item-row:last-child { border-bottom: none; }
         
         .order-total-row { 
-            font-weight: 800; color: var(--gold-300); font-size: 22px; 
+            font-weight: 800; color: var(--gold-300); 
+            font-size: clamp(18px, 3.5vw, 22px); 
             margin: 18px 0; padding-top: 14px; 
             border-top: 2px solid rgba(201, 169, 110, 0.2); 
         }
         
         .status-flow { 
             display: flex; gap: 10px; flex-wrap: wrap; align-items: center; 
-            margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color); 
+            margin-top: 20px; padding-top: 16px; 
+            border-top: 1px solid var(--border-color); 
         }
         .status-btn { 
-            padding: 10px 18px; border-radius: 50px; border: 2px solid transparent; 
-            font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 13px; 
+            padding: clamp(8px, 1.5vw, 10px) clamp(14px, 2.5vw, 18px); 
+            border-radius: 50px; border: 2px solid transparent; 
+            font-family: 'Cairo', sans-serif; font-weight: 700; 
+            font-size: clamp(11px, 2vw, 13px); 
             cursor: pointer; transition: var(--transition-fast); 
             display: flex; align-items: center; gap: 6px; 
             background: var(--bg-primary); color: var(--text-muted); 
@@ -397,20 +489,25 @@
         
         .countdown-timer { 
             display: inline-flex; align-items: center; gap: 8px; 
-            background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); 
-            padding: 8px 16px; border-radius: 50px; font-size: 13px; 
+            background: rgba(245, 158, 11, 0.1); 
+            border: 1px solid rgba(245, 158, 11, 0.3); 
+            padding: clamp(6px, 1vw, 8px) clamp(12px, 2vw, 16px); 
+            border-radius: 50px; 
+            font-size: clamp(11px, 2vw, 13px); 
             font-weight: 700; color: var(--status-pending); 
             animation: pulse 1.5s infinite; 
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
+        /* شبكة المنتجات - تحسينات للتجاوب */
         .products-grid-admin { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
-            gap: 24px; 
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+            gap: clamp(16px, 3vw, 24px); 
         }
         .product-card-admin { 
-            background: var(--bg-tertiary); border-radius: var(--radius-lg); 
+            background: var(--bg-tertiary); 
+            border-radius: var(--radius-lg); 
             overflow: hidden; border: 1px solid var(--border-color); 
             transition: var(--transition); 
         }
@@ -421,19 +518,29 @@
         .product-card-admin.low-stock { border-color: rgba(245, 158, 11, 0.5); }
         .product-card-admin.out-stock { border-color: rgba(239, 68, 68, 0.5); opacity: 0.7; }
         .product-img-admin { 
-            width: 100%; height: 220px; object-fit: contain; 
+            width: 100%; 
+            height: clamp(160px, 30vw, 220px); 
+            object-fit: contain; 
             background: var(--bg-primary); padding: 16px; 
         }
-        .product-card-body { padding: 20px; }
-        .product-card-body h4 { font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 12px; }
+        .product-card-body { padding: clamp(16px, 2vw, 20px); }
+        .product-card-body h4 { 
+            font-size: clamp(16px, 3vw, 20px); 
+            font-weight: 800; color: var(--text-primary); margin-bottom: 12px; 
+        }
         .product-meta { 
             display: flex; justify-content: space-between; align-items: center; 
             margin-bottom: 14px; flex-wrap: wrap; gap: 10px; 
         }
-        .product-price-tag { font-weight: 900; color: var(--gold-300); font-size: 24px; }
+        .product-price-tag { 
+            font-weight: 900; color: var(--gold-300); 
+            font-size: clamp(20px, 4vw, 24px); 
+        }
         .stock-indicator { 
             display: flex; align-items: center; gap: 8px; 
-            font-weight: 700; font-size: 13px; padding: 6px 14px; border-radius: 50px; 
+            font-weight: 700; 
+            font-size: clamp(11px, 2vw, 13px); 
+            padding: 6px 14px; border-radius: 50px; 
         }
         .stock-good { background: rgba(16, 185, 129, 0.15); color: var(--status-delivering); }
         .stock-warning { background: rgba(245, 158, 11, 0.15); color: var(--status-pending); }
@@ -448,19 +555,24 @@
         .stock-bar-warning { background: linear-gradient(90deg, #92400e, var(--status-pending)); }
         .stock-bar-danger { background: linear-gradient(90deg, #991b1b, var(--status-rejected)); }
         
-        .product-actions { display: flex; gap: 12px; margin-top: 16px; }
+        .product-actions { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
 
+        /* المودال - تحسينات للتجاوب */
         .modal-overlay { 
             display: none; position: fixed; inset: 0; 
             background: rgba(0, 0, 0, 0.85); z-index: 2000; 
-            align-items: center; justify-content: center; padding: 24px; 
+            align-items: center; justify-content: center; 
+            padding: clamp(16px, 3vw, 24px); 
             backdrop-filter: blur(8px); 
         }
         .modal-overlay.active { display: flex; }
         .modal-dialog { 
-            background: var(--bg-card); border-radius: var(--radius-xl); 
-            max-width: 600px; width: 100%; max-height: 85vh; overflow-y: auto; 
-            padding: 36px; border: 1px solid var(--border-color); 
+            background: var(--bg-card); 
+            border-radius: var(--radius-xl); 
+            max-width: 600px; width: 100%; 
+            max-height: 85vh; overflow-y: auto; 
+            padding: clamp(24px, 4vw, 36px); 
+            border: 1px solid var(--border-color); 
             box-shadow: var(--shadow-xl); 
             animation: modalIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
         }
@@ -469,33 +581,49 @@
             to { transform: scale(1) translateY(0); opacity: 1; } 
         }
         
-        .form-group { margin-bottom: 20px; }
+        .form-group { margin-bottom: clamp(16px, 2vw, 20px); }
         .form-label { 
-            display: block; font-weight: 700; margin-bottom: 8px; 
-            color: var(--text-secondary); font-size: 14px; 
+            display: block; font-weight: 700; 
+            margin-bottom: clamp(6px, 1vw, 8px); 
+            color: var(--text-secondary); 
+            font-size: clamp(12px, 2vw, 14px); 
         }
         .form-input { 
-            width: 100%; padding: 14px 18px; 
-            border: 2px solid var(--border-light); border-radius: var(--radius); 
+            width: 100%; 
+            padding: clamp(12px, 2vw, 14px) clamp(14px, 2.5vw, 18px); 
+            border: 2px solid var(--border-light); 
+            border-radius: var(--radius); 
             background: var(--bg-tertiary); color: var(--text-primary); 
-            font-family: 'Cairo', sans-serif; font-size: 15px; transition: var(--transition); 
+            font-family: 'Cairo', sans-serif; 
+            font-size: clamp(13px, 2vw, 15px); 
+            transition: var(--transition); 
         }
         .form-input:focus { outline: none; border-color: var(--gold-500); }
         .form-textarea { min-height: 110px; resize: vertical; }
         
-        .modal-actions { display: flex; gap: 14px; margin-top: 32px; justify-content: center; }
+        .modal-actions { 
+            display: flex; gap: 14px; margin-top: 32px; 
+            justify-content: center; flex-wrap: wrap; 
+        }
 
         .upload-area { 
-            border: 2px dashed var(--border-light); border-radius: var(--radius-lg); 
-            padding: 40px 20px; text-align: center; cursor: pointer; 
+            border: 2px dashed var(--border-light); 
+            border-radius: var(--radius-lg); 
+            padding: clamp(30px, 5vw, 40px) clamp(16px, 3vw, 20px); 
+            text-align: center; cursor: pointer; 
             transition: var(--transition); background: var(--bg-tertiary); 
         }
         .upload-area:hover { border-color: var(--gold-500); }
         .upload-area.has-file { border-color: var(--status-delivering); }
-        .upload-area i { font-size: 48px; color: var(--gold-500); margin-bottom: 12px; display: block; }
+        .upload-area i { 
+            font-size: clamp(36px, 8vw, 48px); 
+            color: var(--gold-500); margin-bottom: 12px; display: block; 
+        }
         
         .img-preview { 
-            width: 150px; height: 150px; border-radius: var(--radius); 
+            width: clamp(120px, 25vw, 150px); 
+            height: clamp(120px, 25vw, 150px); 
+            border-radius: var(--radius); 
             object-fit: contain; margin: 16px auto 0; 
             border: 2px solid var(--border-color); display: none; 
             background: var(--bg-primary); 
@@ -503,27 +631,50 @@
         .img-preview.show { display: block; }
 
         .message-log { 
-            background: var(--bg-tertiary); border-radius: var(--radius-lg); 
-            padding: 20px; max-height: 500px; overflow-y: auto; 
+            background: var(--bg-tertiary); 
+            border-radius: var(--radius-lg); 
+            padding: clamp(16px, 2vw, 20px); 
+            max-height: 500px; overflow-y: auto; 
             border: 1px solid var(--border-color); 
         }
         .message-item { 
-            padding: 16px; border-bottom: 1px solid var(--border-color); 
-            font-size: 14px; transition: var(--transition-fast); 
+            padding: clamp(12px, 2vw, 16px); 
+            border-bottom: 1px solid var(--border-color); 
+            font-size: clamp(12px, 2vw, 14px); 
+            transition: var(--transition-fast); 
         }
         .message-item:hover { background: var(--bg-hover); }
         .message-item:last-child { border-bottom: none; }
         .message-item.success { border-right: 4px solid var(--status-delivering); }
         .message-item.failed { border-right: 4px solid var(--status-rejected); }
 
+        /* إشعارات التوست - تحسينات للتجاوب */
         .toast-container { 
-            position: fixed; top: 24px; right: 24px; z-index: 9999; 
-            display: flex; flex-direction: column; gap: 12px; 
+            position: fixed; 
+            top: clamp(16px, 3vw, 24px); 
+            right: clamp(16px, 3vw, 24px); 
+            left: clamp(16px, 3vw, 24px);
+            z-index: 9999; 
+            display: flex; flex-direction: column; 
+            gap: 12px; 
+            max-width: 400px;
+            margin-left: auto;
+        }
+        @media (max-width: 480px) {
+            .toast-container {
+                max-width: none;
+                margin-left: 0;
+            }
         }
         .toast { 
-            padding: 18px 24px; border-radius: var(--radius); 
-            font-weight: 700; font-size: 15px; box-shadow: var(--shadow-lg); 
-            animation: toastSlide 0.4s ease; display: flex; align-items: center; gap: 12px; 
+            padding: clamp(14px, 2vw, 18px) clamp(20px, 3vw, 24px); 
+            border-radius: var(--radius); 
+            font-weight: 700; 
+            font-size: clamp(13px, 2vw, 15px); 
+            box-shadow: var(--shadow-lg); 
+            animation: toastSlide 0.4s ease; 
+            display: flex; align-items: center; gap: 12px; 
+            word-break: break-word;
         }
         @keyframes toastSlide { 
             from { transform: translateX(120px); opacity: 0; } 
@@ -535,20 +686,169 @@
         .toast-info { background: var(--status-accepted); color: white; }
 
         .empty-state { 
-            text-align: center; padding: 80px 20px; color: var(--text-muted); 
+            text-align: center; 
+            padding: clamp(60px, 10vw, 80px) clamp(16px, 3vw, 20px); 
+            color: var(--text-muted); 
         }
-        .empty-state i { font-size: 72px; opacity: 0.3; margin-bottom: 20px; display: block; }
-        .empty-state h3 { font-size: 20px; margin-bottom: 8px; color: var(--text-secondary); }
+        .empty-state i { 
+            font-size: clamp(56px, 12vw, 72px); 
+            opacity: 0.3; margin-bottom: 20px; display: block; 
+        }
+        .empty-state h3 { 
+            font-size: clamp(16px, 3vw, 20px); 
+            margin-bottom: 8px; color: var(--text-secondary); 
+        }
 
+        /* تنسيق خاص لإضافة منتج */
+        .add-product-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        /* تحسينات للأجهزة اللوحية */
+        @media (max-width: 1024px) {
+            .stats-row { 
+                grid-template-columns: repeat(3, 1fr); 
+            }
+            .products-grid-admin { 
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+            }
+        }
+
+        /* تحسينات للأجهزة المتوسطة */
         @media (max-width: 768px) {
-            .stats-row { grid-template-columns: repeat(2, 1fr); }
-            .products-grid-admin { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-            .tab { padding: 12px 20px; font-size: 13px; }
-            .status-btn { padding: 8px 12px; font-size: 11px; }
-            .admin-bar { padding: 12px 20px; }
-            .admin-title { font-size: 20px; }
-            .page-header h1 { font-size: 32px; }
-            .container { padding: 24px 16px 60px; }
+            .stats-row { 
+                grid-template-columns: repeat(2, 1fr); 
+            }
+            .products-grid-admin { 
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+            }
+            .add-product-grid {
+                grid-template-columns: 1fr;
+            }
+            .tab { 
+                padding: 12px 16px; 
+                font-size: 12px; 
+            }
+            .status-btn { 
+                padding: 8px 12px; 
+                font-size: 11px; 
+            }
+            .admin-bar { 
+                padding: 12px 16px; 
+                flex-direction: column;
+                text-align: center;
+            }
+            .admin-logo-area {
+                justify-content: center;
+            }
+            .admin-actions {
+                justify-content: center;
+            }
+            .admin-title { font-size: 18px; }
+            .page-header h1 { font-size: 28px; }
+            .container { padding: 20px 12px 60px; }
+            .card-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .order-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .order-info-grid {
+                grid-template-columns: 1fr;
+            }
+            .status-flow {
+                justify-content: center;
+            }
+            .modal-dialog {
+                padding: 20px;
+                max-height: 90vh;
+            }
+        }
+
+        /* تحسينات للهواتف الصغيرة */
+        @media (max-width: 480px) {
+            .stats-row { 
+                grid-template-columns: 1fr 1fr; 
+                gap: 10px;
+            }
+            .stat-card {
+                padding: 16px 12px;
+            }
+            .stat-card .stat-value {
+                font-size: 24px;
+            }
+            .stat-card .stat-icon {
+                font-size: 28px;
+            }
+            .products-grid-admin { 
+                grid-template-columns: 1fr; 
+            }
+            .tabs-container {
+                flex-direction: column;
+                gap: 4px;
+            }
+            .tab {
+                width: 100%;
+                justify-content: center;
+                border-radius: var(--radius);
+            }
+            .btn {
+                padding: 10px 16px;
+                font-size: 12px;
+                width: 100%;
+                justify-content: center;
+            }
+            .btn-sm {
+                width: auto;
+            }
+            .page-header h1 {
+                font-size: 24px;
+            }
+            .page-header p {
+                font-size: 13px;
+            }
+            .admin-bar {
+                padding: 10px;
+                gap: 10px;
+            }
+            .admin-actions {
+                gap: 6px;
+            }
+            .admin-actions .btn {
+                padding: 8px 12px;
+                font-size: 10px;
+            }
+            .order-card {
+                padding: 14px;
+            }
+            .status-flow {
+                gap: 6px;
+            }
+            .status-btn {
+                padding: 6px 10px;
+                font-size: 10px;
+            }
+            .modal-dialog {
+                padding: 16px;
+                border-radius: var(--radius-lg);
+            }
+            .login-box {
+                padding: 24px 16px;
+            }
+        }
+
+        /* تحسينات للشاشات الكبيرة جداً */
+        @media (min-width: 1600px) {
+            .container {
+                max-width: 1600px;
+            }
+            .products-grid-admin {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
     </style>
 </head>
@@ -698,7 +998,7 @@
                         <i class="fa-solid fa-redo"></i> إعادة تعيين
                     </button>
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+                <div class="add-product-grid">
                     <div>
                         <div class="form-group">
                             <label class="form-label">اسم المنتج *</label>
@@ -716,10 +1016,10 @@
                     <div>
                         <div class="form-group">
                             <label class="form-label">صورة المنتج *</label>
-                            <div class="upload-area" id="imgUploadArea">
+                            <div class="upload-area" id="imgUploadArea" onclick="document.getElementById('prodImageInput').click();">
                                 <i class="fa-solid fa-cloud-arrow-up"></i>
                                 <p>اختر صورة المنتج</p>
-                                <input type="file" id="prodImageInput" accept="image/*">
+                                <input type="file" id="prodImageInput" accept="image/*" style="display:none;">
                             </div>
                             <img class="img-preview" id="imgPreview" alt="معاينة">
                         </div>
@@ -729,7 +1029,7 @@
                             <label class="form-label">وصف المنتج *</label>
                             <textarea id="prodDesc" class="form-input form-textarea" placeholder="وصف مختصر للمنتج..."></textarea>
                         </div>
-                        <div style="display:flex;gap:12px;justify-content:center;margin-top:16px;">
+                        <div style="display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
                             <button class="btn btn-outline" onclick="window.resetAddProductForm()">
                                 <i class="fa-solid fa-redo"></i> إعادة تعيين
                             </button>
@@ -895,6 +1195,7 @@
         const DELETE_AFTER_MINUTES = 5;
         const ADMIN_UIDS = ['bGaNd7dz74VaffyUlkWwAl9BTCq2', 'GYfllL1eBmgtbF6mc2dCHnyWhXp2'];
 
+        // دالة عرض الإشعارات
         function showToast(msg, type = 'success') {
             const c = document.getElementById('toastContainer');
             if (!c) return;
@@ -903,20 +1204,33 @@
             const icons = { success: 'check-circle', error: 'exclamation-circle', warning: 'exclamation-triangle', info: 'info-circle' };
             t.innerHTML = `<i class="fa-solid fa-${icons[type] || 'info-circle'}"></i> ${msg}`;
             c.appendChild(t);
-            setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(120px)'; setTimeout(() => t.remove(), 300); }, 3500);
+            setTimeout(() => { 
+                t.style.opacity = '0'; 
+                t.style.transform = 'translateX(120px)'; 
+                setTimeout(() => t.remove(), 300); 
+            }, 3500);
         }
 
+        // دوال سجل الرسائل
         function addToMessageLog(phone, type, success, details = '') {
             messageLog.unshift({ time: new Date().toLocaleString('ar-EG'), phone, type, success, details });
             if (messageLog.length > 100) messageLog.pop();
-            saveMessageLog(); renderMessageLog();
+            saveMessageLog(); 
+            renderMessageLog();
         }
-        function saveMessageLog() { try { localStorage.setItem('pro_message_log', JSON.stringify(messageLog)); } catch(e) {} }
-        function loadMessageLog() { try { const d = localStorage.getItem('pro_message_log'); if (d) messageLog = JSON.parse(d); } catch(e) {} }
+        function saveMessageLog() { 
+            try { localStorage.setItem('pro_message_log', JSON.stringify(messageLog)); } catch(e) {} 
+        }
+        function loadMessageLog() { 
+            try { const d = localStorage.getItem('pro_message_log'); if (d) messageLog = JSON.parse(d); } catch(e) {} 
+        }
         function renderMessageLog() {
             const el = document.getElementById('messageLog');
             if (!el) return;
-            if (!messageLog.length) { el.innerHTML = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>لا توجد رسائل</h3></div>'; return; }
+            if (!messageLog.length) { 
+                el.innerHTML = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>لا توجد رسائل</h3></div>'; 
+                return; 
+            }
             el.innerHTML = messageLog.map(m => `
                 <div class="message-item ${m.success ? 'success' : 'failed'}">
                     <strong>${m.time}</strong> | ${m.phone} | ${m.type} ${m.success ? '✅' : '❌'}
@@ -924,8 +1238,16 @@
                 </div>
             `).join('');
         }
-        window.clearMessageLog = () => { if (confirm('مسح سجل الرسائل؟')) { messageLog = []; saveMessageLog(); renderMessageLog(); showToast('تم مسح السجل'); } };
+        window.clearMessageLog = () => { 
+            if (confirm('مسح سجل الرسائل؟')) { 
+                messageLog = []; 
+                saveMessageLog(); 
+                renderMessageLog(); 
+                showToast('تم مسح السجل'); 
+            } 
+        };
 
+        // دالة رفع الصور إلى Cloudinary
         async function uploadToCloudinary(file, folder = 'rashfa-products') {
             if (!file?.type?.startsWith('image/')) throw new Error('ملف غير صالح');
             if (file.size > 10 * 1024 * 1024) throw new Error('حجم الملف كبير جداً (الحد الأقصى 10 ميجابايت)');
@@ -949,7 +1271,10 @@
             }
         }
 
-        function formatTime(s) { const m = Math.floor(s / 60); return `${m}:${(s % 60).toString().padStart(2, '0')}`; }
+        function formatTime(s) { 
+            const m = Math.floor(s / 60); 
+            return `${m}:${(s % 60).toString().padStart(2, '0')}`; 
+        }
 
         function formatPhoneNumber(phone) {
             if (!phone) return '';
@@ -969,12 +1294,10 @@
             const cleanPhone = formatPhoneNumber(phone);
             
             try {
-                // استخدام CORS Proxy لحل مشكلة CORS
                 const apiUrl = `${CORS_PROXY}${encodeURIComponent(CONVOBEST_CONFIG.apiUrl)}`;
                 
                 console.log('🔄 جاري الإرسال عبر Convobest...');
                 console.log('📱 الرقم:', cleanPhone);
-                console.log('🔗 API URL:', CONVOBEST_CONFIG.apiUrl);
                 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
@@ -1019,11 +1342,21 @@
             return false;
         }
 
-        function msgAccept(o) { return `مرحباً ${o.recipientName||'عميلنا'}،\n\n✅ تم قبول طلبك #${(o.id||'').slice(-8)}\n\n📋 ${(o.items||[]).map(i=>`- ${i.name} ×${i.quantity}`).join('\n')}\n💰 ${o.total||0} ج\n\n🚚 سيتم تجهيز طلبك\n☕ بروفيشنال\n📞 01103127696`; }
-        function msgDelivering(o) { return `مرحباً ${o.recipientName||'عميلنا'}،\n\n🚚 طلبك #${(o.id||'').slice(-8)} في الطريق!\n📍 ${o.address||'---'}\n💰 ${o.total||0} ج\n📞 01103127696`; }
-        function msgDelivered(o) { return `مرحباً ${o.recipientName||'عميلنا'}،\n\n📦 تم استلام طلبك #${(o.id||'').slice(-8)} ✅\n💰 ${o.total||0} ج\n☕ شكراً لاختيارك بروفيشنال\n📞 01103127696`; }
-        function msgRejected(o) { return `مرحباً ${o.recipientName||'عميلنا'}،\n\n❌ تم رفض طلبك #${(o.id||'').slice(-8)}\nالسبب: ${o.rejectionReason||'أسباب تقنية'}\n📞 01103127696`; }
+        // رسائل واتساب
+        function msgAccept(o) { 
+            return `مرحباً ${o.recipientName||'عميلنا'}،\n\n✅ تم قبول طلبك #${(o.id||'').slice(-8)}\n\n📋 ${(o.items||[]).map(i=>`- ${i.name} ×${i.quantity}`).join('\n')}\n💰 ${o.total||0} ج\n\n🚚 سيتم تجهيز طلبك\n☕ بروفيشنال\n📞 01103127696`; 
+        }
+        function msgDelivering(o) { 
+            return `مرحباً ${o.recipientName||'عميلنا'}،\n\n🚚 طلبك #${(o.id||'').slice(-8)} في الطريق!\n📍 ${o.address||'---'}\n💰 ${o.total||0} ج\n📞 01103127696`; 
+        }
+        function msgDelivered(o) { 
+            return `مرحباً ${o.recipientName||'عميلنا'}،\n\n📦 تم استلام طلبك #${(o.id||'').slice(-8)} ✅\n💰 ${o.total||0} ج\n☕ شكراً لاختيارك بروفيشنال\n📞 01103127696`; 
+        }
+        function msgRejected(o) { 
+            return `مرحباً ${o.recipientName||'عميلنا'}،\n\n❌ تم رفض طلبك #${(o.id||'').slice(-8)}\nالسبب: ${o.rejectionReason||'أسباب تقنية'}\n📞 01103127696`; 
+        }
 
+        // دالة خصم المخزون
         async function deductStock(order) {
             if (!order?.items?.length || deductedOrders.has(order.id)) return false;
             let ok = true;
@@ -1049,8 +1382,12 @@
             document.getElementById('mainContent').style.display = 'block';
             if (!productsListener) setupProducts();
             if (!window._ordersSetup) { setupOrders(); window._ordersSetup = true; }
-            loadLogo(); loadStoredAnalytics(); loadMessageLog();
-            renderOrders(); renderProducts(); updateStats();
+            loadLogo(); 
+            loadStoredAnalytics(); 
+            loadMessageLog();
+            renderOrders(); 
+            renderProducts(); 
+            updateStats();
             setTimeout(() => updateAnalyticsCache(), 1200);
         }
 
@@ -1060,6 +1397,7 @@
             document.getElementById('mainContent').style.display = 'none';
         }
 
+        // تسجيل الدخول
         window.loginAdmin = async () => {
             const email = document.getElementById('loginEmail')?.value.trim();
             const pass = document.getElementById('loginPassword')?.value;
@@ -1067,11 +1405,17 @@
             const btn = document.getElementById('loginBtn');
             
             if (!email || !pass) {
-                if(errEl) { errEl.textContent = '❌ يرجى إدخال البريد الإلكتروني وكلمة المرور'; errEl.style.display = 'block'; }
+                if(errEl) { 
+                    errEl.textContent = '❌ يرجى إدخال البريد الإلكتروني وكلمة المرور'; 
+                    errEl.style.display = 'block'; 
+                }
                 return;
             }
             
-            if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الدخول...'; }
+            if(btn) { 
+                btn.disabled = true; 
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الدخول...'; 
+            }
             
             try {
                 const uc = await signInWithEmailAndPassword(auth, email, pass);
@@ -1081,12 +1425,19 @@
                 }
                 showToast('✅ تم تسجيل الدخول بنجاح');
             } catch(e) {
-                if(errEl) { errEl.textContent = '❌ ' + (e.message === 'غير مصرح لك بالدخول' ? e.message : 'فشل تسجيل الدخول. تحقق من البيانات.'); errEl.style.display = 'block'; }
+                if(errEl) { 
+                    errEl.textContent = '❌ ' + (e.message === 'غير مصرح لك بالدخول' ? e.message : 'فشل تسجيل الدخول. تحقق من البيانات.'); 
+                    errEl.style.display = 'block'; 
+                }
             } finally {
-                if(btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-lock"></i> تسجيل الدخول'; }
+                if(btn) { 
+                    btn.disabled = false; 
+                    btn.innerHTML = '<i class="fa-solid fa-lock"></i> تسجيل الدخول'; 
+                }
             }
         };
 
+        // تسجيل الخروج
         window.logoutAdmin = async () => {
             if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
                 await signOut(auth);
@@ -1100,6 +1451,7 @@
             else showLogin();
         });
 
+        // تبديل التبويبات
         window.switchTab = function(name) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -1121,6 +1473,7 @@
 
         window.filterOrders = (f) => { currentFilter = f; renderOrders(); };
 
+        // تصدير الطلبات
         window.exportOrders = () => {
             if (!allOrders.length) { showToast('لا توجد طلبات للتصدير', 'error'); return; }
             let csv = '\uFEFFرقم,تاريخ,مستلم,هاتف,عنوان,حالة,إجمالي,منتجات\n';
@@ -1195,7 +1548,10 @@
         }
 
         window.resetAddProductForm = () => {
-            ['prodName', 'prodPrice', 'prodQty', 'prodDesc'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+            ['prodName', 'prodPrice', 'prodQty', 'prodDesc'].forEach(id => { 
+                const e = document.getElementById(id); 
+                if (e) e.value = ''; 
+            });
             document.getElementById('prodImageInput').value = '';
             selectedProductImage = null;
             document.getElementById('imgPreview').classList.remove('show');
@@ -1241,9 +1597,16 @@
             };
         }
 
-        function saveAnalytics(d) { try { localStorage.setItem('pro_analytics', JSON.stringify(d)); analyticsCache = d; } catch(e) {} }
-        async function updateAnalyticsCache() { const d = calcAnalytics(); saveAnalytics(d); if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(d); }
-        function loadStoredAnalytics() { try { const d = localStorage.getItem('pro_analytics'); if (d) analyticsCache = JSON.parse(d); } catch(e) {} }
+        function saveAnalytics(d) { 
+            try { localStorage.setItem('pro_analytics', JSON.stringify(d)); analyticsCache = d; } catch(e) {} 
+        }
+        async function updateAnalyticsCache() { 
+            const d = calcAnalytics(); saveAnalytics(d); 
+            if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(d); 
+        }
+        function loadStoredAnalytics() { 
+            try { const d = localStorage.getItem('pro_analytics'); if (d) analyticsCache = JSON.parse(d); } catch(e) {} 
+        }
 
         function renderAnalyticsHTML(d) {
             const c = document.getElementById('analyticsContent');
@@ -1253,7 +1616,7 @@
                 return;
             }
             const topHtml = d.topProducts?.length ? d.topProducts.map((p, i) => `
-                <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg-tertiary);padding:14px 18px;border-radius:var(--radius);border:1px solid var(--border-color);">
+                <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg-tertiary);padding:14px 18px;border-radius:var(--radius);border:1px solid var(--border-color);flex-wrap:wrap;gap:10px;">
                     <div style="display:flex;align-items:center;gap:12px;">
                         <span style="font-size:24px;">${['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span>
                         <span style="font-weight:700;">${p[0]}</span>
@@ -1266,13 +1629,13 @@
             `).join('') : '<div class="empty-state"><i class="fa-solid fa-chart-bar"></i><span>لا توجد مبيعات</span></div>';
 
             c.innerHTML = `
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
                     <div class="stat-card"><span class="stat-icon">💰</span><div class="stat-value">${d.monthlySales.toFixed(0)} ج</div><div class="stat-label">المبيعات الشهرية</div></div>
                     <div class="stat-card"><span class="stat-icon">📊</span><div class="stat-value">${d.conversionRate}%</div><div class="stat-label">معدل التحويل</div></div>
                     <div class="stat-card"><span class="stat-icon">📦</span><div class="stat-value">${d.deliveredCount}</div><div class="stat-label">طلبات مكتملة</div></div>
                     <div class="stat-card"><span class="stat-icon">❌</span><div class="stat-value">${d.rejectedOrders}</div><div class="stat-label">طلبات مرفوضة</div></div>
                 </div>
-                <div style="margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
+                <div style="margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
                     <div class="stat-card"><span class="stat-icon">💵</span><div class="stat-value">${d.totalSalesAll.toFixed(0)} ج</div><div class="stat-label">إجمالي المبيعات</div></div>
                     <div class="stat-card"><span class="stat-icon">📈</span><div class="stat-value">${d.totalOrders}</div><div class="stat-label">إجمالي الطلبات</div></div>
                 </div>
@@ -1285,7 +1648,11 @@
                 </div>
             `;
         }
-        window.refreshAnalytics = () => { updateStats(); const d = calcAnalytics(); saveAnalytics(d); renderAnalyticsHTML(d); showToast('🔄 تم تحديث التحليلات'); };
+        window.refreshAnalytics = () => { 
+            updateStats(); 
+            const d = calcAnalytics(); saveAnalytics(d); renderAnalyticsHTML(d); 
+            showToast('🔄 تم تحديث التحليلات'); 
+        };
 
         function scheduleDelete(oid, ct) {
             if (deleteTimers[oid]) { clearTimeout(deleteTimers[oid].tid); clearInterval(deleteTimers[oid].iid); }
@@ -1293,7 +1660,11 @@
             const dt = (ct || Date.now()) + (DELETE_AFTER_MINUTES * 60 * 1000);
             const rem = Math.max(0, dt - Date.now());
             if (rem <= 0) { removeOrder(oid); return; }
-            const tid = setTimeout(() => { removeOrder(oid); if (countdownIntervals[oid]) { clearInterval(countdownIntervals[oid]); delete countdownIntervals[oid]; } delete deleteTimers[oid]; }, rem);
+            const tid = setTimeout(() => { 
+                removeOrder(oid); 
+                if (countdownIntervals[oid]) { clearInterval(countdownIntervals[oid]); delete countdownIntervals[oid]; } 
+                delete deleteTimers[oid]; 
+            }, rem);
             const iid = setInterval(() => {
                 const r = Math.max(0, Math.ceil((dt - Date.now()) / 1000));
                 const el = document.getElementById(`cd-${oid}`);
@@ -1303,6 +1674,7 @@
             deleteTimers[oid] = { tid, iid, dt };
             countdownIntervals[oid] = iid;
         }
+        
         async function removeOrder(oid) {
             try {
                 await remove(ref(database, `orders/${oid}`));
@@ -1312,36 +1684,39 @@
                 showToast('🗑️ تم حذف الطلب تلقائياً');
             } catch(e) {}
         }
+        
         function cancelDelete(oid) {
             if (deleteTimers[oid]) { clearTimeout(deleteTimers[oid].tid); clearInterval(deleteTimers[oid].iid); delete deleteTimers[oid]; }
             if (countdownIntervals[oid]) { clearInterval(countdownIntervals[oid]); delete countdownIntervals[oid]; }
         }
 
+        // ============ إعداد الطلبات (تم إلغاء القبول التلقائي) ============
         function setupOrders() {
             onValue(ref(database, 'orders'), async (snap) => {
                 const orders = [];
-                if (snap.exists()) { const d = snap.val(); for (const k in d) { if (d.hasOwnProperty(k)) orders.push({ id: k, ...d[k] }); } }
+                if (snap.exists()) { 
+                    const d = snap.val(); 
+                    for (const k in d) { 
+                        if (d.hasOwnProperty(k)) orders.push({ id: k, ...d[k] }); 
+                    } 
+                }
                 orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
+                // تحديث حالة الطلبات السابقة
                 for (const o of orders) {
                     const wasStatus = previousStatuses[o.id];
                     
-                    if (o.status === 'pending' && !wasStatus) {
-                        try {
-                            await update(ref(database, `orders/${o.id}`), { status: 'accepted', acceptedAt: Date.now() });
-                            setTimeout(async () => {
-                                const sent = await sendWhatsApp(o.phone, msgAccept(o), 'قبول تلقائي');
-                                if (sent) showToast(`✅ طلب جديد #${o.id.slice(-8)} - تم إرسال واتساب`);
-                                else showToast(`⚠️ طلب جديد #${o.id.slice(-8)} - فشل إرسال واتساب`, 'warning');
-                            }, 500);
-                        } catch(e) {}
-                    }
+                    // تم إلغاء القبول التلقائي - الطلبات الجديدة تبقى معلقة حتى يقبلها المدير يدوياً
                     
+                    // إرسال رسائل واتساب فقط عند تغيير الحالة يدوياً
                     if (wasStatus && wasStatus !== o.status) {
                         setTimeout(async () => {
                             if (o.status === 'accepted') await sendWhatsApp(o.phone, msgAccept(o), 'تأكيد قبول');
                             else if (o.status === 'delivering') await sendWhatsApp(o.phone, msgDelivering(o), 'توصيل');
-                            else if (o.status === 'delivered') { await deductStock(o); await sendWhatsApp(o.phone, msgDelivered(o), 'تسليم'); }
+                            else if (o.status === 'delivered') { 
+                                await deductStock(o); 
+                                await sendWhatsApp(o.phone, msgDelivered(o), 'تسليم'); 
+                            }
                             else if (o.status === 'rejected') await sendWhatsApp(o.phone, msgRejected(o), 'رفض');
                         }, 300);
                     }
@@ -1351,6 +1726,7 @@
                 
                 allOrders = orders;
                 
+                // جدولة حذف الطلبات المكتملة والمرفوضة
                 for (const o of orders) {
                     if (o.status === 'delivered' || o.status === 'rejected') {
                         if (!deleteTimers[o.id]) scheduleDelete(o.id, o.deliveredAt || o.rejectedAt || o.createdAt);
@@ -1365,7 +1741,12 @@
         window.forceRefreshOrders = async () => {
             const snap = await get(ref(database, 'orders'));
             const orders = [];
-            if (snap.exists()) { const d = snap.val(); for (const k in d) { if (d.hasOwnProperty(k)) orders.push({ id: k, ...d[k] }); } }
+            if (snap.exists()) { 
+                const d = snap.val(); 
+                for (const k in d) { 
+                    if (d.hasOwnProperty(k)) orders.push({ id: k, ...d[k] }); 
+                } 
+            }
             orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
             allOrders = orders; updateStats(); updateAnalyticsCache(); renderOrders();
             showToast(`✅ تم تحديث ${orders.length} طلب`);
@@ -1394,17 +1775,32 @@
                 if (isRej) btns = '<span style="color:var(--status-rejected);font-weight:700;">❌ مرفوض</span>';
                 else if (isDone) btns = '<span style="color:var(--status-delivered);font-weight:700;">📦 مكتمل ✓</span>';
                 else {
+                    // أزرار تغيير الحالة - القبول يدوي الآن
                     for (let i = 0; i < STATUS_FLOW.length; i++) {
                         const st = STATUS_FLOW[i], isCur = o.status === st, isNext = cIdx >= 0 && i === cIdx + 1;
-                        let cls = `status-btn btn-${st}`; let dis = true;
-                        if (isCur) { cls += ' current'; dis = false; } else if (isNext) { dis = false; }
+                        // إذا كان الطلب معلقاً، نسمح بالضغط على "مقبول" فقط
+                        let dis = true;
+                        if (isCur) { dis = false; } 
+                        else if (isNext) { dis = false; }
+                        // حالة خاصة: pending يمكن الانتقال إلى accepted مباشرة
+                        if (o.status === 'pending' && st === 'accepted') dis = false;
+                        
+                        let cls = `status-btn btn-${st}`; 
+                        if (isCur) cls += ' current';
                         btns += `<button class="${cls}" onclick="window.advanceStatus('${o.id}','${st}')" ${dis ? 'disabled' : ''}>${labels[st]}${isCur ? ' ✓' : ''}</button>`;
                     }
                     if (o.status === 'pending') btns += `<button class="status-btn btn-reject" onclick="window.openRejectModal('${o.id}')">❌ رفض</button>`;
                 }
+                
+                // أزرار إضافية للطلبات المقبولة أو قيد التوصيل
                 if (o.status === 'accepted' || o.status === 'delivering') {
                     btns += `<button class="btn btn-info btn-sm" onclick="window.printReceiptForOrder('${o.id}')">🖨️ طباعة</button>`;
                     btns += `<button class="btn btn-whatsapp btn-sm" onclick="window.sendWAtoClient('${o.id}')"><i class="fa-brands fa-whatsapp"></i> واتساب</button>`;
+                }
+                
+                // زر قبول يدوي للطلبات المعلقة
+                if (o.status === 'pending') {
+                    btns += `<button class="btn btn-success btn-sm" onclick="window.manualAcceptOrder('${o.id}')">✅ قبول يدوي</button>`;
                 }
                 
                 let cd = '';
@@ -1442,29 +1838,75 @@
             }).join('');
         }
 
+        // دالة القبول اليدوي للطلب
+        window.manualAcceptOrder = async (oid) => {
+            const o = allOrders.find(x => x.id === oid);
+            if (!o) return;
+            
+            try {
+                await update(ref(database, `orders/${oid}`), { 
+                    status: 'accepted', 
+                    acceptedAt: Date.now() 
+                });
+                
+                // إرسال رسالة واتساب بعد القبول
+                const sent = await sendWhatsApp(o.phone, msgAccept(o), 'قبول يدوي');
+                if (sent) {
+                    showToast(`✅ تم قبول الطلب #${oid.slice(-8)} وإرسال واتساب`);
+                } else {
+                    showToast(`✅ تم قبول الطلب #${oid.slice(-8)} (فشل إرسال واتساب)`, 'warning');
+                }
+            } catch(e) {
+                showToast('❌ فشل قبول الطلب', 'error');
+            }
+        };
+
         window.advanceStatus = async (oid, ns) => {
             const o = allOrders.find(x => x.id === oid);
             if (!o) return;
             const d = { status: ns };
             if (ns === 'delivered') d.deliveredAt = Date.now();
             if (ns === 'accepted') d.acceptedAt = Date.now();
-            await update(ref(database, `orders/${oid}`), d);
-            showToast('✅ تم تحديث الحالة');
+            
+            try {
+                await update(ref(database, `orders/${oid}`), d);
+                
+                // إرسال رسالة واتساب عند تغيير الحالة
+                if (ns === 'accepted') {
+                    await sendWhatsApp(o.phone, msgAccept(o), 'قبول');
+                } else if (ns === 'delivering') {
+                    await sendWhatsApp(o.phone, msgDelivering(o), 'توصيل');
+                } else if (ns === 'delivered') {
+                    await sendWhatsApp(o.phone, msgDelivered(o), 'تسليم');
+                }
+                
+                showToast('✅ تم تحديث الحالة');
+            } catch(e) {
+                showToast('❌ فشل تحديث الحالة', 'error');
+            }
         };
 
         window.sendWAtoClient = (oid) => {
             const o = allOrders.find(x => x.id === oid);
-            if (o) sendWhatsApp(o.phone, msgAccept(o), 'يدوي');
+            if (o) {
+                let msg;
+                if (o.status === 'accepted') msg = msgAccept(o);
+                else if (o.status === 'delivering') msg = msgDelivering(o);
+                else msg = msgAccept(o);
+                sendWhatsApp(o.phone, msg, 'يدوي');
+            }
         };
 
         window.printReceiptForOrder = (oid) => {
             const o = allOrders.find(x => x.id === oid);
             if (o) {
                 const date = new Date(o.createdAt || Date.now()).toLocaleString('ar-EG');
-                const items = (o.items || []).map(i => `<tr><td style="text-align:right;padding:4px 8px;border-bottom:1px dashed #ccc;">${i.name} ×${i.quantity}</td><td style="text-align:center;padding:4px 8px;border-bottom:1px dashed #ccc;">${(i.price * i.quantity).toFixed(2)} ج</td></tr>`).join('');
+                const items = (o.items || []).map(i => 
+                    `<tr><td style="text-align:right;padding:4px 8px;border-bottom:1px dashed #ccc;">${i.name} ×${i.quantity}</td><td style="text-align:center;padding:4px 8px;border-bottom:1px dashed #ccc;">${(i.price * i.quantity).toFixed(2)} ج</td></tr>`
+                ).join('');
                 const w = window.open('', '_blank', 'width=400,height=650');
                 if (w) {
-                    w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>بروفيشنال - ريسيت</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;background:white;color:black;padding:10px;width:80mm;margin:0 auto}.header{text-align:center;margin-bottom:10px}.header h2{font-size:18px;margin-bottom:2px}.header p{font-size:11px;color:#555}hr{border:none;border-top:1px dashed #999;margin:8px 0}.info{font-size:12px}.info p{margin:3px 0}table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}th{text-align:right;padding:4px 8px;border-bottom:1px solid #999;font-size:11px}.total{font-size:18px;font-weight:bold;text-align:center;margin:8px 0}.footer{text-align:center;font-size:11px;margin-top:10px}@media print{body{width:80mm}}</style></head><body><div class="header"><h2>🏪 بروفيشنال</h2><p>Professional Store</p><p>📞 01103127696</p></div><hr><div class="info"><p><strong>طلب #${o.id.slice(-8)}</strong></p><p>📅 ${date}</p><p>👤 ${o.recipientName || '---'}</p><p>📞 ${o.phone || '---'}</p><p>📍 ${o.address || '---'}</p></div><hr><table><thead><tr><th>المنتج</th><th>السعر</th></tr></thead><tbody>${items}</tbody></table><hr><div class="total">الإجمالي: ${o.total || 0} جنيه</div><div class="footer"><p>☕ شكراً لاختياركم بروفيشنال</p></div><button onclick="window.print()" style="display:block;margin:10px auto;padding:10px 20px;background:#4A90D9;color:white;border:none;border-radius:5px;font-size:16px;cursor:pointer;">🖨️ طباعة</button></body></html>`);
+                    w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>بروفيشنال - ريسيت</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;background:white;color:black;padding:10px;max-width:80mm;margin:0 auto}.header{text-align:center;margin-bottom:10px}.header h2{font-size:18px;margin-bottom:2px}.header p{font-size:11px;color:#555}hr{border:none;border-top:1px dashed #999;margin:8px 0}.info{font-size:12px}.info p{margin:3px 0}table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}th{text-align:right;padding:4px 8px;border-bottom:1px solid #999;font-size:11px}.total{font-size:18px;font-weight:bold;text-align:center;margin:8px 0}.footer{text-align:center;font-size:11px;margin-top:10px}button{display:block;margin:10px auto;padding:10px 20px;background:#4A90D9;color:white;border:none;border-radius:5px;font-size:16px;cursor:pointer}@media print{button{display:none}body{width:80mm}}@media(max-width:400px){body{padding:5px}}</style></head><body><div class="header"><h2>🏪 بروفيشنال</h2><p>Professional Store</p><p>📞 01103127696</p></div><hr><div class="info"><p><strong>طلب #${o.id.slice(-8)}</strong></p><p>📅 ${date}</p><p>👤 ${o.recipientName || '---'}</p><p>📞 ${o.phone || '---'}</p><p>📍 ${o.address || '---'}</p></div><hr><table><thead><tr><th>المنتج</th><th>السعر</th></tr></thead><tbody>${items}</tbody></table><hr><div class="total">الإجمالي: ${o.total || 0} جنيه</div><div class="footer"><p>☕ شكراً لاختياركم بروفيشنال</p></div><button onclick="window.print()">🖨️ طباعة</button></body></html>`);
                     w.document.close();
                 }
             }
@@ -1482,9 +1924,28 @@
             const reason = document.getElementById('rejectReason')?.value;
             const details = document.getElementById('rejectDetails')?.value?.trim();
             if (!oid || !reason) { showToast('⚠️ اختر سبب الرفض', 'error'); return; }
-            await update(ref(database, `orders/${oid}`), { status: 'rejected', rejectionReason: reason, rejectionDetails: details, rejectedAt: Date.now() });
-            window.closeRejectModal();
-            showToast('❌ تم رفض الطلب', 'info');
+            
+            const o = allOrders.find(x => x.id === oid);
+            
+            try {
+                await update(ref(database, `orders/${oid}`), { 
+                    status: 'rejected', 
+                    rejectionReason: reason, 
+                    rejectionDetails: details, 
+                    rejectedAt: Date.now() 
+                });
+                
+                // إرسال رسالة واتساب بالرفض
+                if (o) {
+                    const rejectedOrder = {...o, status: 'rejected', rejectionReason: reason};
+                    await sendWhatsApp(o.phone, msgRejected(rejectedOrder), 'رفض');
+                }
+                
+                window.closeRejectModal();
+                showToast('❌ تم رفض الطلب', 'info');
+            } catch(e) {
+                showToast('❌ فشل رفض الطلب', 'error');
+            }
         };
 
         window.openEditModal = (pid) => {
@@ -1505,21 +1966,29 @@
             const qty = parseInt(document.getElementById('editProdQty')?.value);
             const desc = document.getElementById('editProdDesc')?.value?.trim();
             if (!pid || !name || isNaN(price) || isNaN(qty)) { showToast('⚠️ بيانات غير صحيحة', 'error'); return; }
-            await update(ref(database, `products/${pid}`), { name, price, quantity: qty, description: desc, lastUpdated: Date.now() });
-            window.closeEditModal();
-            showToast('✅ تم تحديث المنتج');
+            try {
+                await update(ref(database, `products/${pid}`), { name, price, quantity: qty, description: desc, lastUpdated: Date.now() });
+                window.closeEditModal();
+                showToast('✅ تم تحديث المنتج');
+            } catch(e) {
+                showToast('❌ فشل تحديث المنتج', 'error');
+            }
         };
         window.deleteProduct = async (pid) => {
             const p = allProducts.find(x => x.id === pid);
             if (!confirm(`هل أنت متأكد من حذف "${p?.name || 'المنتج'}"؟`)) return;
-            await remove(ref(database, `products/${pid}`));
-            showToast('🗑️ تم حذف المنتج', 'info');
+            try {
+                await remove(ref(database, `products/${pid}`));
+                showToast('🗑️ تم حذف المنتج', 'info');
+            } catch(e) {
+                showToast('❌ فشل حذف المنتج', 'error');
+            }
         };
 
         function updateLogo(url) {
             ['adminLogoDisplay', 'loginLogo', 'logoPreviewLarge'].forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Logo">`;
+                if (el) el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Logo" onerror="this.parentElement.innerHTML='☕'">`;
             });
         }
         function loadLogo() {
@@ -1531,9 +2000,11 @@
             if (s.exists() && s.val().url) updateLogo(s.val().url);
         });
 
+        // ============ تهيئة التطبيق ============
         function init() {
             loadStoredAnalytics();
             
+            // تعيين الدوال العامة
             window.switchTab = window.switchTab;
             window.forceRefreshOrders = window.forceRefreshOrders;
             window.filterOrders = window.filterOrders;
@@ -1544,6 +2015,7 @@
             window.clearMessageLog = window.clearMessageLog;
             window.sendWAtoClient = window.sendWAtoClient;
             window.advanceStatus = window.advanceStatus;
+            window.manualAcceptOrder = window.manualAcceptOrder;
             window.openRejectModal = window.openRejectModal;
             window.closeRejectModal = window.closeRejectModal;
             window.confirmRejectOrder = window.confirmRejectOrder;
@@ -1552,10 +2024,12 @@
             window.printReceiptForOrder = window.printReceiptForOrder;
             window.resetAddProductForm = window.resetAddProductForm;
 
+            // معالج تحميل صورة المنتج
             document.getElementById('prodImageInput')?.addEventListener('change', function(e) {
                 const f = e.target.files[0];
                 if (!f) return;
                 if (!f.type.startsWith('image/')) { showToast('⚠️ اختر ملف صورة صالح', 'error'); return; }
+                if (f.size > 10 * 1024 * 1024) { showToast('⚠️ حجم الصورة كبير جداً (الحد الأقصى 10 ميجابايت)', 'error'); return; }
                 selectedProductImage = f;
                 const r = new FileReader();
                 r.onload = ev => {
@@ -1566,6 +2040,7 @@
                 r.readAsDataURL(f);
             });
 
+            // زر إضافة منتج
             document.getElementById('addProductBtn')?.addEventListener('click', async function() {
                 const name = document.getElementById('prodName')?.value?.trim();
                 const price = parseFloat(document.getElementById('prodPrice')?.value);
@@ -1578,6 +2053,11 @@
                     return;
                 }
                 
+                if (price < 0 || qty < 0) {
+                    showToast('⚠️ السعر والكمية يجب أن يكونا أرقاماً موجبة', 'error');
+                    return;
+                }
+                
                 const btn = this;
                 const orig = btn.innerHTML;
                 btn.disabled = true;
@@ -1585,7 +2065,8 @@
                 
                 try {
                     const imgData = await uploadToCloudinary(img, 'rashfa-products');
-                    await set(push(ref(database, 'products')), {
+                    const newRef = push(ref(database, 'products'));
+                    await set(newRef, {
                         name, price, quantity: qty, initialStock: qty,
                         description: desc, image: imgData.url,
                         cloudinary_public_id: imgData.public_id,
@@ -1602,9 +2083,11 @@
                 }
             });
 
+            // معالج تحميل الشعار
             document.getElementById('logoFileInput')?.addEventListener('change', function(e) {
                 const f = e.target.files[0];
                 if (!f?.type?.startsWith('image/')) return;
+                if (f.size > 5 * 1024 * 1024) { showToast('⚠️ حجم الصورة كبير جداً', 'error'); return; }
                 selectedLogoImage = f;
                 const r = new FileReader();
                 r.onload = ev => {
@@ -1614,6 +2097,7 @@
                 r.readAsDataURL(f);
             });
 
+            // زر حفظ الشعار
             document.getElementById('uploadLogoBtn')?.addEventListener('click', async function() {
                 const f = selectedLogoImage;
                 if (!f) { showToast('⚠️ اختر صورة الشعار أولاً', 'error'); return; }
@@ -1642,6 +2126,7 @@
                 }
             });
 
+            // معالجات السحب والإفلات لمنطقة رفع الصور
             const uploadArea = document.getElementById('imgUploadArea');
             if (uploadArea) {
                 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -1659,6 +2144,10 @@
                 uploadArea.addEventListener('drop', (e) => {
                     const file = e.dataTransfer.files[0];
                     if (file && file.type.startsWith('image/')) {
+                        if (file.size > 10 * 1024 * 1024) {
+                            showToast('⚠️ حجم الصورة كبير جداً', 'error');
+                            return;
+                        }
                         const input = document.getElementById('prodImageInput');
                         if (input) {
                             const dt = new DataTransfer();
@@ -1668,9 +2157,38 @@
                         }
                     }
                 });
+                
+                // النقر على منطقة الرفع لفتح مستعرض الملفات
+                uploadArea.addEventListener('click', function(e) {
+                    if (e.target !== document.getElementById('prodImageInput')) {
+                        document.getElementById('prodImageInput')?.click();
+                    }
+                });
             }
+
+            // إغلاق المودال عند النقر خارجها
+            document.getElementById('editProductModal')?.addEventListener('click', function(e) {
+                if (e.target === this) window.closeEditModal();
+            });
+            document.getElementById('rejectModal')?.addEventListener('click', function(e) {
+                if (e.target === this) window.closeRejectModal();
+            });
+
+            // دعم لوحة المفاتيح
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    window.closeEditModal();
+                    window.closeRejectModal();
+                }
+            });
+
+            // معالجة تسجيل الدخول بزر Enter
+            document.getElementById('loginPassword')?.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') window.loginAdmin();
+            });
         }
 
+        // بدء التطبيق
         init();
     </script>
 </body>
