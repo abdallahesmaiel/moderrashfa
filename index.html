@@ -1984,7 +1984,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, get, set, push, update, remove, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, get, set, push, update, remove, onValue, runTransaction, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -2329,6 +2329,39 @@ ${couponLine}
             return ok;
         }
 
+        // ===== Coupon Usage Increment =====
+        async function incrementCouponUsage(couponCode) {
+            if (!couponCode || !database) return false;
+            try {
+                // البحث عن الكوبون في قاعدة البيانات باستخدام الكود
+                const snapshot = await get(ref(database, 'coupons'));
+                let couponId = null;
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    for (const key in data) {
+                        if (data.hasOwnProperty(key) && data[key].code === couponCode) {
+                            couponId = key;
+                            break;
+                        }
+                    }
+                }
+                if (!couponId) {
+                    console.warn('⚠️ الكوبون غير موجود في قاعدة البيانات:', couponCode);
+                    return false;
+                }
+
+                // استخدام increment لزيادة عدد الاستخدامات
+                await update(ref(database, `coupons/${couponId}`), {
+                    usedCount: increment(1)
+                });
+                console.log(`✅ تم زيادة استخدام الكوبون ${couponCode}`);
+                return true;
+            } catch (e) {
+                console.error('❌ فشل زيادة استخدام الكوبون:', e);
+                return false;
+            }
+        }
+
         // ===== Load Wallet Settings =====
         function loadWalletSettings() {
             if (!database) return;
@@ -2374,7 +2407,7 @@ ${couponLine}
                 if (s.exists()) {
                     const d = s.val();
                     for (const k in d) {
-                        if (d.hasOwnProperty(k)) {
+                        if (d.hasOwnProperty(k) && k !== '_init') {
                             allCoupons.push({ id: k, ...d[k] });
                         }
                     }
@@ -2382,15 +2415,12 @@ ${couponLine}
                 renderCoupons();
             } catch (e) {
                 console.error('Error loading coupons:', e);
-                // إذا حدث خطأ صلاحية، نعرض رسالة وننشئ مسار الكوبونات
                 if (e.message && e.message.includes('Permission denied')) {
                     showToast('⚠️ مشكلة في صلاحيات قاعدة البيانات. جاري إنشاء المسار...', 'warning');
                     try {
-                        // محاولة إنشاء مسار الكوبونات
                         await set(ref(database, 'coupons/_init'), { initialized: true, timestamp: Date.now() });
                         await remove(ref(database, 'coupons/_init'));
                         showToast('✅ تم إنشاء مسار الكوبونات. حاول مرة أخرى', 'success');
-                        // إعادة تحميل الكوبونات
                         setTimeout(() => loadCoupons(), 1000);
                     } catch (err) {
                         showToast('❌ فشل إنشاء المسار. يرجى التحقق من صلاحيات Firebase', 'error');
