@@ -1982,6 +1982,38 @@
         </div>
     </div>
 
+    <!-- ===== Modal: Edit Coupon ===== -->
+    <div class="modal-overlay" id="editCouponModal">
+        <div class="modal-dialog">
+            <h2 style="color:var(--gold-300);">✏️ تعديل الكوبون</h2>
+            <input type="hidden" id="editCouponId">
+            <div class="form-group"><label class="form-label">كود الكوبون *</label><input type="text" id="editCouponCode" class="form-input" placeholder="مثال: SUMMER25" dir="ltr" style="text-transform:uppercase;"></div>
+            <div class="form-group"><label class="form-label">وصف الكوبون</label><input type="text" id="editCouponDesc" class="form-input" placeholder="خصم 25% على جميع المنتجات"></div>
+            <div class="form-group"><label class="form-label">نوع الخصم *</label>
+                <select id="editCouponType" class="form-select">
+                    <option value="percent">نسبة مئوية %</option>
+                    <option value="fixed">قيمة ثابتة (جنيه)</option>
+                    <option value="free_shipping">شحن مجاني</option>
+                </select>
+            </div>
+            <div class="form-group"><label class="form-label">قيمة الخصم *</label><input type="number" id="editCouponValue" class="form-input" placeholder="مثال: 25" min="0" step="0.01"></div>
+            <div class="form-group"><label class="form-label">الحد الأقصى للاستخدام</label><input type="number" id="editCouponMaxUses" class="form-input" placeholder="مثال: 100" min="0"></div>
+            <div class="form-group"><label class="form-label">عدد مرات الاستخدام الحالية</label><input type="number" id="editCouponUsedCount" class="form-input" disabled style="opacity:0.6;"></div>
+            <div class="form-group"><label class="form-label">تاريخ الانتهاء (اختياري)</label><input type="date" id="editCouponExpiry" class="form-input"></div>
+            <div class="form-group">
+                <label class="form-label">الحالة</label>
+                <select id="editCouponStatus" class="form-select">
+                    <option value="true">مفعل</option>
+                    <option value="false">غير مفعل</option>
+                </select>
+            </div>
+            <div class="modal-actions" style="display:flex;gap:14px;margin-top:32px;justify-content:center;flex-wrap:wrap;">
+                <button class="btn btn-outline" onclick="window.closeEditCouponModal()">إلغاء</button>
+                <button class="btn btn-gold" onclick="window.saveCouponEdit()"><i class="fa-solid fa-check"></i> حفظ التعديلات</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, get, set, push, update, remove, onValue, runTransaction, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -2166,7 +2198,7 @@
         // ===== WhatsApp Messages =====
         function msgAccept(o) {
             const itemsList = (o.items || []).map(i => `- ${i.name} ×${i.quantity} = ${(i.price * i.quantity).toFixed(2)} ج`).join(
-            '\n');
+                '\n');
             const subtotal = (o.items || []).reduce((s, i) => s + (i.price * i.quantity), 0);
             const deliveryFee = o.deliveryFee || 0;
             const codFee = o.codFee || 0;
@@ -2329,11 +2361,10 @@ ${couponLine}
             return ok;
         }
 
-        // ===== Coupon Usage Increment (محسّن) =====
+        // ===== Coupon Usage Increment =====
         async function incrementCouponUsage(couponCode) {
             if (!couponCode || !database) return { success: false, message: 'بيانات غير صالحة' };
             try {
-                // البحث عن الكوبون في قاعدة البيانات باستخدام الكود
                 const snapshot = await get(ref(database, 'coupons'));
                 let couponId = null;
                 let couponData = null;
@@ -2351,20 +2382,33 @@ ${couponLine}
                     return { success: false, message: 'الكوبون غير موجود في قاعدة البيانات' };
                 }
 
-                // التحقق من الحد الأقصى للاستخدام
                 const usedCount = couponData.usedCount || 0;
                 const maxUses = couponData.maxUses || null;
                 if (maxUses !== null && usedCount >= maxUses) {
-                    return { success: false, message: 'تم استخدام الحد الأقصى لهذا الكوبون' };
+                    // إيقاف الكوبون تلقائياً عند استنفاذ الحد الأقصى
+                    await update(ref(database, `coupons/${couponId}`), { active: false });
+                    return { success: false, message: 'تم استنفاذ الحد الأقصى للاستخدام', deactivated: true };
                 }
 
-                // استخدام increment لزيادة عدد الاستخدامات
                 await update(ref(database, `coupons/${couponId}`), {
                     usedCount: increment(1),
                     lastUsedAt: Date.now()
                 });
-                console.log(`✅ تم زيادة استخدام الكوبون ${couponCode} (${usedCount + 1}/${maxUses || '∞'})`);
-                return { success: true, message: `تم استخدام الكوبون (${usedCount + 1}/${maxUses || '∞'})` };
+
+                // التحقق مجدداً بعد الزيادة لمعرفة إذا وصل للحد الأقصى
+                const updatedSnapshot = await get(ref(database, `coupons/${couponId}`));
+                if (updatedSnapshot.exists()) {
+                    const updatedData = updatedSnapshot.val();
+                    const newUsedCount = updatedData.usedCount || 0;
+                    const newMaxUses = updatedData.maxUses || null;
+                    if (newMaxUses !== null && newUsedCount >= newMaxUses) {
+                        await update(ref(database, `coupons/${couponId}`), { active: false });
+                        return { success: true, message: `تم استخدام الكوبون (${newUsedCount}/${newMaxUses}) - تم إيقاف الكوبون تلقائياً`, deactivated: true };
+                    }
+                    return { success: true, message: `تم استخدام الكوبون (${newUsedCount}/${newMaxUses || '∞'})` };
+                }
+
+                return { success: true, message: 'تم استخدام الكوبون' };
             } catch (e) {
                 console.error('❌ فشل زيادة استخدام الكوبون:', e);
                 return { success: false, message: 'فشل تحديث استخدام الكوبون' };
@@ -2452,9 +2496,13 @@ ${couponLine}
                 const usedCount = c.usedCount || 0;
                 const maxUses = c.maxUses || '∞';
                 const remaining = maxUses === '∞' ? '∞' : maxUses - usedCount;
-                const statusText = isExpired ? '⏰ منتهي' : (c.active !== false ? '✅ مفعل' : '⏸️ غير مفعل');
-                const statusClass = isExpired ? 'badge-rejected' : (c.active !== false ? 'badge-delivering' : 'badge-pending');
-                return `<div class="coupon-card" style="${isExpired ? 'opacity:0.6;' : ''}">
+                const isDeactivated = c.active === false;
+                const isMaxedOut = maxUses !== '∞' && usedCount >= maxUses;
+                const statusText = isExpired ? '⏰ منتهي' : (isDeactivated || isMaxedOut ? '⛔ موقوف' : '✅ مفعل');
+                const statusClass = isExpired ? 'badge-rejected' : (isDeactivated || isMaxedOut ? 'badge-pending' : 'badge-delivering');
+                const usagePercent = maxUses === '∞' ? 0 : Math.round((usedCount / maxUses) * 100);
+                const isExhausted = maxUses !== '∞' && usedCount >= maxUses;
+                return `<div class="coupon-card" style="${isExpired || isExhausted ? 'opacity:0.6;border-color:var(--status-rejected);' : isDeactivated ? 'opacity:0.7;' : ''}">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
                         <span class="coupon-code">${c.code || '---'}</span>
                         <span class="order-status-badge ${statusClass}">${statusText}</span>
@@ -2464,18 +2512,93 @@ ${couponLine}
                     <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:8px;flex-wrap:wrap;gap:4px;">
                         <span>📊 النوع: ${typeLabels[c.type] || c.type}</span>
                         <span>🔄 استخدم ${usedCount}/${maxUses} (متبقي ${remaining})</span>
+                        ${maxUses !== '∞' ? `<span style="color:${usagePercent > 80 ? 'var(--status-pending)' : 'var(--text-muted)'};">📈 ${usagePercent}%</span>` : ''}
                         ${c.expiry ? `<span>📅 حتى ${new Date(c.expiry).toLocaleDateString('ar-EG')}</span>` : ''}
                     </div>
+                    ${isExhausted ? `<div style="margin-top:8px;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:var(--radius-sm);color:var(--status-rejected);font-size:12px;border:1px solid rgba(239,68,68,0.2);">⚠️ تم استنفاذ الحد الأقصى للاستخدام</div>` : ''}
                     <div class="product-actions" style="margin-top:12px;">
-                        <button class="btn btn-gold btn-sm" onclick="window.toggleCouponStatus('${c.id}')">
-                            <i class="fa-solid ${c.active !== false ? 'fa-pause' : 'fa-play'}"></i>
-                            ${c.active !== false ? 'إيقاف' : 'تفعيل'}
+                        <button class="btn btn-gold btn-sm" onclick="window.openEditCouponModal('${c.id}')"><i class="fa-solid fa-pen"></i> تعديل</button>
+                        <button class="btn ${isDeactivated || isExhausted ? 'btn-success' : 'btn-outline'} btn-sm" onclick="window.toggleCouponStatus('${c.id}')">
+                            <i class="fa-solid ${isDeactivated || isExhausted ? 'fa-play' : 'fa-pause'}"></i>
+                            ${isDeactivated || isExhausted ? 'تفعيل' : 'إيقاف'}
                         </button>
                         <button class="btn btn-danger btn-sm" onclick="window.deleteCoupon('${c.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
                     </div>
                 </div>`;
             }).join('')}</div>`;
         }
+
+        // ===== Open Edit Coupon Modal =====
+        window.openEditCouponModal = function(couponId) {
+            const coupon = allCoupons.find(c => c.id === couponId);
+            if (!coupon) {
+                showToast('❌ الكوبون غير موجود', 'error');
+                return;
+            }
+            document.getElementById('editCouponId').value = couponId;
+            document.getElementById('editCouponCode').value = coupon.code || '';
+            document.getElementById('editCouponDesc').value = coupon.description || '';
+            document.getElementById('editCouponType').value = coupon.type || 'percent';
+            document.getElementById('editCouponValue').value = coupon.value || 0;
+            document.getElementById('editCouponMaxUses').value = coupon.maxUses || '';
+            document.getElementById('editCouponUsedCount').value = coupon.usedCount || 0;
+            document.getElementById('editCouponExpiry').value = coupon.expiry || '';
+            document.getElementById('editCouponStatus').value = coupon.active !== false ? 'true' : 'false';
+            document.getElementById('editCouponModal').classList.add('active');
+        };
+
+        window.closeEditCouponModal = function() {
+            document.getElementById('editCouponModal').classList.remove('active');
+        };
+
+        // ===== Save Coupon Edit =====
+        window.saveCouponEdit = async function() {
+            const couponId = document.getElementById('editCouponId').value;
+            if (!couponId) {
+                showToast('❌ خطأ في معرف الكوبون', 'error');
+                return;
+            }
+
+            const code = document.getElementById('editCouponCode').value?.trim().toUpperCase();
+            const description = document.getElementById('editCouponDesc').value?.trim();
+            const type = document.getElementById('editCouponType').value;
+            const value = parseFloat(document.getElementById('editCouponValue').value);
+            const maxUses = parseInt(document.getElementById('editCouponMaxUses').value) || null;
+            const expiry = document.getElementById('editCouponExpiry').value || null;
+            const status = document.getElementById('editCouponStatus').value === 'true';
+
+            if (!code) { showToast('⚠️ أدخل كود الكوبون', 'error'); return; }
+            if (!value || value <= 0) { showToast('⚠️ أدخل قيمة الخصم', 'error'); return; }
+            if (type === 'percent' && value > 100) { showToast('⚠️ النسبة لا تتجاوز 100%', 'error'); return; }
+
+            // التحقق من عدم تكرار الكود مع كوبون آخر
+            const existingCoupon = allCoupons.find(c => c.code === code && c.id !== couponId);
+            if (existingCoupon) {
+                showToast('⚠️ هذا الكود مستخدم من قبل', 'error');
+                return;
+            }
+
+            try {
+                const updateData = {
+                    code,
+                    description: description || '',
+                    type,
+                    value,
+                    maxUses,
+                    expiry,
+                    active: status,
+                    updatedAt: Date.now()
+                };
+
+                await update(ref(database, `coupons/${couponId}`), updateData);
+                window.closeEditCouponModal();
+                showToast(`✅ تم تحديث كوبون "${code}" بنجاح`);
+                await loadCoupons();
+            } catch (e) {
+                console.error('Save coupon edit error:', e);
+                showToast('❌ فشل تحديث الكوبون: ' + e.message, 'error');
+            }
+        };
 
         window.openAddCouponModal = function() {
             document.getElementById('couponCodeInput').value = '';
@@ -2503,7 +2626,6 @@ ${couponLine}
             if (!value || value <= 0) { showToast('⚠️ أدخل قيمة الخصم', 'error'); return; }
             if (type === 'percent' && value > 100) { showToast('⚠️ النسبة لا تتجاوز 100%', 'error'); return; }
 
-            // Check for duplicate
             if (allCoupons.some(c => c.code === code)) {
                 showToast('⚠️ هذا الكود موجود بالفعل', 'error');
                 return;
@@ -3172,7 +3294,6 @@ ${couponLine}
                     cd = `<span class="countdown-timer" id="cd-${o.id}">⏱️ ${formatTime(rem)}</span>`;
                 }
 
-                // Coupon display in order
                 let couponLine = '';
                 if (discount > 0) {
                     couponLine =
@@ -3450,12 +3571,16 @@ ${couponLine}
         document.getElementById('addCouponModal')?.addEventListener('click', function(e) {
             if (e.target === this) window.closeAddCouponModal();
         });
+        document.getElementById('editCouponModal')?.addEventListener('click', function(e) {
+            if (e.target === this) window.closeEditCouponModal();
+        });
 
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 window.closeEditModal();
                 window.closeRejectModal();
                 window.closeAddCouponModal();
+                window.closeEditCouponModal();
             }
         });
 
