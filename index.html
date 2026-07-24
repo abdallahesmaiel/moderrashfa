@@ -2329,36 +2329,45 @@ ${couponLine}
             return ok;
         }
 
-        // ===== Coupon Usage Increment =====
+        // ===== Coupon Usage Increment (محسّن) =====
         async function incrementCouponUsage(couponCode) {
-            if (!couponCode || !database) return false;
+            if (!couponCode || !database) return { success: false, message: 'بيانات غير صالحة' };
             try {
                 // البحث عن الكوبون في قاعدة البيانات باستخدام الكود
                 const snapshot = await get(ref(database, 'coupons'));
                 let couponId = null;
+                let couponData = null;
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     for (const key in data) {
                         if (data.hasOwnProperty(key) && data[key].code === couponCode) {
                             couponId = key;
+                            couponData = data[key];
                             break;
                         }
                     }
                 }
-                if (!couponId) {
-                    console.warn('⚠️ الكوبون غير موجود في قاعدة البيانات:', couponCode);
-                    return false;
+                if (!couponId || !couponData) {
+                    return { success: false, message: 'الكوبون غير موجود في قاعدة البيانات' };
+                }
+
+                // التحقق من الحد الأقصى للاستخدام
+                const usedCount = couponData.usedCount || 0;
+                const maxUses = couponData.maxUses || null;
+                if (maxUses !== null && usedCount >= maxUses) {
+                    return { success: false, message: 'تم استخدام الحد الأقصى لهذا الكوبون' };
                 }
 
                 // استخدام increment لزيادة عدد الاستخدامات
                 await update(ref(database, `coupons/${couponId}`), {
-                    usedCount: increment(1)
+                    usedCount: increment(1),
+                    lastUsedAt: Date.now()
                 });
-                console.log(`✅ تم زيادة استخدام الكوبون ${couponCode}`);
-                return true;
+                console.log(`✅ تم زيادة استخدام الكوبون ${couponCode} (${usedCount + 1}/${maxUses || '∞'})`);
+                return { success: true, message: `تم استخدام الكوبون (${usedCount + 1}/${maxUses || '∞'})` };
             } catch (e) {
                 console.error('❌ فشل زيادة استخدام الكوبون:', e);
-                return false;
+                return { success: false, message: 'فشل تحديث استخدام الكوبون' };
             }
         }
 
@@ -2442,6 +2451,7 @@ ${couponLine}
                 const isExpired = c.expiry && new Date(c.expiry) < new Date();
                 const usedCount = c.usedCount || 0;
                 const maxUses = c.maxUses || '∞';
+                const remaining = maxUses === '∞' ? '∞' : maxUses - usedCount;
                 const statusText = isExpired ? '⏰ منتهي' : (c.active !== false ? '✅ مفعل' : '⏸️ غير مفعل');
                 const statusClass = isExpired ? 'badge-rejected' : (c.active !== false ? 'badge-delivering' : 'badge-pending');
                 return `<div class="coupon-card" style="${isExpired ? 'opacity:0.6;' : ''}">
@@ -2453,7 +2463,7 @@ ${couponLine}
                     <div class="coupon-value">${c.type === 'percent' ? c.value + '%' : c.type === 'free_shipping' ? '🚚 شحن مجاني' : c.value + ' ج'}</div>
                     <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:8px;flex-wrap:wrap;gap:4px;">
                         <span>📊 النوع: ${typeLabels[c.type] || c.type}</span>
-                        <span>🔄 استخدم ${usedCount}/${maxUses}</span>
+                        <span>🔄 استخدم ${usedCount}/${maxUses} (متبقي ${remaining})</span>
                         ${c.expiry ? `<span>📅 حتى ${new Date(c.expiry).toLocaleDateString('ar-EG')}</span>` : ''}
                     </div>
                     <div class="product-actions" style="margin-top:12px;">
