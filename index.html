@@ -1642,6 +1642,108 @@
         .category-select-wrapper select {
             padding-right: 44px;
         }
+
+        /* ===== Flash Sale Settings Panel ===== */
+        .flash-sale-settings {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .flash-sale-settings-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .flash-sale-settings-header i {
+            font-size: 24px;
+            color: var(--discount-color);
+        }
+        .flash-sale-settings-header h3 {
+            font-size: 16px;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .flash-sale-setting-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .flash-sale-setting-row label {
+            font-weight: 700;
+            color: var(--text-secondary);
+            font-size: 14px;
+            min-width: 140px;
+        }
+        .flash-sale-setting-row input,
+        .flash-sale-setting-row select {
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            border: 2px solid var(--border-light);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            flex: 1;
+            min-width: 120px;
+            transition: var(--transition);
+        }
+        .flash-sale-setting-row input:focus,
+        .flash-sale-setting-row select:focus {
+            outline: none;
+            border-color: var(--gold-500);
+        }
+        .flash-sale-setting-row input[type="number"] {
+            max-width: 120px;
+        }
+        .flash-sale-setting-row input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--gold-500);
+        }
+        .flash-sale-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 16px;
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .flash-sale-status.active {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--status-delivering);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .flash-sale-status.inactive {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--status-rejected);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .flash-sale-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-dot 1.5s infinite;
+        }
+        .flash-sale-status.active .dot {
+            background: var(--status-delivering);
+        }
+        .flash-sale-status.inactive .dot {
+            background: var(--status-rejected);
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
     </style>
 </head>
 <body>
@@ -1720,6 +1822,7 @@
             <button class="tab" onclick="window.switchTab('wallets')"><i class="fa-solid fa-wallet"></i> المحافظ والدفع</button>
             <button class="tab" onclick="window.switchTab('messages')"><i class="fa-brands fa-whatsapp"></i> سجل الرسائل</button>
             <button class="tab" onclick="window.switchTab('logo')"><i class="fa-solid fa-image"></i> الشعار</button>
+            <button class="tab" onclick="window.switchTab('flashsale')"><i class="fa-solid fa-bolt"></i> عروض الخصم</button>
             <button class="tab" onclick="window.switchTab('analytics')"><i class="fa-solid fa-chart-simple"></i> التحليلات</button>
         </div>
 
@@ -1879,6 +1982,103 @@
                     <input type="file" id="logoFileInput" accept="image/*" style="display:none;">
                 </div>
                 <div style="text-align:center;margin-top:20px;"><button class="btn btn-gold" id="uploadLogoBtn"><i class="fa-solid fa-save"></i> حفظ الشعار</button></div>
+            </div>
+        </div>
+
+        <!-- ===== Panel: Flash Sale ===== -->
+        <div class="panel" id="panel-flashsale">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-bolt"></i> إدارة عروض الخصم السريع</div>
+                    <button class="btn btn-gold btn-sm" onclick="window.saveFlashSaleSettings()"><i class="fa-solid fa-save"></i> حفظ الإعدادات</button>
+                </div>
+
+                <div class="flash-sale-settings">
+                    <div class="flash-sale-settings-header">
+                        <i class="fa-solid fa-clock"></i>
+                        <h3>⏱️ إعدادات المؤقت</h3>
+                    </div>
+                    <div class="flash-sale-setting-row">
+                        <label>حالة العروض:</label>
+                        <select id="flashSaleStatus">
+                            <option value="active">🟢 مفعل</option>
+                            <option value="inactive">🔴 غير مفعل</option>
+                        </select>
+                        <span class="flash-sale-status active" id="flashSaleStatusBadge">
+                            <span class="dot"></span> مفعل
+                        </span>
+                    </div>
+                    <div class="flash-sale-setting-row">
+                        <label>مدة العرض (ساعات):</label>
+                        <input type="number" id="flashSaleDuration" value="24" min="1" max="168">
+                        <span style="color:var(--text-muted);font-size:12px;">(1-168 ساعة)</span>
+                    </div>
+                    <div class="flash-sale-setting-row">
+                        <label>عدد المنتجات المعروضة:</label>
+                        <input type="number" id="flashSaleCount" value="4" min="1" max="20">
+                        <span style="color:var(--text-muted);font-size:12px;">(1-20 منتج)</span>
+                    </div>
+                    <div class="flash-sale-setting-row">
+                        <label>إعادة تعيين المؤقت تلقائياً:</label>
+                        <input type="checkbox" id="flashSaleAutoReset" checked>
+                        <span style="color:var(--text-muted);font-size:12px;">إعادة تعيين المؤقت عند الانتهاء</span>
+                    </div>
+                </div>
+
+                <div class="flash-sale-settings">
+                    <div class="flash-sale-settings-header">
+                        <i class="fa-solid fa-sliders-h"></i>
+                        <h3>🎯 شروط ظهور المنتجات</h3>
+                    </div>
+                    <div class="flash-sale-setting-row">
+                        <label>الحد الأدنى للخصم:</label>
+                        <input type="number" id="flashSaleMinDiscount" value="5" min="1" max="100">
+                        <span style="color:var(--text-muted);font-size:12px;">% (المنتجات التي خصمها أكبر من هذه القيمة)</span>
+                    </div>
+                    <div class="flash-sale-setting-row">
+                        <label>ترتيب المنتجات:</label>
+                        <select id="flashSaleSortOrder">
+                            <option value="highest-discount">أعلى خصم أولاً</option>
+                            <option value="lowest-price">أقل سعر أولاً</option>
+                            <option value="newest">الأحدث أولاً</option>
+                            <option value="random">عشوائي</option>
+                        </select>
+                    </div>
+                    <div class="flash-sale-setting-row">
+                        <label>إظهار المنتجات النفاذة:</label>
+                        <input type="checkbox" id="flashSaleShowOutOfStock">
+                        <span style="color:var(--text-muted);font-size:12px;">عرض المنتجات التي نفذ مخزونها</span>
+                    </div>
+                </div>
+
+                <div class="flash-sale-settings">
+                    <div class="flash-sale-settings-header">
+                        <i class="fa-solid fa-eye"></i>
+                        <h3>👁️ المعاينة المباشرة</h3>
+                    </div>
+                    <div style="background:var(--bg-primary);border-radius:var(--radius-lg);padding:16px;border:1px solid var(--border-color);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+                            <span style="color:var(--text-secondary);">⏱️ الوقت المتبقي:</span>
+                            <span id="flashSalePreviewTimer" style="font-size:20px;font-weight:900;color:var(--discount-color);font-family:monospace;">00:00:00</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                            <span style="color:var(--text-secondary);">📦 عدد المنتجات:</span>
+                            <span id="flashSalePreviewCount" style="font-size:18px;font-weight:900;color:var(--gold-300);">0 منتج</span>
+                        </div>
+                        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-success btn-sm" onclick="window.resetFlashSaleTimer()"><i class="fa-solid fa-rotate"></i> إعادة تعيين المؤقت</button>
+                            <button class="btn btn-danger btn-sm" onclick="window.stopFlashSale()"><i class="fa-solid fa-stop"></i> إيقاف العرض</button>
+                            <button class="btn btn-info btn-sm" onclick="window.startFlashSale()"><i class="fa-solid fa-play"></i> بدء العرض</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flash-sale-settings" style="margin-top:16px;">
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+                        <button class="btn btn-gold" onclick="window.saveFlashSaleSettings()"><i class="fa-solid fa-save"></i> حفظ جميع الإعدادات</button>
+                        <button class="btn btn-outline" onclick="window.resetFlashSaleToDefault()"><i class="fa-solid fa-undo"></i> استعادة الإعدادات الافتراضية</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2084,6 +2284,20 @@
         let currentDiscountType = 'none',
             editCurrentDiscountType = 'none';
 
+        // ===== Flash Sale State =====
+        let flashSaleSettings = {
+            status: 'active',
+            duration: 24, // hours
+            count: 4,
+            autoReset: true,
+            minDiscount: 5,
+            sortOrder: 'highest-discount',
+            showOutOfStock: false,
+            endTime: Date.now() + 24 * 60 * 60 * 1000
+        };
+        let flashSaleTimerInterval = null;
+        let flashSaleEndTime = Date.now() + 24 * 60 * 60 * 1000;
+
         // ===== Toast =====
         function showToast(msg, type = 'success') {
             const c = document.getElementById('toastContainer');
@@ -2099,6 +2313,184 @@
                 setTimeout(() => t.remove(), 300);
             }, 3500);
         }
+
+        // ===== Flash Sale Functions =====
+        function loadFlashSaleSettings() {
+            get(ref(database, 'settings/flashSale')).then(s => {
+                if (s.exists()) {
+                    const data = s.val();
+                    flashSaleSettings = { ...flashSaleSettings, ...data };
+                    flashSaleEndTime = flashSaleSettings.endTime || Date.now() + flashSaleSettings.duration * 60 * 60 * 1000;
+                    updateFlashSaleUI();
+                    updateFlashSalePreview();
+                }
+            }).catch(() => {});
+        }
+
+        function updateFlashSaleUI() {
+            const statusSelect = document.getElementById('flashSaleStatus');
+            const statusBadge = document.getElementById('flashSaleStatusBadge');
+            if (statusSelect) statusSelect.value = flashSaleSettings.status;
+            if (statusBadge) {
+                const isActive = flashSaleSettings.status === 'active';
+                statusBadge.className = `flash-sale-status ${isActive ? 'active' : 'inactive'}`;
+                statusBadge.innerHTML = `<span class="dot"></span> ${isActive ? 'مفعل' : 'غير مفعل'}`;
+            }
+            document.getElementById('flashSaleDuration').value = flashSaleSettings.duration;
+            document.getElementById('flashSaleCount').value = flashSaleSettings.count;
+            document.getElementById('flashSaleAutoReset').checked = flashSaleSettings.autoReset !== false;
+            document.getElementById('flashSaleMinDiscount').value = flashSaleSettings.minDiscount || 5;
+            document.getElementById('flashSaleSortOrder').value = flashSaleSettings.sortOrder || 'highest-discount';
+            document.getElementById('flashSaleShowOutOfStock').checked = flashSaleSettings.showOutOfStock || false;
+        }
+
+        function updateFlashSalePreview() {
+            const timerEl = document.getElementById('flashSalePreviewTimer');
+            const countEl = document.getElementById('flashSalePreviewCount');
+            
+            if (timerEl) {
+                const now = Date.now();
+                const diff = Math.max(0, flashSaleEndTime - now);
+                const hours = Math.floor(diff / 3600000);
+                const minutes = Math.floor((diff % 3600000) / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+                timerEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+            
+            if (countEl) {
+                const saleProducts = getFlashSaleProducts();
+                countEl.textContent = `${saleProducts.length} منتج`;
+            }
+        }
+
+        function getFlashSaleProducts() {
+            let products = allProducts.filter(p => {
+                const hasDiscount = p.discountType && p.discountType !== 'none' && parseFloat(p.discountValue) > 0;
+                const discountPercent = p.discountType === 'percent' ? parseFloat(p.discountValue) : 
+                    (p.discountType === 'amount' ? (parseFloat(p.discountValue) / (p.price || 1) * 100) : 0);
+                const meetsMinDiscount = discountPercent >= (flashSaleSettings.minDiscount || 5);
+                const inStock = (p.quantity || 0) > 0;
+                return hasDiscount && meetsMinDiscount && (flashSaleSettings.showOutOfStock || inStock);
+            });
+
+            // ترتيب المنتجات
+            switch (flashSaleSettings.sortOrder) {
+                case 'highest-discount':
+                    products.sort((a, b) => {
+                        const da = a.discountType === 'percent' ? parseFloat(a.discountValue) : 
+                            (a.discountType === 'amount' ? (parseFloat(a.discountValue) / (a.price || 1) * 100) : 0);
+                        const db = b.discountType === 'percent' ? parseFloat(b.discountValue) : 
+                            (b.discountType === 'amount' ? (parseFloat(b.discountValue) / (b.price || 1) * 100) : 0);
+                        return db - da;
+                    });
+                    break;
+                case 'lowest-price':
+                    products.sort((a, b) => (a.price || 0) - (b.price || 0));
+                    break;
+                case 'newest':
+                    products.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    break;
+                case 'random':
+                    products.sort(() => Math.random() - 0.5);
+                    break;
+            }
+
+            return products.slice(0, flashSaleSettings.count || 4);
+        }
+
+        window.saveFlashSaleSettings = async function() {
+            const status = document.getElementById('flashSaleStatus').value;
+            const duration = parseInt(document.getElementById('flashSaleDuration').value) || 24;
+            const count = parseInt(document.getElementById('flashSaleCount').value) || 4;
+            const autoReset = document.getElementById('flashSaleAutoReset').checked;
+            const minDiscount = parseInt(document.getElementById('flashSaleMinDiscount').value) || 5;
+            const sortOrder = document.getElementById('flashSaleSortOrder').value;
+            const showOutOfStock = document.getElementById('flashSaleShowOutOfStock').checked;
+
+            // إذا تغيرت المدة، أعد تعيين وقت الانتهاء
+            if (duration !== flashSaleSettings.duration) {
+                flashSaleEndTime = Date.now() + duration * 60 * 60 * 1000;
+            }
+
+            const settings = {
+                status,
+                duration,
+                count,
+                autoReset,
+                minDiscount,
+                sortOrder,
+                showOutOfStock,
+                endTime: flashSaleEndTime,
+                updatedAt: Date.now()
+            };
+
+            try {
+                await set(ref(database, 'settings/flashSale'), settings);
+                flashSaleSettings = settings;
+                updateFlashSaleUI();
+                updateFlashSalePreview();
+                showToast('✅ تم حفظ إعدادات عروض الخصم');
+            } catch (e) {
+                showToast('❌ فشل حفظ الإعدادات', 'error');
+            }
+        };
+
+        window.resetFlashSaleTimer = function() {
+            flashSaleEndTime = Date.now() + flashSaleSettings.duration * 60 * 60 * 1000;
+            updateFlashSalePreview();
+            saveFlashSaleSettings();
+            showToast('🔄 تم إعادة تعيين المؤقت');
+        };
+
+        window.stopFlashSale = function() {
+            document.getElementById('flashSaleStatus').value = 'inactive';
+            saveFlashSaleSettings();
+            showToast('⏸️ تم إيقاف عروض الخصم');
+        };
+
+        window.startFlashSale = function() {
+            document.getElementById('flashSaleStatus').value = 'active';
+            flashSaleEndTime = Date.now() + flashSaleSettings.duration * 60 * 60 * 1000;
+            saveFlashSaleSettings();
+            showToast('▶️ تم تشغيل عروض الخصم');
+        };
+
+        window.resetFlashSaleToDefault = function() {
+            if (!confirm('استعادة الإعدادات الافتراضية لعروض الخصم؟')) return;
+            flashSaleSettings = {
+                status: 'active',
+                duration: 24,
+                count: 4,
+                autoReset: true,
+                minDiscount: 5,
+                sortOrder: 'highest-discount',
+                showOutOfStock: false,
+                endTime: Date.now() + 24 * 60 * 60 * 1000
+            };
+            flashSaleEndTime = flashSaleSettings.endTime;
+            updateFlashSaleUI();
+            updateFlashSalePreview();
+            saveFlashSaleSettings();
+            showToast('🔄 تم استعادة الإعدادات الافتراضية');
+        };
+
+        // تحديث المؤقت كل ثانية
+        setInterval(() => {
+            if (flashSaleSettings.status === 'active') {
+                const now = Date.now();
+                if (now >= flashSaleEndTime) {
+                    if (flashSaleSettings.autoReset) {
+                        flashSaleEndTime = Date.now() + flashSaleSettings.duration * 60 * 60 * 1000;
+                        updateFlashSalePreview();
+                        saveFlashSaleSettings();
+                    } else {
+                        document.getElementById('flashSaleStatus').value = 'inactive';
+                        saveFlashSaleSettings();
+                    }
+                }
+                updateFlashSalePreview();
+            }
+        }, 1000);
 
         // ===== Message Log =====
         function addToMessageLog(phone, type, success, details = '') {
@@ -2697,6 +3089,7 @@ ${couponLine}
             loadMessageLog();
             loadWalletSettings();
             loadCoupons();
+            loadFlashSaleSettings();
             renderOrders();
             renderProducts();
             updateStats();
@@ -2750,7 +3143,7 @@ ${couponLine}
         window.switchTab = function(n) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            const tabs = ['orders', 'products', 'add', 'coupons', 'wallets', 'messages', 'logo', 'analytics'];
+            const tabs = ['orders', 'products', 'add', 'coupons', 'wallets', 'messages', 'logo', 'flashsale', 'analytics'];
             const idx = tabs.indexOf(n);
             const at = document.querySelectorAll('.tab');
             if (idx >= 0 && at[idx]) at[idx].classList.add('active');
@@ -2761,6 +3154,8 @@ ${couponLine}
             if (n === 'coupons') renderCoupons();
             if (n === 'wallets') loadWalletSettings();
             if (n === 'messages') renderMessageLog();
+            if (n === 'flashsale') { loadFlashSaleSettings();
+                updateFlashSalePreview(); }
             if (n === 'analytics') {
                 updateStats();
                 if (analyticsCache) renderAnalyticsHTML(analyticsCache);
@@ -2818,6 +3213,8 @@ ${couponLine}
                 updateStats();
                 renderProducts();
                 updateAnalyticsCache();
+                // تحديث معاينة عروض الخصم
+                updateFlashSalePreview();
             });
         }
 
@@ -3619,7 +4016,7 @@ ${couponLine}
         // ===== Init =====
         window.updateCategoryEmoji();
         window.selectDiscountType('none');
-        console.log('✅ لوحة التحكم بروفيشنال جاهزة');
+        console.log('✅ لوحة التحكم بروفيشنال جاهزة مع نظام عروض الخصم السريع');
     </script>
 </body>
 </html>
