@@ -1744,6 +1744,31 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
+
+        /* ===== منطقة الطباعة ===== */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printArea, #printArea * {
+                visibility: visible;
+            }
+            #printArea {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: #fff;
+                padding: 20px;
+                direction: rtl;
+                font-family: 'Cairo', 'Tahoma', sans-serif;
+                color: #222;
+                z-index: 9999;
+            }
+            .print-btn, .no-print {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2093,6 +2118,9 @@
             </div>
         </div>
     </div>
+
+    <!-- ===== منطقة الطباعة ===== -->
+    <div id="printArea" style="display:none;"></div>
 
     <!-- ===== Modal: Edit Product ===== -->
     <div class="modal-overlay" id="editProductModal">
@@ -3763,60 +3791,168 @@ ${couponLine}
             }
         };
 
+        // ===== حل نهائي للطباعة - فتح صفحة منفصلة للفاتورة =====
         window.printReceiptForOrder = (oid) => {
             const o = allOrders.find(x => x.id === oid);
-            if (!o) return;
-            const date = new Date(o.createdAt || Date.now()).toLocaleString('ar-EG');
-            const subtotal = (o.items || []).reduce((s, i) => s + (i.price * i.quantity), 0);
-            const deliveryFee = o.deliveryFee || 0;
-            const codFee = o.codFee || 0;
-            const total = o.total || 0;
-            const paymentMethod = o.paymentMethod || 'cod';
-            const pmName = getPaymentMethodName(paymentMethod);
-            const coupon = o.coupon || null;
-            const discount = coupon ? (coupon.discount || 0) : 0;
-            const items = (o.items || []).map(i =>
-                `<tr><td>${i.name} ×${i.quantity}</td><td>${(i.price * i.quantity).toFixed(2)} ج</td></tr>`
-            ).join('');
-
-            let couponLine = '';
-            if (discount > 0) {
-                couponLine =
-                    `<div class="breakdown-row"><span>🎫 خصم الكوبون (${coupon.code || ''}):</span><span>-${discount.toFixed(2)} ج</span></div>`;
+            if (!o) {
+                showToast('❌ الطلب غير موجود', 'error');
+                return;
             }
 
-            const w = window.open('', '_blank', 'width=400,height=700');
-            if (w) {
-                w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>بروفيشنال</title>
-                    <style>*{margin:0;padding:0}body{font-family:'Cairo',sans-serif;padding:10px;max-width:80mm;margin:0 auto}.h{text-align:center}.h h2{font-size:18px}hr{border-top:1px dashed #999;margin:8px 0}.info{font-size:12px}table{width:100%;font-size:12px;margin:8px 0}td{padding:4px 8px;border-bottom:1px dashed #ccc}.breakdown{font-size:12px;margin:8px 0;padding:8px;background:#f5f5f5;border-radius:8px}.breakdown-row{display:flex;justify-content:space-between;padding:2px 0}.total{font-size:18px;font-weight:bold;text-align:center}.footer{text-align:center;font-size:11px;margin-top:10px}button{display:block;margin:10px auto;padding:10px 20px;background:#4A90D9;color:white;border:none;border-radius:5px;cursor:pointer}@media print{button{display:none}}
-                    </style></head><body>
-                    <div class="h"><h2>🏪 بروفيشنال</h2><p>📞 01103127696</p></div>
-                    <hr>
-                    <div class="info">
-                        <p><strong>رقم الطلب: #${o.id.slice(-8)}</strong></p>
-                        <p>📅 ${date}</p>
-                        <p>👤 المستلم: ${o.recipientName || '---'}</p>
-                        <p>📞 الهاتف: ${o.phone || '---'}</p>
-                        <p>📍 العنوان: ${o.address || '---'}</p>
-                        <p>💳 طريقة الدفع: ${pmName}</p>
-                        ${coupon ? `<p>🎫 كوبون: ${coupon.code} (خصم ${discount.toFixed(2)} ج)</p>` : ''}
+            try {
+                showToast('⏳ جاري تحضير الفاتورة...', 'info');
+
+                // بناء محتوى الفاتورة
+                const date = new Date(o.createdAt || Date.now()).toLocaleString('ar-EG');
+                const subtotal = (o.items || []).reduce((s, i) => s + (i.price * i.quantity), 0);
+                const deliveryFee = o.deliveryFee || 0;
+                const codFee = o.codFee || 0;
+                const total = o.total || 0;
+                const paymentMethod = o.paymentMethod || 'cod';
+                const pmName = getPaymentMethodName(paymentMethod);
+                const coupon = o.coupon || null;
+                const discount = coupon ? (coupon.discount || 0) : 0;
+                const itemsHtml = (o.items || []).map(i =>
+                    `<tr><td style="padding:6px 4px;">${i.name} ×${i.quantity}</td><td style="padding:6px 4px;text-align:left;font-weight:600;">${(i.price * i.quantity).toFixed(2)} ج</td></tr>`
+                ).join('');
+
+                // بناء HTML كامل للفاتورة كصفحة منفصلة
+                const htmlContent = `<!DOCTYPE html>
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>فاتورة #${o.id.slice(-8)}</title>
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { 
+                            font-family: 'Cairo', 'Tahoma', sans-serif; 
+                            padding: 20px; 
+                            max-width: 80mm; 
+                            margin: 0 auto; 
+                            background: #fff; 
+                            color: #222;
+                            direction: rtl;
+                        }
+                        .header { text-align: center; margin-bottom: 16px; }
+                        .header h2 { font-size: 20px; color: #333; }
+                        .header p { font-size: 12px; color: #666; }
+                        hr { border: none; border-top: 2px dashed #ccc; margin: 12px 0; }
+                        .info { font-size: 13px; line-height: 1.8; }
+                        .info strong { color: #333; }
+                        table { width: 100%; font-size: 13px; border-collapse: collapse; margin: 12px 0; }
+                        td { padding: 6px 4px; border-bottom: 1px dashed #e0e0e0; }
+                        td:last-child { text-align: left; font-weight: 600; }
+                        .breakdown { background: #f8f8f8; padding: 12px; border-radius: 8px; margin: 12px 0; font-size: 13px; }
+                        .breakdown-row { display: flex; justify-content: space-between; padding: 4px 0; }
+                        .breakdown-row.total { font-weight: 800; border-top: 2px solid #999; margin-top: 6px; padding-top: 8px; font-size: 16px; }
+                        .footer { text-align: center; font-size: 12px; color: #888; margin-top: 16px; border-top: 1px dashed #ddd; padding-top: 12px; }
+                        @media print { body { padding: 10px; } }
+                        .print-btn { 
+                            display: block; 
+                            margin: 20px auto; 
+                            padding: 12px 30px; 
+                            background: #2563eb; 
+                            color: white; 
+                            border: none; 
+                            border-radius: 8px; 
+                            font-size: 16px; 
+                            cursor: pointer; 
+                            font-family: 'Cairo', sans-serif;
+                        }
+                        .print-btn:hover { background: #1d4ed8; }
+                        @media print { .print-btn { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h2>🏪 بروفيشنال</h2>
+                        <p>📞 01103127696</p>
                     </div>
                     <hr>
-                    <table>${items}</table>
+                    <div class="info">
+                        <p><strong>رقم الطلب:</strong> #${o.id.slice(-8)}</p>
+                        <p><strong>📅 التاريخ:</strong> ${date}</p>
+                        <p><strong>👤 المستلم:</strong> ${o.recipientName || '---'}</p>
+                        <p><strong>📞 الهاتف:</strong> ${o.phone || '---'}</p>
+                        <p><strong>📍 العنوان:</strong> ${o.address || '---'}</p>
+                        <p><strong>💳 طريقة الدفع:</strong> ${pmName}</p>
+                        ${coupon ? `<p><strong>🎫 كوبون:</strong> ${coupon.code} (خصم ${discount.toFixed(2)} ج)</p>` : ''}
+                    </div>
+                    <hr>
+                    <table>
+                        <thead>
+                            <tr style="font-weight:700;border-bottom:2px solid #333;">
+                                <td style="padding:6px 4px;">المنتج</td>
+                                <td style="padding:6px 4px;text-align:left;">السعر</td>
+                            </tr>
+                        </thead>
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
                     <hr>
                     <div class="breakdown">
                         <div class="breakdown-row"><span>🛒 إجمالي المنتجات:</span><span>${subtotal.toFixed(2)} ج</span></div>
                         <div class="breakdown-row"><span>🚚 رسوم التوصيل:</span><span>${deliveryFee === 0 ? 'مجاناً 🎉' : deliveryFee.toFixed(2) + ' ج'}</span></div>
-                        ${codFee > 0 ? `<div class="breakdown-row"><span>💳 رسوم الدفع عند الاستلام:</span><span>${codFee.toFixed(2)} ج</span></div>` : ''}
-                        ${couponLine}
-                        <div class="breakdown-row" style="font-weight:bold;border-top:2px solid #999;padding-top:4px;margin-top:4px;">
-                            <span>💰 الإجمالي الكلي:</span><span>${total.toFixed(2)} ج</span>
-                        </div>
+                        ${codFee > 0 ? `<div class="breakdown-row"><span>💳 رسوم الدفع:</span><span>${codFee.toFixed(2)} ج</span></div>` : ''}
+                        ${discount > 0 ? `<div class="breakdown-row" style="color:#e11d48;"><span>🎫 خصم الكوبون:</span><span>-${discount.toFixed(2)} ج</span></div>` : ''}
+                        <div class="breakdown-row total"><span>💰 الإجمالي الكلي:</span><span>${total.toFixed(2)} ج</span></div>
                     </div>
-                    <div class="footer">🏪 شكراً لاختياركم بروفيشنال</div>
-                    <button onclick="window.print()">🖨️ طباعة</button>
-                </body></html>`);
-                w.document.close();
+                    <div class="footer">
+                        🏪 شكراً لاختياركم بروفيشنال<br>
+                        <small style="font-size:10px;">هذه فاتورة إلكترونية معتمدة</small>
+                    </div>
+                    <button class="print-btn" onclick="window.print()">🖨️ طباعة الفاتورة</button>
+                    <script>
+                        // طباعة تلقائية بعد تحميل الصفحة
+                        window.onload = function() {
+                            setTimeout(function() {
+                                try { window.print(); } catch(e) {}
+                            }, 500);
+                        };
+                    <\/script>
+                </body>
+                </html>`;
+
+                // إنشاء Blob URL للصفحة المنفصلة
+                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+
+                // فتح صفحة جديدة للفاتورة
+                const printWindow = window.open(url, '_blank', 'width=420,height=700,scrollbars=yes');
+                
+                if (!printWindow || printWindow.closed || typeof printWindow.closed === 'undefined') {
+                    // إذا تم حظر النافذة المنبثقة، استخدم iframe
+                    showToast('⚠️ يرجى السماح بالنوافذ المنبثقة للطباعة', 'warning');
+                    try {
+                        const iframe = document.createElement('iframe');
+                        iframe.style.position = 'fixed';
+                        iframe.style.top = '-9999px';
+                        iframe.style.left = '-9999px';
+                        iframe.style.width = '0';
+                        iframe.style.height = '0';
+                        document.body.appendChild(iframe);
+                        const doc = iframe.contentDocument || iframe.contentWindow.document;
+                        doc.open();
+                        doc.write(htmlContent);
+                        doc.close();
+                        setTimeout(() => {
+                            iframe.contentWindow.print();
+                            setTimeout(() => {
+                                document.body.removeChild(iframe);
+                            }, 3000);
+                        }, 300);
+                    } catch (e) {
+                        showToast('❌ تعذر فتح نافذة الطباعة', 'error');
+                    }
+                } else {
+                    // تنظيف الرابط بعد فتح النافذة
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    showToast('🖨️ تم فتح نافذة الفاتورة');
+                }
+
+            } catch (error) {
+                console.error('Print function error:', error);
+                showToast('❌ حدث خطأ أثناء محاولة الطباعة: ' + error.message, 'error');
             }
         };
 
@@ -4016,7 +4152,7 @@ ${couponLine}
         // ===== Init =====
         window.updateCategoryEmoji();
         window.selectDiscountType('none');
-        console.log('✅ لوحة التحكم بروفيشنال جاهزة مع نظام عروض الخصم السريع');
+        console.log('✅ لوحة التحكم بروفيشنال جاهزة مع نظام طباعة متقدم - فتح صفحة منفصلة للفاتورة');
     </script>
 </body>
 </html>
