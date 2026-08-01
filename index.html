@@ -578,7 +578,7 @@
             gap: 12px;
         }
 
-        /* --- أدوات البحث والتصفية (جديدة) --- */
+        /* --- أدوات البحث والتصفية --- */
         .search-filter-wrapper {
             display: flex;
             gap: 12px;
@@ -935,7 +935,7 @@
             border: 1px solid rgba(30, 64, 175, 0.3);
         }
 
-        /* --- المنتجات (المحسّنة) --- */
+        /* --- المنتجات --- */
         .products-grid-admin {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -2453,30 +2453,82 @@
         function getPaymentMethodIcon(method) { return (PAYMENT_METHODS[method] || PAYMENT_METHODS['cod']).icon; }
 
         // ============================================================
-        // 2. رفع الصور إلى Cloudinary
+        // 2. رفع الصور إلى Cloudinary مع إعادة المحاولة التلقائية
         // ============================================================
 
-        async function uploadToCloudinary(file, folder = 'rashfa-products') {
-            if (!file?.type?.startsWith('image/')) throw new Error('ملف غير صالح');
-            if (file.size > 10 * 1024 * 1024) throw new Error('حجم كبير');
-            const fd = new FormData();
-            fd.append('file', file);
-            fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-            fd.append('folder', folder);
-            fd.append('api_key', CLOUDINARY_API_KEY);
-            const ctrl = new AbortController();
-            const timeout = setTimeout(() => ctrl.abort(), 120000);
-            try {
-                const r = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: fd, signal: ctrl.signal });
-                clearTimeout(timeout);
-                if (!r.ok) throw new Error('فشل الرفع');
-                const d = await r.json();
-                if (d.error) throw new Error(d.error.message);
-                return { url: d.secure_url, public_id: d.public_id };
-            } catch (e) {
-                if (e.name === 'AbortError') throw new Error('انتهت المهلة');
-                throw e;
+        /**
+         * رفع الصورة إلى Cloudinary مع إعادة محاولة تلقائية عند الفشل
+         * @param {File} file - ملف الصورة
+         * @param {string} folder - المجلد في Cloudinary
+         * @param {number} maxRetries - عدد محاولات إعادة الرفع
+         * @returns {Promise<{url: string, public_id: string}>}
+         */
+        async function uploadToCloudinary(file, folder = 'rashfa-products', maxRetries = 3) {
+            if (!file?.type?.startsWith('image/')) {
+                throw new Error('الملف المحدد ليس صورة صالحة');
             }
+            if (file.size > 10 * 1024 * 1024) {
+                throw new Error('حجم الصورة يتجاوز 10 ميجابايت');
+            }
+
+            let lastError = null;
+            
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                    fd.append('folder', folder);
+                    fd.append('api_key', CLOUDINARY_API_KEY);
+
+                    const ctrl = new AbortController();
+                    const timeout = setTimeout(() => ctrl.abort(), 90000);
+
+                    const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+                        method: 'POST',
+                        body: fd,
+                        signal: ctrl.signal
+                    });
+
+                    clearTimeout(timeout);
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`فشل الرفع (${response.status}): ${errorText.substring(0, 100)}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error.message || 'خطأ من Cloudinary');
+                    }
+
+                    if (!data.secure_url) {
+                        throw new Error('لم يتم استلام رابط الصورة من Cloudinary');
+                    }
+
+                    // نجاح الرفع
+                    return {
+                        url: data.secure_url,
+                        public_id: data.public_id
+                    };
+
+                } catch (error) {
+                    lastError = error;
+                    console.warn(`محاولة رفع الصورة #${attempt} فشلت:`, error.message);
+                    
+                    // إذا كانت المحاولة الأخيرة، نرمي الخطأ
+                    if (attempt === maxRetries) {
+                        throw new Error(`فشل رفع الصورة بعد ${maxRetries} محاولات: ${error.message}`);
+                    }
+                    
+                    // انتظار قبل إعادة المحاولة (تأخير تصاعدي)
+                    const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+
+            throw new Error('فشل رفع الصورة: سبب غير معروف');
         }
 
         // ============================================================
@@ -3154,7 +3206,7 @@
         }
 
         // ============================================================
-        // 10. إضافة منتج
+        // 10. إضافة منتج (مع تحسين رفع الصور)
         // ============================================================
 
         window.updateCategoryEmoji = function() {
@@ -4193,26 +4245,72 @@
                 btn.innerHTML = orig; }
         });
 
+        // ============================================================
+        // إضافة منتج - تحسين رفع الصور مع إعادة المحاولة
+        // ============================================================
         document.getElementById('addProductBtn')?.addEventListener('click', async function() {
-            const name = document.getElementById('prodName')?.value?.trim(),
-                category = document.getElementById('prodCategory')?.value || 'أجهزة شخصية',
-                price = parseFloat(document.getElementById('prodPrice')?.value),
-                qty = parseInt(document.getElementById('prodQty')?.value),
-                desc = document.getElementById('prodDesc')?.value?.trim(),
-                img = selectedProductImage,
-                dv = parseFloat(document.getElementById('prodDiscountValue')?.value) || 0;
-            if (!name || isNaN(price) || isNaN(qty) || !desc || !img) { showToast('⚠️ أكمل جميع الحقول', 'error'); return; }
-            if (price < 0 || qty < 0) { showToast('⚠️ أرقام موجبة', 'error'); return; }
-            if (currentDiscountType === 'percent' && dv > 100) { showToast('⚠️ نسبة الخصم ≤100%', 'error'); return; }
-            if (currentDiscountType === 'amount' && dv >= price) { showToast('⚠️ الخصم أقل من السعر', 'error'); return; }
-            const btn = this,
-                orig = btn.innerHTML;
+            const name = document.getElementById('prodName')?.value?.trim();
+            const category = document.getElementById('prodCategory')?.value || 'أجهزة شخصية';
+            const price = parseFloat(document.getElementById('prodPrice')?.value);
+            const qty = parseInt(document.getElementById('prodQty')?.value);
+            const desc = document.getElementById('prodDesc')?.value?.trim();
+            const img = selectedProductImage;
+            const dv = parseFloat(document.getElementById('prodDiscountValue')?.value) || 0;
+
+            // التحقق من صحة البيانات
+            if (!name || isNaN(price) || isNaN(qty) || !desc || !img) {
+                showToast('⚠️ يرجى ملء جميع الحقول المطلوبة (الاسم، السعر، الكمية، الوصف، الصورة)', 'error');
+                return;
+            }
+            if (price < 0 || qty < 0) {
+                showToast('⚠️ السعر والكمية يجب أن تكون أرقاماً موجبة', 'error');
+                return;
+            }
+            if (currentDiscountType === 'percent' && dv > 100) {
+                showToast('⚠️ نسبة الخصم يجب أن تكون أقل من أو تساوي 100%', 'error');
+                return;
+            }
+            if (currentDiscountType === 'amount' && dv >= price) {
+                showToast('⚠️ قيمة الخصم يجب أن تكون أقل من السعر الأساسي', 'error');
+                return;
+            }
+
+            const btn = this;
+            const orig = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الرفع...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الصورة...';
+
             try {
-                const id = await uploadToCloudinary(img);
-                const nr = push(ref(database, 'products'));
-                await set(nr, {
+                // محاولة رفع الصورة مع إعادة المحاولة التلقائية
+                let uploadResult = null;
+                let uploadAttempts = 0;
+                const maxUploadAttempts = 3;
+
+                while (uploadAttempts < maxUploadAttempts) {
+                    try {
+                        uploadAttempts++;
+                        btn.innerHTML =
+                            `<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الصورة (محاولة ${uploadAttempts}/${maxUploadAttempts})...`;
+                        uploadResult = await uploadToCloudinary(img);
+                        break; // نجح الرفع
+                    } catch (uploadError) {
+                        console.warn(`محاولة رفع الصورة ${uploadAttempts} فشلت:`, uploadError);
+                        if (uploadAttempts >= maxUploadAttempts) {
+                            throw new Error(`فشل رفع الصورة بعد ${maxUploadAttempts} محاولات: ${uploadError.message}`);
+                        }
+                        // انتظار قبل إعادة المحاولة
+                        await new Promise(resolve => setTimeout(resolve, 1500 * uploadAttempts));
+                    }
+                }
+
+                if (!uploadResult) {
+                    throw new Error('لم يتم الحصول على رابط الصورة');
+                }
+
+                // إضافة المنتج إلى قاعدة البيانات
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري حفظ المنتج...';
+                const newProductRef = push(ref(database, 'products'));
+                await set(newProductRef, {
                     name,
                     price,
                     finalPrice: calculateFinalPrice(price, currentDiscountType, dv),
@@ -4220,17 +4318,41 @@
                     quantity: qty,
                     initialStock: qty,
                     description: desc,
-                    image: id.url,
-                    cloudinary_public_id: id.public_id,
+                    image: uploadResult.url,
+                    cloudinary_public_id: uploadResult.public_id,
                     discountType: currentDiscountType,
                     discountValue: dv,
                     createdAt: Date.now()
                 });
+
+                // إعادة تعيين النموذج وعرض رسالة نجاح
                 window.resetAddProductForm();
-                showToast(`🎉 تمت إضافة "${name}"`);
-                setTimeout(() => window.switchTab('products'), 500);
-            } catch (e) { showToast('❌ ' + e.message, 'error'); } finally { btn.disabled = false;
-                btn.innerHTML = orig; }
+                showToast(`🎉 تمت إضافة المنتج "${name}" بنجاح!`, 'success');
+                
+                // الانتقال إلى صفحة المنتجات بعد تأخير
+                setTimeout(() => window.switchTab('products'), 800);
+
+            } catch (error) {
+                console.error('❌ فشل إضافة المنتج:', error);
+                // عرض رسالة خطأ تفصيلية
+                let errorMsg = error.message || 'حدث خطأ غير متوقع';
+                if (errorMsg.includes('رفع الصورة')) {
+                    showToast(`❌ فشل رفع الصورة: ${errorMsg}`, 'error');
+                } else if (errorMsg.includes('حفظ')) {
+                    showToast(`❌ فشل حفظ المنتج: ${errorMsg}`, 'error');
+                } else {
+                    showToast(`❌ فشل إضافة المنتج: ${errorMsg}`, 'error');
+                }
+                // إعادة تمكين الزر
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            } finally {
+                // التأكد من إعادة تمكين الزر في جميع الحالات
+                btn.disabled = false;
+                if (btn.innerHTML.includes('spinner')) {
+                    btn.innerHTML = orig;
+                }
+            }
         });
 
         // ============================================================
@@ -4319,6 +4441,7 @@
 
         console.log('✅ لوحة التحكم بروفيشنال جاهزة مع نظام طباعة متقدم - فتح صفحة منفصلة للفاتورة');
         console.log('✅ تم إضافة البحث المتقدم وتصنيفات المنتجات');
+        console.log('✅ تم تحسين رفع الصور مع إعادة المحاولة التلقائية لحل مشكلة الفشل');
     </script>
 </body>
 </html>
