@@ -2768,18 +2768,73 @@
         }
 
         // ============================================================
-        // ⭐ إدارة الكوبونات (مع حل مشكلة حفظ تاريخ الانتهاء)
+        // ⭐ إدارة الكوبونات مع التحديث التلقائي للحالة
         // ============================================================
 
-        async function loadCoupons() {
-            try {
-                const s = await get(ref(database, 'coupons'));
-                allCoupons = [];
-                if (s.exists()) {
-                    const d = s.val();
+        // دالة التحقق من حالة الكوبونات وتحديثها تلقائياً
+        async function checkCouponStatus() {
+            if (!allCoupons.length) return;
+            
+            let updated = false;
+            const now = new Date();
+            
+            for (const coupon of allCoupons) {
+                let shouldDeactivate = false;
+                let reason = '';
+                
+                // التحقق من انتهاء الصلاحية
+                if (coupon.expiry) {
+                    const expiryDate = new Date(coupon.expiry);
+                    if (expiryDate < now && coupon.active !== false) {
+                        shouldDeactivate = true;
+                        reason = 'انتهت صلاحية الكوبون';
+                    }
+                }
+                
+                // التحقق من استنفاذ عدد الاستخدامات
+                if (coupon.maxUses !== null && coupon.maxUses !== undefined) {
+                    const usedCount = coupon.usedCount || 0;
+                    if (usedCount >= coupon.maxUses && coupon.active !== false) {
+                        shouldDeactivate = true;
+                        reason = `تم استنفاذ الحد الأقصى للاستخدام (${usedCount}/${coupon.maxUses})`;
+                    }
+                }
+                
+                // إذا كان يجب إلغاء التفعيل، قم بتحديث قاعدة البيانات
+                if (shouldDeactivate && coupon.id) {
+                    try {
+                        await update(ref(database, `coupons/${coupon.id}`), { 
+                            active: false,
+                            deactivatedAt: Date.now(),
+                            deactivationReason: reason
+                        });
+                        console.log(`✅ تم إيقاف كوبون "${coupon.code}" تلقائياً: ${reason}`);
+                        updated = true;
+                    } catch (e) {
+                        console.error(`❌ فشل إيقاف كوبون "${coupon.code}":`, e);
+                    }
+                }
+            }
+            
+            // إذا تم تحديث أي كوبون، أعد تحميل البيانات
+            if (updated) {
+                await loadCoupons();
+            }
+        }
+
+        // تحميل الكوبونات مع استماع مباشر
+        function loadCoupons() {
+            if (!database) return;
+            
+            const couponsRef = ref(database, 'coupons');
+            
+            onValue(couponsRef, async (snap) => {
+                const coupons = [];
+                if (snap.exists()) {
+                    const d = snap.val();
                     for (const k in d) {
                         if (d.hasOwnProperty(k) && k !== '_init') {
-                            allCoupons.push({
+                            coupons.push({
                                 id: k,
                                 code: d[k].code || '',
                                 description: d[k].description || '',
@@ -2790,39 +2845,67 @@
                                 active: d[k].active !== false,
                                 expiry: d[k].expiry || d[k].expiryDate || null,
                                 createdAt: d[k].createdAt || Date.now(),
-                                updatedAt: d[k].updatedAt || null
+                                updatedAt: d[k].updatedAt || null,
+                                deactivatedAt: d[k].deactivatedAt || null,
+                                deactivationReason: d[k].deactivationReason || null
                             });
                         }
                     }
                 }
+                allCoupons = coupons;
                 renderCoupons();
-            } catch (e) {
-                console.error('Error loading coupons:', e);
+                
+                // التحقق من حالة الكوبونات بعد التحميل
+                await checkCouponStatus();
+                
+            }, (error) => {
+                console.error('❌ فشل تحميل الكوبونات:', error);
                 renderCoupons();
-            }
+            });
         }
 
         function renderCoupons() {
             const el = document.getElementById('couponsList');
             if (!el) return;
+            
             if (!allCoupons.length) {
-                el.innerHTML =
-                    `<div class="empty-state"><i class="fa-solid fa-ticket"></i><h3>لا توجد كوبونات</h3><p>أضف كوبون خصم جديد لجذب المزيد من العملاء</p></div>`;
+                el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-ticket"></i><h3>لا توجد كوبونات</h3><p>أضف كوبون خصم جديد لجذب المزيد من العملاء</p></div>`;
                 return;
             }
+            
             el.innerHTML = `<div class="coupons-grid">${allCoupons.map(c => {
                 const typeLabels = { percent: 'نسبة مئوية', fixed: 'قيمة ثابتة', free_shipping: 'شحن مجاني' };
-                const isExpired = c.expiry && new Date(c.expiry) < new Date();
+                
+                // التحقق من انتهاء الصلاحية في وقت العرض
+                const now = new Date();
+                const isExpired = c.expiry && new Date(c.expiry) < now;
                 const usedCount = c.usedCount || 0;
                 const maxUses = c.maxUses === null || c.maxUses === undefined ? '∞' : c.maxUses;
                 const remaining = maxUses === '∞' ? '∞' : maxUses - usedCount;
-                const isDeactivated = c.active === false;
                 const isMaxedOut = maxUses !== '∞' && usedCount >= maxUses;
+                const isDeactivated = c.active === false;
                 const isInactive = isDeactivated || isMaxedOut || isExpired;
-                const statusText = isExpired ? '⏰ منتهي' : (isDeactivated ? '⛔ موقوف' : (isMaxedOut ? '⛔ مستنفذ' : '✅ مفعل'));
-                const statusClass = isExpired ? 'badge-rejected' : (isDeactivated || isMaxedOut ? 'badge-pending' : 'badge-delivering');
+                
+                // تحديد حالة الكوبون
+                let statusText, statusClass;
+                if (isDeactivated && c.deactivationReason) {
+                    statusText = `⛔ ${c.deactivationReason}`;
+                    statusClass = 'badge-rejected';
+                } else if (isExpired) {
+                    statusText = '⏰ منتهي الصلاحية';
+                    statusClass = 'badge-rejected';
+                } else if (isMaxedOut) {
+                    statusText = '⛔ مستنفذ';
+                    statusClass = 'badge-pending';
+                } else {
+                    statusText = '✅ مفعل';
+                    statusClass = 'badge-delivering';
+                }
+                
                 const usagePercent = maxUses === '∞' ? 0 : Math.round((usedCount / maxUses) * 100);
                 const expiryDate = c.expiry ? new Date(c.expiry).toLocaleDateString('ar-EG') : 'غير محدد';
+                const deactivatedDate = c.deactivatedAt ? new Date(c.deactivatedAt).toLocaleDateString('ar-EG') : '';
+                
                 return `<div class="coupon-card" style="${isInactive ? 'opacity:0.6;border-color:var(--status-rejected);' : ''}">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
                         <span class="coupon-code">${c.code || '---'}</span>
@@ -2835,9 +2918,11 @@
                         <span>🔄 استخدم ${usedCount}/${maxUses} (متبقي ${remaining})</span>
                         ${maxUses !== '∞' ? `<span style="color:${usagePercent > 80 ? 'var(--status-pending)' : 'var(--text-muted)'};">📈 ${usagePercent}%</span>` : ''}
                         <span>📅 ينتهي: ${expiryDate}</span>
+                        ${c.deactivatedAt ? `<span style="color:var(--status-rejected);">⛔ تم الإيقاف: ${deactivatedDate}</span>` : ''}
                     </div>
-                    ${isMaxedOut ? `<div style="margin-top:8px;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:var(--radius-sm);color:var(--status-rejected);font-size:12px;border:1px solid rgba(239,68,68,0.2);">⚠️ تم استنفاذ الحد الأقصى للاستخدام</div>` : ''}
-                    ${isExpired ? `<div style="margin-top:8px;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:var(--radius-sm);color:var(--status-rejected);font-size:12px;border:1px solid rgba(239,68,68,0.2);">⏰ انتهت صلاحية الكوبون</div>` : ''}
+                    ${isMaxedOut ? `<div style="margin-top:8px;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:var(--radius-sm);color:var(--status-rejected);font-size:12px;border:1px solid rgba(239,68,68,0.2);">⚠️ تم استنفاذ الحد الأقصى للاستخدام (${usedCount}/${maxUses})</div>` : ''}
+                    ${isExpired ? `<div style="margin-top:8px;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:var(--radius-sm);color:var(--status-rejected);font-size:12px;border:1px solid rgba(239,68,68,0.2);">⏰ انتهت صلاحية الكوبون في ${expiryDate}</div>` : ''}
+                    ${c.deactivationReason && isDeactivated ? `<div style="margin-top:8px;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:var(--radius-sm);color:var(--status-rejected);font-size:12px;border:1px solid rgba(239,68,68,0.2);">ℹ️ ${c.deactivationReason}</div>` : ''}
                     <div class="product-actions" style="margin-top:12px;">
                         <button class="btn btn-gold btn-sm" onclick="window.openEditCouponModal('${c.id}')"><i class="fa-solid fa-pen"></i> تعديل</button>
                         <button class="btn ${isDeactivated || isMaxedOut || isExpired ? 'btn-success' : 'btn-outline'} btn-sm" onclick="window.toggleCouponStatus('${c.id}')">
@@ -2912,7 +2997,7 @@
                 await update(ref(database, `coupons/${couponId}`), updateData);
                 window.closeEditCouponModal();
                 showToast(`✅ تم تحديث كوبون "${code}" بنجاح`);
-                await loadCoupons();
+                // سيتم تحميل الكوبونات تلقائياً من خلال onValue
             } catch (e) {
                 console.error('Save coupon edit error:', e);
                 showToast('❌ فشل تحديث الكوبون: ' + e.message, 'error');
@@ -2965,7 +3050,7 @@
                 });
                 window.closeAddCouponModal();
                 showToast(`🎫 تم إضافة كوبون "${code}"`);
-                await loadCoupons();
+                // سيتم تحميل الكوبونات تلقائياً من خلال onValue
             } catch (e) {
                 console.error('Save coupon error:', e);
                 showToast('❌ فشل إضافة الكوبون: ' + e.message, 'error');
@@ -2975,11 +3060,19 @@
         window.toggleCouponStatus = async function(id) {
             const coupon = allCoupons.find(c => c.id === id);
             if (!coupon) return;
+            
             try {
+                // التحقق من الصلاحية قبل التفعيل
                 if (coupon.active !== false) {
-                    await update(ref(database, `coupons/${id}`), { active: false });
+                    // إيقاف الكوبون
+                    await update(ref(database, `coupons/${id}`), { 
+                        active: false,
+                        deactivatedAt: Date.now(),
+                        deactivationReason: 'تم الإيقاف يدوياً'
+                    });
                     showToast('⏸️ تم إيقاف الكوبون');
                 } else {
+                    // التحقق من انتهاء الصلاحية قبل التفعيل
                     if (coupon.expiry && new Date(coupon.expiry) < new Date()) {
                         showToast('⚠️ لا يمكن تفعيل كوبون منتهي الصلاحية', 'error');
                         return;
@@ -2988,10 +3081,14 @@
                         showToast('⚠️ لا يمكن تفعيل كوبون مستنفذ الحد الأقصى', 'error');
                         return;
                     }
-                    await update(ref(database, `coupons/${id}`), { active: true });
+                    await update(ref(database, `coupons/${id}`), { 
+                        active: true,
+                        deactivatedAt: null,
+                        deactivationReason: null
+                    });
                     showToast('✅ تم تفعيل الكوبون');
                 }
-                await loadCoupons();
+                // سيتم تحميل الكوبونات تلقائياً من خلال onValue
             } catch (e) {
                 console.error('Toggle coupon error:', e);
                 showToast('❌ فشل تغيير الحالة', 'error');
@@ -3004,7 +3101,7 @@
             try {
                 await remove(ref(database, `coupons/${id}`));
                 showToast('🗑️ تم حذف الكوبون');
-                await loadCoupons();
+                // سيتم تحميل الكوبونات تلقائياً من خلال onValue
             } catch (e) {
                 console.error('Delete coupon error:', e);
                 showToast('❌ فشل الحذف', 'error');
@@ -4088,12 +4185,17 @@
             loadStoredAnalytics();
             loadMessageLog();
             loadWalletSettings();
-            loadCoupons();
+            loadCoupons(); // سيتم تحميل الكوبونات مع الاستماع المباشر
             loadFlashSaleSettings();
             renderOrders();
             renderProducts();
             updateStats();
             setTimeout(() => updateAnalyticsCache(), 1200);
+            
+            // تشغيل فحص دوري للكوبونات كل 60 ثانية
+            setInterval(async () => {
+                await checkCouponStatus();
+            }, 60000);
         }
 
         function showLogin() {
@@ -4415,7 +4517,7 @@
         };
 
         console.log('✅ لوحة التحكم بروفيشنال جاهزة مع نظام رفع الصور بشريط تحميل');
-        console.log('✅ تم حل مشكلة حفظ تاريخ انتهاء الكوبونات نهائياً');
+        console.log('✅ تم حل مشكلة إيقاف الكوبونات تلقائياً عند انتهاء الصلاحية أو استنفاذ الاستخدام');
     </script>
 </body>
 </html>
