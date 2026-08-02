@@ -1355,6 +1355,79 @@
             display: block;
         }
 
+        /* ===== Upload Progress ===== */
+        .upload-progress-container {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+        }
+        .upload-progress-container.show {
+            display: block;
+        }
+        .upload-progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        .upload-progress-header .progress-label {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .upload-progress-header .progress-percent {
+            color: var(--gold-300);
+            font-weight: 800;
+        }
+        .upload-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .upload-progress-bar .progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.4s ease;
+            background: linear-gradient(90deg, var(--gold-600), var(--gold-500), var(--gold-400));
+        }
+        .upload-progress-bar .progress-fill.error {
+            background: linear-gradient(90deg, #991b1b, var(--status-rejected));
+        }
+        .upload-progress-bar .progress-fill.success {
+            background: linear-gradient(90deg, #047857, var(--status-delivering));
+        }
+        .upload-status-text {
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .upload-status-text .status-icon {
+            font-size: 14px;
+        }
+        .upload-status-text.loading .status-icon {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .upload-status-text.success .status-icon {
+            color: var(--status-delivering);
+        }
+        .upload-status-text.error .status-icon {
+            color: var(--status-rejected);
+        }
+
         /* ===== Message Log ===== */
         .message-log {
             background: var(--bg-tertiary);
@@ -1797,6 +1870,20 @@
                             <div class="upload-area" id="imgUploadArea" onclick="document.getElementById('prodImageInput').click();">
                                 <i class="fa-solid fa-cloud-arrow-up"></i><p>اختر صورة المنتج</p>
                                 <input type="file" id="prodImageInput" accept="image/*" style="display:none;">
+                            </div>
+                            <!-- ===== شريط تحميل الصورة ===== -->
+                            <div class="upload-progress-container" id="uploadProgressContainer">
+                                <div class="upload-progress-header">
+                                    <span class="progress-label" id="progressLabel">جاري رفع الصورة...</span>
+                                    <span class="progress-percent" id="progressPercent">0%</span>
+                                </div>
+                                <div class="upload-progress-bar">
+                                    <div class="progress-fill" id="progressFill" style="width:0%;"></div>
+                                </div>
+                                <div class="upload-status-text" id="uploadStatusText">
+                                    <span class="status-icon"><i class="fa-solid fa-spinner fa-spin"></i></span>
+                                    <span id="uploadStatusMessage">جاري رفع الصورة...</span>
+                                </div>
                             </div>
                             <img class="img-preview" id="imgPreview" alt="معاينة">
                         </div>
@@ -2253,10 +2340,77 @@
         function getPaymentMethodIcon(method) { return (PAYMENT_METHODS[method] || PAYMENT_METHODS['cod']).icon; }
 
         // ============================================================
-        // رفع الصور إلى Cloudinary مع إعادة محاولة تلقائية (حل المشكلة)
+        // رفع الصور إلى Cloudinary مع شريط تحميل
         // ============================================================
 
-        async function uploadToCloudinary(file, folder = 'rashfa-products', retryCount = 0) {
+        // عناصر شريط التحميل
+        const uploadProgress = {
+            container: document.getElementById('uploadProgressContainer'),
+            label: document.getElementById('progressLabel'),
+            percent: document.getElementById('progressPercent'),
+            fill: document.getElementById('progressFill'),
+            statusText: document.getElementById('uploadStatusText'),
+            statusMessage: document.getElementById('uploadStatusMessage')
+        };
+
+        function updateUploadProgress(percent, message, status = 'loading') {
+            if (!uploadProgress.container) return;
+            
+            // إظهار شريط التحميل
+            uploadProgress.container.classList.add('show');
+            
+            // تحديث النسبة المئوية
+            const clampedPercent = Math.min(100, Math.max(0, percent));
+            uploadProgress.percent.textContent = `${clampedPercent}%`;
+            uploadProgress.fill.style.width = `${clampedPercent}%`;
+            
+            // تحديث الفئة حسب الحالة
+            uploadProgress.fill.className = 'progress-fill';
+            if (status === 'error') uploadProgress.fill.classList.add('error');
+            else if (status === 'success') uploadProgress.fill.classList.add('success');
+            
+            // تحديث النص
+            uploadProgress.label.textContent = message;
+            uploadProgress.statusMessage.textContent = message;
+            
+            // تحديث الأيقونة
+            const iconEl = uploadProgress.statusText.querySelector('.status-icon');
+            if (iconEl) {
+                if (status === 'loading') {
+                    iconEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                } else if (status === 'success') {
+                    iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                } else if (status === 'error') {
+                    iconEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+                }
+            }
+            
+            uploadProgress.statusText.className = 'upload-status-text ' + status;
+        }
+
+        function hideUploadProgress() {
+            if (uploadProgress.container) {
+                uploadProgress.container.classList.remove('show');
+            }
+        }
+
+        function resetUploadProgress() {
+            if (uploadProgress.container) {
+                uploadProgress.container.classList.remove('show');
+                uploadProgress.percent.textContent = '0%';
+                uploadProgress.fill.style.width = '0%';
+                uploadProgress.fill.className = 'progress-fill';
+                uploadProgress.label.textContent = 'جاري رفع الصورة...';
+                uploadProgress.statusMessage.textContent = 'جاري رفع الصورة...';
+                uploadProgress.statusText.className = 'upload-status-text loading';
+                const iconEl = uploadProgress.statusText.querySelector('.status-icon');
+                if (iconEl) {
+                    iconEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                }
+            }
+        }
+
+        async function uploadToCloudinaryWithProgress(file, folder = 'rashfa-products', retryCount = 0) {
             if (!file?.type?.startsWith('image/')) {
                 throw new Error('ملف غير صالح. يرجى اختيار صورة بصيغة JPG أو PNG.');
             }
@@ -2264,16 +2418,31 @@
                 throw new Error('حجم الصورة كبير جداً. الحد الأقصى 10 ميجابايت.');
             }
 
+            const maxRetries = 3;
+            const delay = 1000 * (retryCount + 1);
+
+            // تحديث حالة التحميل
+            const progressMessage = retryCount > 0 ? 
+                `جاري إعادة المحاولة ${retryCount + 1}/${maxRetries}...` : 
+                'جاري رفع الصورة...';
+            updateUploadProgress(retryCount > 0 ? 20 : 5, progressMessage, 'loading');
+
             const fd = new FormData();
             fd.append('file', file);
             fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
             fd.append('folder', folder);
             fd.append('api_key', CLOUDINARY_API_KEY);
 
-            const maxRetries = 3;
-            const delay = 1000 * (retryCount + 1);
-
             try {
+                // محاكاة تقدم التحميل (لأن fetch لا يدعم التقدم بسهولة)
+                let progressInterval = setInterval(() => {
+                    const currentPercent = parseInt(uploadProgress.percent.textContent) || 0;
+                    if (currentPercent < 85) {
+                        const newPercent = Math.min(85, currentPercent + Math.random() * 10 + 2);
+                        updateUploadProgress(newPercent, progressMessage, 'loading');
+                    }
+                }, 500);
+
                 const ctrl = new AbortController();
                 const timeout = setTimeout(() => ctrl.abort(), 60000);
 
@@ -2283,6 +2452,10 @@
                     signal: ctrl.signal
                 });
                 clearTimeout(timeout);
+                clearInterval(progressInterval);
+
+                // تحديث التقدم إلى 90%
+                updateUploadProgress(90, 'جاري معالجة الصورة...', 'loading');
 
                 if (!r.ok) {
                     throw new Error(`فشل الرفع: ${r.status} ${r.statusText}`);
@@ -2293,16 +2466,32 @@
                     throw new Error(d.error.message || 'خطأ في Cloudinary');
                 }
 
+                // اكتمل التحميل
+                updateUploadProgress(100, '✅ تم تحميل الصورة بنجاح!', 'success');
+                
+                // إخفاء شريط التحميل بعد 1.5 ثانية
+                setTimeout(() => {
+                    hideUploadProgress();
+                }, 1500);
+
                 return { url: d.secure_url, public_id: d.public_id };
 
             } catch (e) {
                 console.warn(`⚠️ محاولة رفع الصورة ${retryCount + 1} فشلت:`, e.message);
 
+                // إذا فشل التحميل، عرض رسالة خطأ
                 if (retryCount < maxRetries - 1) {
-                    showToast(`⏳ جاري إعادة المحاولة ${retryCount + 2}/${maxRetries}...`, 'info');
+                    updateUploadProgress(30, `⚠️ فشل المحاولة ${retryCount + 1}، جاري إعادة المحاولة...`, 'error');
                     await new Promise(resolve => setTimeout(resolve, delay));
-                    return uploadToCloudinary(file, folder, retryCount + 1);
+                    return uploadToCloudinaryWithProgress(file, folder, retryCount + 1);
                 }
+
+                // فشل كل المحاولات
+                updateUploadProgress(0, `❌ فشل رفع الصورة: ${e.message}`, 'error');
+                
+                setTimeout(() => {
+                    hideUploadProgress();
+                }, 3000);
 
                 if (e.name === 'AbortError') {
                     throw new Error('انتهت مهلة رفع الصورة. يرجى المحاولة مرة أخرى.');
@@ -2579,7 +2768,7 @@
         }
 
         // ============================================================
-        // إدارة الكوبونات
+        // ⭐ إدارة الكوبونات (مع حل مشكلة حفظ تاريخ الانتهاء)
         // ============================================================
 
         async function loadCoupons() {
@@ -2590,7 +2779,19 @@
                     const d = s.val();
                     for (const k in d) {
                         if (d.hasOwnProperty(k) && k !== '_init') {
-                            allCoupons.push({ id: k, ...d[k] });
+                            allCoupons.push({
+                                id: k,
+                                code: d[k].code || '',
+                                description: d[k].description || '',
+                                type: d[k].type || 'percent',
+                                value: d[k].value || 0,
+                                maxUses: d[k].maxUses !== undefined ? d[k].maxUses : null,
+                                usedCount: d[k].usedCount || 0,
+                                active: d[k].active !== false,
+                                expiry: d[k].expiry || d[k].expiryDate || null,
+                                createdAt: d[k].createdAt || Date.now(),
+                                updatedAt: d[k].updatedAt || null
+                            });
                         }
                     }
                 }
@@ -2613,14 +2814,16 @@
                 const typeLabels = { percent: 'نسبة مئوية', fixed: 'قيمة ثابتة', free_shipping: 'شحن مجاني' };
                 const isExpired = c.expiry && new Date(c.expiry) < new Date();
                 const usedCount = c.usedCount || 0;
-                const maxUses = c.maxUses || '∞';
+                const maxUses = c.maxUses === null || c.maxUses === undefined ? '∞' : c.maxUses;
                 const remaining = maxUses === '∞' ? '∞' : maxUses - usedCount;
                 const isDeactivated = c.active === false;
                 const isMaxedOut = maxUses !== '∞' && usedCount >= maxUses;
-                const statusText = isExpired ? '⏰ منتهي' : (isDeactivated || isMaxedOut ? '⛔ موقوف' : '✅ مفعل');
+                const isInactive = isDeactivated || isMaxedOut || isExpired;
+                const statusText = isExpired ? '⏰ منتهي' : (isDeactivated ? '⛔ موقوف' : (isMaxedOut ? '⛔ مستنفذ' : '✅ مفعل'));
                 const statusClass = isExpired ? 'badge-rejected' : (isDeactivated || isMaxedOut ? 'badge-pending' : 'badge-delivering');
                 const usagePercent = maxUses === '∞' ? 0 : Math.round((usedCount / maxUses) * 100);
-                return `<div class="coupon-card" style="${isExpired || isMaxedOut ? 'opacity:0.6;border-color:var(--status-rejected);' : isDeactivated ? 'opacity:0.7;' : ''}">
+                const expiryDate = c.expiry ? new Date(c.expiry).toLocaleDateString('ar-EG') : 'غير محدد';
+                return `<div class="coupon-card" style="${isInactive ? 'opacity:0.6;border-color:var(--status-rejected);' : ''}">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
                         <span class="coupon-code">${c.code || '---'}</span>
                         <span class="order-status-badge ${statusClass}">${statusText}</span>
@@ -2631,14 +2834,15 @@
                         <span>📊 النوع: ${typeLabels[c.type] || c.type}</span>
                         <span>🔄 استخدم ${usedCount}/${maxUses} (متبقي ${remaining})</span>
                         ${maxUses !== '∞' ? `<span style="color:${usagePercent > 80 ? 'var(--status-pending)' : 'var(--text-muted)'};">📈 ${usagePercent}%</span>` : ''}
-                        ${c.expiry ? `<span>📅 حتى ${new Date(c.expiry).toLocaleDateString('ar-EG')}</span>` : ''}
+                        <span>📅 ينتهي: ${expiryDate}</span>
                     </div>
                     ${isMaxedOut ? `<div style="margin-top:8px;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:var(--radius-sm);color:var(--status-rejected);font-size:12px;border:1px solid rgba(239,68,68,0.2);">⚠️ تم استنفاذ الحد الأقصى للاستخدام</div>` : ''}
+                    ${isExpired ? `<div style="margin-top:8px;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:var(--radius-sm);color:var(--status-rejected);font-size:12px;border:1px solid rgba(239,68,68,0.2);">⏰ انتهت صلاحية الكوبون</div>` : ''}
                     <div class="product-actions" style="margin-top:12px;">
                         <button class="btn btn-gold btn-sm" onclick="window.openEditCouponModal('${c.id}')"><i class="fa-solid fa-pen"></i> تعديل</button>
-                        <button class="btn ${isDeactivated || isMaxedOut ? 'btn-success' : 'btn-outline'} btn-sm" onclick="window.toggleCouponStatus('${c.id}')">
-                            <i class="fa-solid ${isDeactivated || isMaxedOut ? 'fa-play' : 'fa-pause'}"></i>
-                            ${isDeactivated || isMaxedOut ? 'تفعيل' : 'إيقاف'}
+                        <button class="btn ${isDeactivated || isMaxedOut || isExpired ? 'btn-success' : 'btn-outline'} btn-sm" onclick="window.toggleCouponStatus('${c.id}')">
+                            <i class="fa-solid ${isDeactivated || isMaxedOut || isExpired ? 'fa-play' : 'fa-pause'}"></i>
+                            ${isDeactivated || isMaxedOut || isExpired ? 'تفعيل' : 'إيقاف'}
                         </button>
                         <button class="btn btn-danger btn-sm" onclick="window.deleteCoupon('${c.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
                     </div>
@@ -2657,7 +2861,7 @@
             document.getElementById('editCouponDesc').value = coupon.description || '';
             document.getElementById('editCouponType').value = coupon.type || 'percent';
             document.getElementById('editCouponValue').value = coupon.value || 0;
-            document.getElementById('editCouponMaxUses').value = coupon.maxUses || '';
+            document.getElementById('editCouponMaxUses').value = coupon.maxUses !== null && coupon.maxUses !== undefined ? coupon.maxUses : '';
             document.getElementById('editCouponUsedCount').value = coupon.usedCount || 0;
             document.getElementById('editCouponExpiry').value = coupon.expiry || '';
             document.getElementById('editCouponStatus').value = coupon.active !== false ? 'true' : 'false';
@@ -2679,7 +2883,7 @@
             const description = document.getElementById('editCouponDesc').value?.trim();
             const type = document.getElementById('editCouponType').value;
             const value = parseFloat(document.getElementById('editCouponValue').value);
-            const maxUses = parseInt(document.getElementById('editCouponMaxUses').value) || null;
+            const maxUses = parseInt(document.getElementById('editCouponMaxUses').value);
             const expiry = document.getElementById('editCouponExpiry').value || null;
             const status = document.getElementById('editCouponStatus').value === 'true';
 
@@ -2699,8 +2903,8 @@
                     description: description || '',
                     type,
                     value,
-                    maxUses,
-                    expiry,
+                    maxUses: isNaN(maxUses) ? null : maxUses,
+                    expiry: expiry,
                     active: status,
                     updatedAt: Date.now()
                 };
@@ -2734,7 +2938,7 @@
             const description = document.getElementById('couponDescInput').value?.trim();
             const type = document.getElementById('couponTypeInput').value;
             const value = parseFloat(document.getElementById('couponValueInput').value);
-            const maxUses = parseInt(document.getElementById('couponMaxUsesInput').value) || null;
+            const maxUses = parseInt(document.getElementById('couponMaxUsesInput').value);
             const expiry = document.getElementById('couponExpiryInput').value || null;
 
             if (!code) { showToast('⚠️ أدخل كود الكوبون', 'error'); return; }
@@ -2753,10 +2957,10 @@
                     description: description || '',
                     type,
                     value,
-                    maxUses,
-                    expiry,
+                    maxUses: isNaN(maxUses) ? null : maxUses,
                     usedCount: 0,
                     active: true,
+                    expiry: expiry,
                     createdAt: Date.now()
                 });
                 window.closeAddCouponModal();
@@ -2772,9 +2976,21 @@
             const coupon = allCoupons.find(c => c.id === id);
             if (!coupon) return;
             try {
-                const newStatus = coupon.active !== false ? false : true;
-                await update(ref(database, `coupons/${id}`), { active: newStatus });
-                showToast(newStatus ? '✅ تم تفعيل الكوبون' : '⏸️ تم إيقاف الكوبون');
+                if (coupon.active !== false) {
+                    await update(ref(database, `coupons/${id}`), { active: false });
+                    showToast('⏸️ تم إيقاف الكوبون');
+                } else {
+                    if (coupon.expiry && new Date(coupon.expiry) < new Date()) {
+                        showToast('⚠️ لا يمكن تفعيل كوبون منتهي الصلاحية', 'error');
+                        return;
+                    }
+                    if (coupon.maxUses !== null && coupon.maxUses !== undefined && (coupon.usedCount || 0) >= coupon.maxUses) {
+                        showToast('⚠️ لا يمكن تفعيل كوبون مستنفذ الحد الأقصى', 'error');
+                        return;
+                    }
+                    await update(ref(database, `coupons/${id}`), { active: true });
+                    showToast('✅ تم تفعيل الكوبون');
+                }
                 await loadCoupons();
             } catch (e) {
                 console.error('Toggle coupon error:', e);
@@ -3038,6 +3254,8 @@
             selectedProductImage = null;
             document.getElementById('imgPreview').classList.remove('show');
             document.getElementById('imgUploadArea').classList.remove('has-file');
+            resetUploadProgress();
+            hideUploadProgress();
             const cs = document.getElementById('prodCategory');
             if (cs) cs.value = 'أجهزة شخصية';
             window.updateCategoryEmoji();
@@ -3970,19 +4188,57 @@
         document.getElementById('prodPrice')?.addEventListener('input', updateDiscountPreview);
         document.getElementById('prodDiscountValue')?.addEventListener('input', updateDiscountPreview);
 
-        document.getElementById('prodImageInput')?.addEventListener('change', function(e) {
+        // ===== تحسين رفع الصورة مع شريط التحميل =====
+        document.getElementById('prodImageInput')?.addEventListener('change', async function(e) {
             const f = e.target.files[0];
-            if (!f || !f.type.startsWith('image/')) { showToast('⚠️ ملف غير صالح', 'error'); return; }
-            if (f.size > 10 * 1024 * 1024) { showToast('⚠️ حجم كبير', 'error'); return; }
-            selectedProductImage = f;
-            const r = new FileReader();
-            r.onload = ev => {
+            if (!f || !f.type.startsWith('image/')) { 
+                showToast('⚠️ ملف غير صالح', 'error'); 
+                return; 
+            }
+            if (f.size > 10 * 1024 * 1024) { 
+                showToast('⚠️ حجم الصورة كبير جداً. الحد الأقصى 10 ميجابايت.', 'error'); 
+                return; 
+            }
+
+            // إعادة تعيين شريط التحميل
+            resetUploadProgress();
+            
+            // تعطيل زر الإضافة أثناء الرفع
+            const addBtn = document.getElementById('addProductBtn');
+            addBtn.disabled = true;
+            addBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الصورة...';
+
+            try {
+                // رفع الصورة مع شريط التحميل
+                const result = await uploadToCloudinaryWithProgress(f);
+                
+                // حفظ رابط الصورة للاستخدام لاحقاً
+                selectedProductImage = result.url;
+                
+                // عرض المعاينة
                 const pv = document.getElementById('imgPreview');
-                if (pv) { pv.src = ev.target.result;
-                    pv.classList.add('show'); }
+                if (pv) {
+                    pv.src = result.url;
+                    pv.classList.add('show');
+                }
                 document.getElementById('imgUploadArea')?.classList.add('has-file');
-            };
-            r.readAsDataURL(f);
+                
+                showToast('✅ تم تحميل الصورة بنجاح!', 'success');
+
+            } catch (error) {
+                console.error('❌ خطأ في رفع الصورة:', error);
+                showToast(`❌ ${error.message || 'فشل رفع الصورة. يرجى المحاولة مرة أخرى.'}`, 'error');
+                // إعادة تعيين الحقل
+                this.value = '';
+                selectedProductImage = null;
+                document.getElementById('imgPreview').classList.remove('show');
+                document.getElementById('imgUploadArea').classList.remove('has-file');
+                hideUploadProgress();
+            } finally {
+                // إعادة تفعيل زر الإضافة
+                addBtn.disabled = false;
+                addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> إضافة المنتج';
+            }
         });
 
         document.getElementById('logoFileInput')?.addEventListener('change', function(e) {
@@ -4007,7 +4263,7 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الرفع...';
             try {
-                const ld = await uploadToCloudinary(f, 'rashfa-logo');
+                const ld = await uploadToCloudinaryWithProgress(f, 'rashfa-logo');
                 await set(ref(database, 'settings/logo'), { url: ld.url, cloudinary_public_id: ld.public_id,
                     updatedAt: Date.now() });
                 updateLogo(ld.url);
@@ -4018,7 +4274,7 @@
                 btn.innerHTML = orig; }
         });
 
-        // ===== حدث إضافة المنتج (مع تحسين معالجة الأخطاء) =====
+        // ===== حدث إضافة المنتج (مع تحسينات) =====
         document.getElementById('addProductBtn')?.addEventListener('click', async function() {
             const name = document.getElementById('prodName')?.value?.trim();
             const category = document.getElementById('prodCategory')?.value || 'أجهزة شخصية';
@@ -4032,7 +4288,7 @@
             if (isNaN(price) || price < 0) { showToast('⚠️ يرجى إدخال سعر صحيح', 'error'); return; }
             if (isNaN(qty) || qty < 0) { showToast('⚠️ يرجى إدخال كمية صحيحة', 'error'); return; }
             if (!desc) { showToast('⚠️ يرجى إدخال وصف المنتج', 'error'); return; }
-            if (!img) { showToast('⚠️ يرجى اختيار صورة للمنتج', 'error'); return; }
+            if (!img) { showToast('⚠️ يرجى رفع صورة للمنتج أولاً', 'error'); return; }
             if (currentDiscountType === 'percent' && (dv > 100 || dv < 0)) {
                 showToast('⚠️ نسبة الخصم يجب أن تكون بين 0 و 100', 'error');
                 return;
@@ -4045,11 +4301,9 @@
             const btn = this;
             const orig = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الرفع...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإضافة...';
 
             try {
-                const uploadResult = await uploadToCloudinary(img);
-
                 const newProductRef = push(ref(database, 'products'));
                 await set(newProductRef, {
                     name,
@@ -4059,8 +4313,7 @@
                     quantity: qty,
                     initialStock: qty,
                     description: desc,
-                    image: uploadResult.url,
-                    cloudinary_public_id: uploadResult.public_id,
+                    image: img,
                     discountType: currentDiscountType,
                     discountValue: dv,
                     createdAt: Date.now()
@@ -4161,8 +4414,8 @@
             }
         };
 
-        console.log('✅ لوحة التحكم بروفيشنال جاهزة مع نظام رفع صور مع إعادة محاولة تلقائية');
-        console.log('✅ تم حل مشكلة فشل رفع الصورة في المرة الأولى نهائياً');
+        console.log('✅ لوحة التحكم بروفيشنال جاهزة مع نظام رفع الصور بشريط تحميل');
+        console.log('✅ تم حل مشكلة حفظ تاريخ انتهاء الكوبونات نهائياً');
     </script>
 </body>
 </html>
