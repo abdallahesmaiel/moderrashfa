@@ -2517,30 +2517,30 @@
 
             let couponLine = '';
             if (discount > 0) {
-                couponLine = `🎫 خصم الكوبون (${coupon.code || ''}): -${discount.toFixed(2)} ج\n`;
+couponLine = `🎫 خصم الكوبون (${coupon.code || ''}): -${discount.toFixed(2)} ج\n`;
             }
 
-            return `مرحباً ${o.recipientName || 'عميلنا'}،
+return `مرحباً ${o.recipientName || 'عميلنا'}،
 
-        ✅ تم قبول طلبك #${(o.id || '').slice(-8)}
+✅ تم قبول طلبك #${(o.id || '').slice(-8)}
 
-        📋 تفاصيل الطلب:
-        ${itemsList}
+📋 تفاصيل الطلب:
+${itemsList}
 
-        💰 تفاصيل المبلغ:
-        🛒 إجمالي المنتجات: ${subtotal.toFixed(2)} ج
-        ${deliveryFee > 0 ? `🚚 رسوم التوصيل: ${deliveryFee.toFixed(2)} ج` : '🚚 رسوم التوصيل: مجاناً 🎉'}
-        ${codFee > 0 ? `💳 رسوم الدفع عند الاستلام: ${codFee.toFixed(2)} ج` : ''}
-        ${couponLine}
-        💰 الإجمالي الكلي: ${total.toFixed(2)} ج
+💰 تفاصيل المبلغ:
+🛒 إجمالي المنتجات: ${subtotal.toFixed(2)} ج
+${deliveryFee > 0 ? `🚚 رسوم التوصيل: ${deliveryFee.toFixed(2)} ج` : '🚚 رسوم التوصيل: مجاناً 🎉'}
+${codFee > 0 ? `💳 رسوم الدفع عند الاستلام: ${codFee.toFixed(2)} ج` : ''}
+${couponLine}
+💰 الإجمالي الكلي: ${total.toFixed(2)} ج
 
-        💳 طريقة الدفع: ${pmName}
-        📍 العنوان: ${o.address || '---'}
-        📞 هاتف: ${o.phone || '---'}
+💳 طريقة الدفع: ${pmName}
+📍 العنوان: ${o.address || '---'}
+📞 هاتف: ${o.phone || '---'}
 
-        🚚 سيتم تجهيز طلبك خلال 24 ساعة
-        🏪 بروفيشنال
-        📞 01103127696`;
+🚚 سيتم تجهيز طلبك خلال 24 ساعة
+🏪 بروفيشنال
+📞 01103127696`;
         }
 
         function msgDelivering(o) {
@@ -2549,22 +2549,22 @@
             const paymentMethod = o.paymentMethod || 'cod';
             const pmName = getPaymentMethodName(paymentMethod);
 
-            return `مرحباً ${o.recipientName || 'عميلنا'}،
+return `مرحباً ${o.recipientName || 'عميلنا'}،
 
-        🚚 طلبك #${(o.id || '').slice(-8)} في الطريق!
+🚚 طلبك #${(o.id || '').slice(-8)} في الطريق!
 
-        📍 عنوان التوصيل: ${o.address || '---'}
-        📞 هاتف: ${o.phone || '---'}
+📍 عنوان التوصيل: ${o.address || '---'}
+📞 هاتف: ${o.phone || '---'}
 
-        📋 المنتجات:
-        ${itemsList}
+📋 المنتجات:
+${itemsList}
 
-        💰 المبلغ الإجمالي: ${total.toFixed(2)} ج
-        💳 طريقة الدفع: ${pmName}
+💰 المبلغ الإجمالي: ${total.toFixed(2)} ج
+💳 طريقة الدفع: ${pmName}
 
-        📦 سيتم التوصيل خلال 30-60 دقيقة
-        🏪 بروفيشنال
-        📞 01103127696`;
+📦 سيتم التوصيل خلال 30-60 دقيقة
+🏪 بروفيشنال
+📞 01103127696`;
         }
 
         function msgDelivered(o) {
@@ -2580,40 +2580,40 @@
 
             let couponLine = '';
             if (discount > 0) {
-                couponLine = `🎫 خصم الكوبون (${coupon.code || ''}): -${discount.toFixed(2)} ج\n`;
+ couponLine = `🎫 خصم الكوبون (${coupon.code || ''}): -${discount.toFixed(2)} ج\n`;
             }
 
-            return `مرحباً ${o.recipientName || 'عميلنا'}،
+ return `مرحباً ${o.recipientName || 'عميلنا'}،
 
-        📦 تم استلام طلبك #${(o.id || '').slice(-8)} ✅
+📦 تم استلام طلبك #${(o.id || '').slice(-8)} ✅
 
-        📋 تفاصيل الطلب المستلم:
-        ${itemsList}
+📋 تفاصيل الطلب المستلم:
+${itemsList}
 
-        💰 تفاصيل المبلغ المدفوع:
-        🛒 إجمالي المنتجات: ${subtotal.toFixed(2)} ج
-        ${deliveryFee > 0 ? `🚚 رسوم التوصيل: ${deliveryFee.toFixed(2)} ج` : '🚚 رسوم التوصيل: مجاناً 🎉'}
-        ${codFee > 0 ? `💳 رسوم الدفع عند الاستلام: ${codFee.toFixed(2)} ج` : ''}
-        ${couponLine}
-        💰 الإجمالي الكلي: ${total.toFixed(2)} ج
+💰 تفاصيل المبلغ المدفوع:
+🛒 إجمالي المنتجات: ${subtotal.toFixed(2)} ج
+${deliveryFee > 0 ? `🚚 رسوم التوصيل: ${deliveryFee.toFixed(2)} ج` : '🚚 رسوم التوصيل: مجاناً 🎉'}
+${codFee > 0 ? `💳 رسوم الدفع عند الاستلام: ${codFee.toFixed(2)} ج` : ''}
+${couponLine}
+💰 الإجمالي الكلي: ${total.toFixed(2)} ج
 
-        💳 طريقة الدفع: ${pmName}
+💳 طريقة الدفع: ${pmName}
 
-        🏪 شكراً لاختيارك بروفيشنال
-        ⭐ نتمنى أن تكون تجربتك ممتعة
-        📞 01103127696`;
+🏪 شكراً لاختيارك بروفيشنال
+⭐ نتمنى أن تكون تجربتك ممتعة
+📞 01103127696`;
         }
 
         function msgRejected(o) {
-            return `مرحباً ${o.recipientName || 'عميلنا'}،
+ return `مرحباً ${o.recipientName || 'عميلنا'}،
 
-        ❌ تم رفض طلبك #${(o.id || '').slice(-8)}
+❌ تم رفض طلبك #${(o.id || '').slice(-8)}
 
-        السبب: ${o.rejectionReason || 'أسباب تقنية'}
+السبب: ${o.rejectionReason || 'أسباب تقنية'}
 
-        📞 للاستفسار: 01103127696
+📞 للاستفسار: 01103127696
 
-        🏪 بروفيشنال`;
+🏪 بروفيشنال`;
         }
 
         async function sendWhatsApp(phone, message, type = 'واتساب') {
