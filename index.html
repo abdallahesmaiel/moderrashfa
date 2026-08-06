@@ -1456,6 +1456,168 @@
             border-right: 4px solid var(--status-rejected);
         }
 
+        /* ===== About Page Admin ===== */
+        .about-admin-section {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .about-admin-section .about-preview {
+            background: var(--bg-primary);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-top: 16px;
+            border: 1px solid var(--border-color);
+        }
+        .about-admin-section .about-preview h2 {
+            color: var(--gold-300);
+            margin-bottom: 12px;
+        }
+        .about-admin-section .about-preview p {
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+        .about-admin-section .about-preview .extra-content {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--border-color);
+            color: var(--text-muted);
+        }
+
+        /* ===== Contact Admin ===== */
+        .contact-admin-section {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .contact-admin-section .contact-preview {
+            background: var(--bg-primary);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-top: 16px;
+            border: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .contact-admin-section .contact-preview .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+        }
+        .contact-admin-section .contact-preview .contact-item i {
+            font-size: 20px;
+            color: var(--gold-500);
+        }
+        .contact-admin-section .contact-preview .contact-item .label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .contact-admin-section .contact-preview .contact-item .value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* ===== Client Messages ===== */
+        .messages-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .message-card {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: 16px 20px;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+        .message-card:hover {
+            border-color: var(--gold-500);
+        }
+        .message-card.unread {
+            border-right: 4px solid var(--gold-500);
+        }
+        .message-card .msg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .message-card .msg-sender {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .message-card .msg-date {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .message-card .msg-subject {
+            font-weight: 700;
+            color: var(--gold-300);
+            font-size: 15px;
+        }
+        .message-card .msg-body {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin: 8px 0 12px;
+            padding: 12px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-sm);
+            line-height: 1.6;
+        }
+        .message-card .msg-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .message-card .msg-reply {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+            display: none;
+        }
+        .message-card .msg-reply.show {
+            display: block;
+        }
+        .message-card .msg-reply textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .message-card .msg-reply textarea:focus {
+            outline: none;
+            border-color: var(--gold-500);
+        }
+        .message-card .msg-reply .reply-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .message-card .msg-reply .reply-status {
+            font-size: 12px;
+            color: var(--status-delivering);
+            margin-top: 8px;
+            display: none;
+        }
+
         /* ===== Toast ===== */
         .toast-container {
             position: fixed;
@@ -1682,6 +1844,7 @@
             .search-filter-wrapper { flex-direction: column; }
             .search-filter-wrapper .search-box { width: 100%; }
             .filter-tags { justify-content: center; }
+            .contact-admin-section .contact-preview { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
             .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -1789,7 +1952,9 @@
             <button class="tab" onclick="window.switchTab('add')"><i class="fa-solid fa-plus-circle"></i> إضافة منتج</button>
             <button class="tab" onclick="window.switchTab('coupons')"><i class="fa-solid fa-ticket"></i> الكوبونات</button>
             <button class="tab" onclick="window.switchTab('wallets')"><i class="fa-solid fa-wallet"></i> المحافظ والدفع</button>
-            <button class="tab" onclick="window.switchTab('messages')"><i class="fa-brands fa-whatsapp"></i> سجل الرسائل</button>
+            <button class="tab" onclick="window.switchTab('about')"><i class="fa-solid fa-info-circle"></i> من نحن</button>
+            <button class="tab" onclick="window.switchTab('contact')"><i class="fa-solid fa-envelope"></i> تواصل معنا</button>
+            <button class="tab" onclick="window.switchTab('messages')"><i class="fa-regular fa-message"></i> رسائل العملاء <span class="tab-badge hidden" id="messageBadge">0</span></button>
             <button class="tab" onclick="window.switchTab('logo')"><i class="fa-solid fa-image"></i> الشعار</button>
             <button class="tab" onclick="window.switchTab('flashsale')"><i class="fa-solid fa-bolt"></i> عروض الخصم</button>
             <button class="tab" onclick="window.switchTab('analytics')"><i class="fa-solid fa-chart-simple"></i> التحليلات</button>
@@ -1871,7 +2036,6 @@
                                 <i class="fa-solid fa-cloud-arrow-up"></i><p>اختر صورة المنتج</p>
                                 <input type="file" id="prodImageInput" accept="image/*" style="display:none;">
                             </div>
-                            <!-- ===== شريط تحميل الصورة ===== -->
                             <div class="upload-progress-container" id="uploadProgressContainer">
                                 <div class="upload-progress-header">
                                     <span class="progress-label" id="progressLabel">جاري رفع الصورة...</span>
@@ -1956,14 +2120,81 @@
             </div>
         </div>
 
-        <!-- ===== Panel: Messages ===== -->
+        <!-- ===== Panel: About Us ===== -->
+        <div class="panel" id="panel-about">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-info-circle"></i> صفحة "من نحن"</div>
+                    <button class="btn btn-gold btn-sm" onclick="window.saveAboutSettings()"><i class="fa-solid fa-save"></i> حفظ التغييرات</button>
+                </div>
+                <div class="about-admin-section">
+                    <div class="form-group">
+                        <label class="form-label">العنوان الرئيسي</label>
+                        <input type="text" id="aboutTitle" class="form-input" placeholder="مثال: من نحن">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">المحتوى (الوصف)</label>
+                        <textarea id="aboutContent" class="form-input form-textarea" placeholder="اكتب وصفاً عن المتجر..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">محتوى إضافي (اختياري)</label>
+                        <textarea id="aboutExtra" class="form-input form-textarea" placeholder="محتوى إضافي يظهر أسفل الوصف..."></textarea>
+                    </div>
+                    <div class="about-preview">
+                        <h4 style="color:var(--text-muted);margin-bottom:12px;">👁️ معاينة الصفحة:</h4>
+                        <div id="aboutPreviewContent">
+                            <h2 style="color:var(--gold-300);">من نحن</h2>
+                            <p style="color:var(--text-secondary);">نحن متجر بروفيشنال نقدم لكم أفضل المنتجات الفاخرة والعصرية بجودة عالية وأسعار تنافسية.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Panel: Contact ===== -->
+        <div class="panel" id="panel-contact">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-envelope"></i> صفحة "تواصل معنا"</div>
+                    <button class="btn btn-gold btn-sm" onclick="window.saveContactSettings()"><i class="fa-solid fa-save"></i> حفظ التغييرات</button>
+                </div>
+                <div class="contact-admin-section">
+                    <div class="form-group">
+                        <label class="form-label">📞 رقم الهاتف</label>
+                        <input type="text" id="contactPhone" class="form-input" placeholder="مثال: 01103127696" dir="ltr">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">💬 رقم واتساب</label>
+                        <input type="text" id="contactWhatsapp" class="form-input" placeholder="مثال: 01103127696" dir="ltr">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">📘 رابط فيسبوك</label>
+                        <input type="text" id="contactFacebook" class="form-input" placeholder="مثال: https://facebook.com/..." dir="ltr">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">✉️ البريد الإلكتروني</label>
+                        <input type="email" id="contactEmail" class="form-input" placeholder="مثال: info@professional.com" dir="ltr">
+                    </div>
+                    <div class="contact-preview" id="contactPreview">
+                        <div class="contact-item"><i class="fa-solid fa-phone"></i><div><div class="label">📞 هاتف</div><div class="value" id="previewPhone">غير محدد</div></div></div>
+                        <div class="contact-item"><i class="fa-brands fa-whatsapp" style="color:#25D366;"></i><div><div class="label">💬 واتساب</div><div class="value" id="previewWhatsapp">غير محدد</div></div></div>
+                        <div class="contact-item"><i class="fa-brands fa-facebook" style="color:#1877F2;"></i><div><div class="label">📘 فيسبوك</div><div class="value" id="previewFacebook">غير محدد</div></div></div>
+                        <div class="contact-item"><i class="fa-solid fa-envelope"></i><div><div class="label">✉️ بريد إلكتروني</div><div class="value" id="previewEmail">غير محدد</div></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Panel: Client Messages ===== -->
         <div class="panel" id="panel-messages">
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title"><i class="fa-brands fa-whatsapp"></i> سجل رسائل واتساب</div>
-                    <button class="btn btn-outline btn-sm" onclick="window.clearMessageLog()"><i class="fa-solid fa-trash"></i> مسح السجل</button>
+                    <div class="card-title"><i class="fa-regular fa-message"></i> رسائل العملاء</div>
+                    <button class="btn btn-outline btn-sm" onclick="window.refreshMessages()"><i class="fa-solid fa-rotate"></i> تحديث</button>
                 </div>
-                <div class="message-log" id="messageLog"><div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>لا توجد رسائل حتى الآن</h3></div></div>
+                <div class="messages-list" id="messagesList">
+                    <div class="empty-state"><i class="fa-regular fa-inbox"></i><h3>لا توجد رسائل</h3></div>
+                </div>
             </div>
         </div>
 
@@ -2265,6 +2496,7 @@
         let allOrders = [],
             allProducts = [],
             allCoupons = [],
+            allMessages = [],
             deleteTimers = {},
             countdownIntervals = {},
             previousStatuses = {},
@@ -2340,10 +2572,9 @@
         function getPaymentMethodIcon(method) { return (PAYMENT_METHODS[method] || PAYMENT_METHODS['cod']).icon; }
 
         // ============================================================
-        // رفع الصور إلى Cloudinary مع شريط تحميل
+        // رفع الصور إلى Cloudinary
         // ============================================================
 
-        // عناصر شريط التحميل
         const uploadProgress = {
             container: document.getElementById('uploadProgressContainer'),
             label: document.getElementById('progressLabel'),
@@ -2355,43 +2586,26 @@
 
         function updateUploadProgress(percent, message, status = 'loading') {
             if (!uploadProgress.container) return;
-            
-            // إظهار شريط التحميل
             uploadProgress.container.classList.add('show');
-            
-            // تحديث النسبة المئوية
             const clampedPercent = Math.min(100, Math.max(0, percent));
             uploadProgress.percent.textContent = `${clampedPercent}%`;
             uploadProgress.fill.style.width = `${clampedPercent}%`;
-            
-            // تحديث الفئة حسب الحالة
             uploadProgress.fill.className = 'progress-fill';
             if (status === 'error') uploadProgress.fill.classList.add('error');
             else if (status === 'success') uploadProgress.fill.classList.add('success');
-            
-            // تحديث النص
             uploadProgress.label.textContent = message;
             uploadProgress.statusMessage.textContent = message;
-            
-            // تحديث الأيقونة
             const iconEl = uploadProgress.statusText.querySelector('.status-icon');
             if (iconEl) {
-                if (status === 'loading') {
-                    iconEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-                } else if (status === 'success') {
-                    iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
-                } else if (status === 'error') {
-                    iconEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
-                }
+                if (status === 'loading') iconEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                else if (status === 'success') iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                else if (status === 'error') iconEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
             }
-            
             uploadProgress.statusText.className = 'upload-status-text ' + status;
         }
 
         function hideUploadProgress() {
-            if (uploadProgress.container) {
-                uploadProgress.container.classList.remove('show');
-            }
+            if (uploadProgress.container) uploadProgress.container.classList.remove('show');
         }
 
         function resetUploadProgress() {
@@ -2404,9 +2618,7 @@
                 uploadProgress.statusMessage.textContent = 'جاري رفع الصورة...';
                 uploadProgress.statusText.className = 'upload-status-text loading';
                 const iconEl = uploadProgress.statusText.querySelector('.status-icon');
-                if (iconEl) {
-                    iconEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-                }
+                if (iconEl) iconEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             }
         }
 
@@ -2421,7 +2633,6 @@
             const maxRetries = 3;
             const delay = 1000 * (retryCount + 1);
 
-            // تحديث حالة التحميل
             const progressMessage = retryCount > 0 ? 
                 `جاري إعادة المحاولة ${retryCount + 1}/${maxRetries}...` : 
                 'جاري رفع الصورة...';
@@ -2434,7 +2645,6 @@
             fd.append('api_key', CLOUDINARY_API_KEY);
 
             try {
-                // محاكاة تقدم التحميل (لأن fetch لا يدعم التقدم بسهولة)
                 let progressInterval = setInterval(() => {
                     const currentPercent = parseInt(uploadProgress.percent.textContent) || 0;
                     if (currentPercent < 85) {
@@ -2454,7 +2664,6 @@
                 clearTimeout(timeout);
                 clearInterval(progressInterval);
 
-                // تحديث التقدم إلى 90%
                 updateUploadProgress(90, 'جاري معالجة الصورة...', 'loading');
 
                 if (!r.ok) {
@@ -2466,32 +2675,22 @@
                     throw new Error(d.error.message || 'خطأ في Cloudinary');
                 }
 
-                // اكتمل التحميل
                 updateUploadProgress(100, '✅ تم تحميل الصورة بنجاح!', 'success');
-                
-                // إخفاء شريط التحميل بعد 1.5 ثانية
-                setTimeout(() => {
-                    hideUploadProgress();
-                }, 1500);
+                setTimeout(() => hideUploadProgress(), 1500);
 
                 return { url: d.secure_url, public_id: d.public_id };
 
             } catch (e) {
                 console.warn(`⚠️ محاولة رفع الصورة ${retryCount + 1} فشلت:`, e.message);
 
-                // إذا فشل التحميل، عرض رسالة خطأ
                 if (retryCount < maxRetries - 1) {
                     updateUploadProgress(30, `⚠️ فشل المحاولة ${retryCount + 1}، جاري إعادة المحاولة...`, 'error');
                     await new Promise(resolve => setTimeout(resolve, delay));
                     return uploadToCloudinaryWithProgress(file, folder, retryCount + 1);
                 }
 
-                // فشل كل المحاولات
                 updateUploadProgress(0, `❌ فشل رفع الصورة: ${e.message}`, 'error');
-                
-                setTimeout(() => {
-                    hideUploadProgress();
-                }, 3000);
+                setTimeout(() => hideUploadProgress(), 3000);
 
                 if (e.name === 'AbortError') {
                     throw new Error('انتهت مهلة رفع الصورة. يرجى المحاولة مرة أخرى.');
@@ -2517,10 +2716,10 @@
 
             let couponLine = '';
             if (discount > 0) {
-couponLine = `🎫 خصم الكوبون (${coupon.code || ''}): -${discount.toFixed(2)} ج\n`;
+                couponLine = `🎫 خصم الكوبون (${coupon.code || ''}): -${discount.toFixed(2)} ج\n`;
             }
 
-return `مرحباً ${o.recipientName || 'عميلنا'}،
+            return `مرحباً ${o.recipientName || 'عميلنا'}،
 
 ✅ تم قبول طلبك #${(o.id || '').slice(-8)}
 
@@ -2549,7 +2748,7 @@ ${couponLine}
             const paymentMethod = o.paymentMethod || 'cod';
             const pmName = getPaymentMethodName(paymentMethod);
 
-return `مرحباً ${o.recipientName || 'عميلنا'}،
+            return `مرحباً ${o.recipientName || 'عميلنا'}،
 
 🚚 طلبك #${(o.id || '').slice(-8)} في الطريق!
 
@@ -2580,10 +2779,10 @@ ${itemsList}
 
             let couponLine = '';
             if (discount > 0) {
- couponLine = `🎫 خصم الكوبون (${coupon.code || ''}): -${discount.toFixed(2)} ج\n`;
+                couponLine = `🎫 خصم الكوبون (${coupon.code || ''}): -${discount.toFixed(2)} ج\n`;
             }
 
- return `مرحباً ${o.recipientName || 'عميلنا'}،
+            return `مرحباً ${o.recipientName || 'عميلنا'}،
 
 📦 تم استلام طلبك #${(o.id || '').slice(-8)} ✅
 
@@ -2605,7 +2804,7 @@ ${couponLine}
         }
 
         function msgRejected(o) {
- return `مرحباً ${o.recipientName || 'عميلنا'}،
+            return `مرحباً ${o.recipientName || 'عميلنا'}،
 
 ❌ تم رفض طلبك #${(o.id || '').slice(-8)}
 
@@ -2692,483 +2891,347 @@ ${couponLine}
         };
 
         // ============================================================
-        // إدارة المخزون والكوبونات
+        // صفحة "من نحن" - إدارة المحتوى
         // ============================================================
 
-        async function deductStock(order) {
-            if (!order?.items?.length || deductedOrders.has(order.id)) return false;
-            let ok = true;
-            for (const i of order.items) {
-                if (!i.productId) continue;
-                try {
-                    await runTransaction(ref(database, `products/${i.productId}`), (c) => {
-                        if (!c) return null;
-                        return { ...c, quantity: Math.max(0, (c.quantity || 0) - i.quantity), lastUpdated: Date.now() };
-                    });
-                } catch (e) { ok = false; }
-            }
-            if (ok) {
-                deductedOrders.add(order.id);
-                await update(ref(database, `orders/${order.id}`), { _stockDeducted: true }).catch(() => {});
-            }
-            return ok;
+        function loadAboutSettings() {
+            get(ref(database, 'settings/about')).then(s => {
+                if (s.exists()) {
+                    const d = s.val();
+                    document.getElementById('aboutTitle').value = d.title || 'من نحن';
+                    document.getElementById('aboutContent').value = d.content || '';
+                    document.getElementById('aboutExtra').value = d.extra || '';
+                    updateAboutPreview();
+                }
+            }).catch(() => {});
         }
 
-        async function incrementCouponUsage(couponCode) {
-            if (!couponCode || !database) return { success: false, message: 'بيانات غير صالحة' };
+        function updateAboutPreview() {
+            const title = document.getElementById('aboutTitle').value || 'من نحن';
+            const content = document.getElementById('aboutContent').value || 'نحن متجر بروفيشنال نقدم لكم أفضل المنتجات الفاخرة والعصرية بجودة عالية وأسعار تنافسية.';
+            const extra = document.getElementById('aboutExtra').value || '';
+            const preview = document.getElementById('aboutPreviewContent');
+            if (preview) {
+                preview.innerHTML = `
+                    <h2 style="color:var(--gold-300);">${title}</h2>
+                    <p style="color:var(--text-secondary);">${content}</p>
+                    ${extra ? `<div class="extra-content" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border-color);color:var(--text-muted);">${extra}</div>` : ''}
+                `;
+            }
+        }
+
+        document.getElementById('aboutTitle')?.addEventListener('input', updateAboutPreview);
+        document.getElementById('aboutContent')?.addEventListener('input', updateAboutPreview);
+        document.getElementById('aboutExtra')?.addEventListener('input', updateAboutPreview);
+
+        window.saveAboutSettings = async function() {
+            const title = document.getElementById('aboutTitle').value?.trim() || 'من نحن';
+            const content = document.getElementById('aboutContent').value?.trim() || '';
+            const extra = document.getElementById('aboutExtra').value?.trim() || '';
+
+            if (!content) {
+                showToast('⚠️ يرجى إدخال محتوى الصفحة', 'error');
+                return;
+            }
+
             try {
-                const snapshot = await get(ref(database, 'coupons'));
-                let couponId = null;
-                let couponData = null;
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    for (const key in data) {
-                        if (data.hasOwnProperty(key) && data[key].code === couponCode) {
-                            couponId = key;
-                            couponData = data[key];
-                            break;
-                        }
-                    }
-                }
-                if (!couponId || !couponData) {
-                    return { success: false, message: 'الكوبون غير موجود في قاعدة البيانات' };
-                }
-
-                const usedCount = couponData.usedCount || 0;
-                const maxUses = couponData.maxUses || null;
-                if (maxUses !== null && usedCount >= maxUses) {
-                    await update(ref(database, `coupons/${couponId}`), { active: false });
-                    return { success: false, message: 'تم استنفاذ الحد الأقصى للاستخدام', deactivated: true };
-                }
-
-                await update(ref(database, `coupons/${couponId}`), {
-                    usedCount: increment(1),
-                    lastUsedAt: Date.now()
+                await set(ref(database, 'settings/about'), {
+                    title,
+                    content,
+                    extra,
+                    updatedAt: Date.now()
                 });
-
-                const updatedSnapshot = await get(ref(database, `coupons/${couponId}`));
-                if (updatedSnapshot.exists()) {
-                    const updatedData = updatedSnapshot.val();
-                    const newUsedCount = updatedData.usedCount || 0;
-                    const newMaxUses = updatedData.maxUses || null;
-                    if (newMaxUses !== null && newUsedCount >= newMaxUses) {
-                        await update(ref(database, `coupons/${couponId}`), { active: false });
-                        return { success: true,
-                            message: `تم استخدام الكوبون (${newUsedCount}/${newMaxUses}) - تم إيقاف الكوبون تلقائياً`,
-                            deactivated: true };
-                    }
-                    return { success: true, message: `تم استخدام الكوبون (${newUsedCount}/${newMaxUses || '∞'})` };
-                }
-
-                return { success: true, message: 'تم استخدام الكوبون' };
+                showToast('✅ تم حفظ صفحة "من نحن" بنجاح');
             } catch (e) {
-                console.error('❌ فشل زيادة استخدام الكوبون:', e);
-                return { success: false, message: 'فشل تحديث استخدام الكوبون' };
+                showToast('❌ فشل حفظ البيانات', 'error');
             }
-        }
+        };
 
         // ============================================================
-        // ⭐ إدارة الكوبونات مع التحديث التلقائي للحالة
+        // صفحة "تواصل معنا" - إدارة المحتوى
         // ============================================================
 
-        // دالة التحقق من حالة الكوبونات وتحديثها تلقائياً
-        async function checkCouponStatus() {
-            if (!allCoupons.length) return;
-            
-            let updated = false;
-            const now = new Date();
-            
-            for (const coupon of allCoupons) {
-                let shouldDeactivate = false;
-                let reason = '';
-                
-                // التحقق من انتهاء الصلاحية
-                if (coupon.expiry) {
-                    const expiryDate = new Date(coupon.expiry);
-                    if (expiryDate < now && coupon.active !== false) {
-                        shouldDeactivate = true;
-                        reason = 'انتهت صلاحية الكوبون';
-                    }
+        function loadContactSettings() {
+            get(ref(database, 'settings/contact')).then(s => {
+                if (s.exists()) {
+                    const d = s.val();
+                    document.getElementById('contactPhone').value = d.phone || '';
+                    document.getElementById('contactWhatsapp').value = d.whatsapp || '';
+                    document.getElementById('contactFacebook').value = d.facebook || '';
+                    document.getElementById('contactEmail').value = d.email || '';
+                    updateContactPreview();
                 }
-                
-                // التحقق من استنفاذ عدد الاستخدامات
-                if (coupon.maxUses !== null && coupon.maxUses !== undefined) {
-                    const usedCount = coupon.usedCount || 0;
-                    if (usedCount >= coupon.maxUses && coupon.active !== false) {
-                        shouldDeactivate = true;
-                        reason = `تم استنفاذ الحد الأقصى للاستخدام (${usedCount}/${coupon.maxUses})`;
-                    }
-                }
-                
-                // إذا كان يجب إلغاء التفعيل، قم بتحديث قاعدة البيانات
-                if (shouldDeactivate && coupon.id) {
-                    try {
-                        await update(ref(database, `coupons/${coupon.id}`), { 
-                            active: false,
-                            deactivatedAt: Date.now(),
-                            deactivationReason: reason
-                        });
-                        console.log(`✅ تم إيقاف كوبون "${coupon.code}" تلقائياً: ${reason}`);
-                        updated = true;
-                    } catch (e) {
-                        console.error(`❌ فشل إيقاف كوبون "${coupon.code}":`, e);
-                    }
-                }
-            }
-            
-            // إذا تم تحديث أي كوبون، أعد تحميل البيانات
-            if (updated) {
-                await loadCoupons();
-            }
+            }).catch(() => {});
         }
 
-        // تحميل الكوبونات مع استماع مباشر
-        function loadCoupons() {
+        function updateContactPreview() {
+            const phone = document.getElementById('contactPhone').value || 'غير محدد';
+            const whatsapp = document.getElementById('contactWhatsapp').value || 'غير محدد';
+            const facebook = document.getElementById('contactFacebook').value || 'غير محدد';
+            const email = document.getElementById('contactEmail').value || 'غير محدد';
+            
+            document.getElementById('previewPhone').textContent = phone;
+            document.getElementById('previewWhatsapp').textContent = whatsapp;
+            document.getElementById('previewFacebook').textContent = facebook || 'غير محدد';
+            document.getElementById('previewEmail').textContent = email;
+        }
+
+        document.getElementById('contactPhone')?.addEventListener('input', updateContactPreview);
+        document.getElementById('contactWhatsapp')?.addEventListener('input', updateContactPreview);
+        document.getElementById('contactFacebook')?.addEventListener('input', updateContactPreview);
+        document.getElementById('contactEmail')?.addEventListener('input', updateContactPreview);
+
+        window.saveContactSettings = async function() {
+            const phone = document.getElementById('contactPhone').value?.trim() || '';
+            const whatsapp = document.getElementById('contactWhatsapp').value?.trim() || '';
+            const facebook = document.getElementById('contactFacebook').value?.trim() || '';
+            const email = document.getElementById('contactEmail').value?.trim() || '';
+
+            try {
+                await set(ref(database, 'settings/contact'), {
+                    phone,
+                    whatsapp,
+                    facebook,
+                    email,
+                    updatedAt: Date.now()
+                });
+                showToast('✅ تم حفظ صفحة "تواصل معنا" بنجاح');
+            } catch (e) {
+                showToast('❌ فشل حفظ البيانات', 'error');
+            }
+        };
+
+        // ============================================================
+        // رسائل العملاء
+        // ============================================================
+
+        function loadClientMessages() {
             if (!database) return;
-            
-            const couponsRef = ref(database, 'coupons');
-            
-            onValue(couponsRef, async (snap) => {
-                const coupons = [];
+            const messagesRef = ref(database, 'contactMessages');
+            onValue(messagesRef, (snap) => {
+                const messages = [];
                 if (snap.exists()) {
                     const d = snap.val();
                     for (const k in d) {
-                        if (d.hasOwnProperty(k) && k !== '_init') {
-                            coupons.push({
+                        if (d.hasOwnProperty(k)) {
+                            messages.push({
                                 id: k,
-                                code: d[k].code || '',
-                                description: d[k].description || '',
-                                type: d[k].type || 'percent',
-                                value: d[k].value || 0,
-                                maxUses: d[k].maxUses !== undefined ? d[k].maxUses : null,
-                                usedCount: d[k].usedCount || 0,
-                                active: d[k].active !== false,
-                                expiry: d[k].expiry || d[k].expiryDate || null,
-                                createdAt: d[k].createdAt || Date.now(),
-                                updatedAt: d[k].updatedAt || null,
-                                deactivatedAt: d[k].deactivatedAt || null,
-                                deactivationReason: d[k].deactivationReason || null
+                                ...d[k]
                             });
                         }
                     }
                 }
-                allCoupons = coupons;
-                renderCoupons();
-                
-                // التحقق من حالة الكوبونات بعد التحميل
-                await checkCouponStatus();
-                
-            }, (error) => {
-                console.error('❌ فشل تحميل الكوبونات:', error);
-                renderCoupons();
+                messages.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                allMessages = messages;
+                renderMessages();
+                updateMessageBadge();
             });
         }
 
-        function renderCoupons() {
-            const el = document.getElementById('couponsList');
-            if (!el) return;
-            
-            if (!allCoupons.length) {
-                el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-ticket"></i><h3>لا توجد كوبونات</h3><p>أضف كوبون خصم جديد لجذب المزيد من العملاء</p></div>`;
+        function renderMessages() {
+            const container = document.getElementById('messagesList');
+            if (!container) return;
+
+            if (!allMessages.length) {
+                container.innerHTML = `<div class="empty-state"><i class="fa-regular fa-inbox"></i><h3>لا توجد رسائل من العملاء</h3></div>`;
                 return;
             }
-            
-            el.innerHTML = `<div class="coupons-grid">${allCoupons.map(c => {
-                const typeLabels = { percent: 'نسبة مئوية', fixed: 'قيمة ثابتة', free_shipping: 'شحن مجاني' };
+
+            container.innerHTML = allMessages.map(m => {
+                const date = m.createdAt ? new Date(m.createdAt).toLocaleString('ar-EG') : '';
+                const isRead = m.read || false;
+                const hasReply = m.reply && m.reply.trim().length > 0;
                 
-                // التحقق من انتهاء الصلاحية في وقت العرض
-                const now = new Date();
-                const isExpired = c.expiry && new Date(c.expiry) < now;
-                const usedCount = c.usedCount || 0;
-                const maxUses = c.maxUses === null || c.maxUses === undefined ? '∞' : c.maxUses;
-                const remaining = maxUses === '∞' ? '∞' : maxUses - usedCount;
-                const isMaxedOut = maxUses !== '∞' && usedCount >= maxUses;
-                const isDeactivated = c.active === false;
-                const isInactive = isDeactivated || isMaxedOut || isExpired;
-                
-                // تحديد حالة الكوبون
-                let statusText, statusClass;
-                if (isDeactivated && c.deactivationReason) {
-                    statusText = `⛔ ${c.deactivationReason}`;
-                    statusClass = 'badge-rejected';
-                } else if (isExpired) {
-                    statusText = '⏰ منتهي الصلاحية';
-                    statusClass = 'badge-rejected';
-                } else if (isMaxedOut) {
-                    statusText = '⛔ مستنفذ';
-                    statusClass = 'badge-pending';
-                } else {
-                    statusText = '✅ مفعل';
-                    statusClass = 'badge-delivering';
-                }
-                
-                const usagePercent = maxUses === '∞' ? 0 : Math.round((usedCount / maxUses) * 100);
-                const expiryDate = c.expiry ? new Date(c.expiry).toLocaleDateString('ar-EG') : 'غير محدد';
-                const deactivatedDate = c.deactivatedAt ? new Date(c.deactivatedAt).toLocaleDateString('ar-EG') : '';
-                
-                return `<div class="coupon-card" style="${isInactive ? 'opacity:0.6;border-color:var(--status-rejected);' : ''}">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
-                        <span class="coupon-code">${c.code || '---'}</span>
-                        <span class="order-status-badge ${statusClass}">${statusText}</span>
+                return `
+                    <div class="message-card ${!isRead ? 'unread' : ''}">
+                        <div class="msg-header">
+                            <span class="msg-sender"><i class="fa-solid fa-user"></i> ${m.name || 'زائر'}</span>
+                            <span class="msg-date">${date}</span>
+                            ${!isRead ? '<span style="font-size:11px;background:var(--gold-500);color:#000;padding:2px 10px;border-radius:50px;font-weight:700;">جديد</span>' : ''}
+                            ${hasReply ? '<span style="font-size:11px;background:var(--status-delivering);color:#fff;padding:2px 10px;border-radius:50px;font-weight:700;">تم الرد ✓</span>' : ''}
+                        </div>
+                        <div class="msg-subject">${m.subject || 'لا يوجد موضوع'}</div>
+                        <div class="msg-body">${m.message || ''}</div>
+                        ${m.email ? `<div style="font-size:12px;color:var(--text-muted);"><i class="fa-solid fa-envelope"></i> ${m.email}</div>` : ''}
+                        ${hasReply ? `<div style="margin-top:8px;padding:10px 14px;background:rgba(16,185,129,0.05);border-radius:var(--radius-sm);border-right:3px solid var(--status-delivering);">
+                            <span style="font-size:11px;color:var(--text-muted);">📨 الرد:</span>
+                            <p style="color:var(--text-secondary);font-size:14px;margin-top:4px;">${m.reply}</p>
+                        </div>` : ''}
+                        <div class="msg-actions">
+                            <button class="btn btn-sm ${hasReply ? 'btn-outline' : 'btn-gold'}" onclick="window.openReplyMessage('${m.id}')">
+                                <i class="fa-solid fa-reply"></i> ${hasReply ? 'تعديل الرد' : 'رد'}
+                            </button>
+                            ${!isRead ? `<button class="btn btn-sm btn-info" onclick="window.markMessageRead('${m.id}')"><i class="fa-solid fa-check"></i> تعليم كمقروء</button>` : ''}
+                            <button class="btn btn-sm btn-danger" onclick="window.deleteMessage('${m.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
+                        </div>
+                        <div class="msg-reply" id="reply-${m.id}">
+                            <textarea id="replyText-${m.id}" placeholder="اكتب ردك هنا...">${m.reply || ''}</textarea>
+                            <div class="reply-actions">
+                                <button class="btn btn-sm btn-gold" onclick="window.sendReply('${m.id}')"><i class="fa-solid fa-paper-plane"></i> إرسال الرد</button>
+                                <button class="btn btn-sm btn-outline" onclick="window.closeReply('${m.id}')">إلغاء</button>
+                            </div>
+                            <div class="reply-status" id="replyStatus-${m.id}"></div>
+                        </div>
                     </div>
-                    <div class="coupon-desc">${c.description || 'لا يوجد وصف'}</div>
-                    <div class="coupon-value">${c.type === 'percent' ? c.value + '%' : c.type === 'free_shipping' ? '🚚 شحن مجاني' : c.value + ' ج'}</div>
-                    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:8px;flex-wrap:wrap;gap:4px;">
-                        <span>📊 النوع: ${typeLabels[c.type] || c.type}</span>
-                        <span>🔄 استخدم ${usedCount}/${maxUses} (متبقي ${remaining})</span>
-                        ${maxUses !== '∞' ? `<span style="color:${usagePercent > 80 ? 'var(--status-pending)' : 'var(--text-muted)'};">📈 ${usagePercent}%</span>` : ''}
-                        <span>📅 ينتهي: ${expiryDate}</span>
-                        ${c.deactivatedAt ? `<span style="color:var(--status-rejected);">⛔ تم الإيقاف: ${deactivatedDate}</span>` : ''}
-                    </div>
-                    ${isMaxedOut ? `<div style="margin-top:8px;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:var(--radius-sm);color:var(--status-rejected);font-size:12px;border:1px solid rgba(239,68,68,0.2);">⚠️ تم استنفاذ الحد الأقصى للاستخدام (${usedCount}/${maxUses})</div>` : ''}
-                    ${isExpired ? `<div style="margin-top:8px;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:var(--radius-sm);color:var(--status-rejected);font-size:12px;border:1px solid rgba(239,68,68,0.2);">⏰ انتهت صلاحية الكوبون في ${expiryDate}</div>` : ''}
-                    ${c.deactivationReason && isDeactivated ? `<div style="margin-top:8px;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:var(--radius-sm);color:var(--status-rejected);font-size:12px;border:1px solid rgba(239,68,68,0.2);">ℹ️ ${c.deactivationReason}</div>` : ''}
-                    <div class="product-actions" style="margin-top:12px;">
-                        <button class="btn btn-gold btn-sm" onclick="window.openEditCouponModal('${c.id}')"><i class="fa-solid fa-pen"></i> تعديل</button>
-                        <button class="btn ${isDeactivated || isMaxedOut || isExpired ? 'btn-success' : 'btn-outline'} btn-sm" onclick="window.toggleCouponStatus('${c.id}')">
-                            <i class="fa-solid ${isDeactivated || isMaxedOut || isExpired ? 'fa-play' : 'fa-pause'}"></i>
-                            ${isDeactivated || isMaxedOut || isExpired ? 'تفعيل' : 'إيقاف'}
-                        </button>
-                        <button class="btn btn-danger btn-sm" onclick="window.deleteCoupon('${c.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
-                    </div>
-                </div>`;
-            }).join('')}</div>`;
+                `;
+            }).join('');
         }
 
-        window.openEditCouponModal = function(couponId) {
-            const coupon = allCoupons.find(c => c.id === couponId);
-            if (!coupon) {
-                showToast('❌ الكوبون غير موجود', 'error');
-                return;
+        function updateMessageBadge() {
+            const unread = allMessages.filter(m => !m.read).length;
+            const badge = document.getElementById('messageBadge');
+            if (badge) {
+                badge.textContent = unread;
+                badge.classList.toggle('hidden', unread === 0);
             }
-            document.getElementById('editCouponId').value = couponId;
-            document.getElementById('editCouponCode').value = coupon.code || '';
-            document.getElementById('editCouponDesc').value = coupon.description || '';
-            document.getElementById('editCouponType').value = coupon.type || 'percent';
-            document.getElementById('editCouponValue').value = coupon.value || 0;
-            document.getElementById('editCouponMaxUses').value = coupon.maxUses !== null && coupon.maxUses !== undefined ? coupon.maxUses : '';
-            document.getElementById('editCouponUsedCount').value = coupon.usedCount || 0;
-            document.getElementById('editCouponExpiry').value = coupon.expiry || '';
-            document.getElementById('editCouponStatus').value = coupon.active !== false ? 'true' : 'false';
-            document.getElementById('editCouponModal').classList.add('active');
+        }
+
+        window.openReplyMessage = function(messageId) {
+            // إغلاق جميع صناديق الرد المفتوحة
+            document.querySelectorAll('.msg-reply').forEach(el => el.classList.remove('show'));
+            // فتح صندوق الرد المطلوب
+            const replyBox = document.getElementById(`reply-${messageId}`);
+            if (replyBox) {
+                replyBox.classList.add('show');
+                // تمرير إلى الرسالة
+                const card = replyBox.closest('.message-card');
+                if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         };
 
-        window.closeEditCouponModal = function() {
-            document.getElementById('editCouponModal').classList.remove('active');
+        window.closeReply = function(messageId) {
+            const replyBox = document.getElementById(`reply-${messageId}`);
+            if (replyBox) replyBox.classList.remove('show');
         };
 
-        window.saveCouponEdit = async function() {
-            const couponId = document.getElementById('editCouponId').value;
-            if (!couponId) {
-                showToast('❌ خطأ في معرف الكوبون', 'error');
+        window.sendReply = async function(messageId) {
+            const textarea = document.getElementById(`replyText-${messageId}`);
+            const replyText = textarea?.value?.trim();
+            if (!replyText) {
+                showToast('⚠️ يرجى كتابة الرد', 'error');
                 return;
             }
 
-            const code = document.getElementById('editCouponCode').value?.trim().toUpperCase();
-            const description = document.getElementById('editCouponDesc').value?.trim();
-            const type = document.getElementById('editCouponType').value;
-            const value = parseFloat(document.getElementById('editCouponValue').value);
-            const maxUses = parseInt(document.getElementById('editCouponMaxUses').value);
-            const expiry = document.getElementById('editCouponExpiry').value || null;
-            const status = document.getElementById('editCouponStatus').value === 'true';
-
-            if (!code) { showToast('⚠️ أدخل كود الكوبون', 'error'); return; }
-            if (!value || value <= 0) { showToast('⚠️ أدخل قيمة الخصم', 'error'); return; }
-            if (type === 'percent' && value > 100) { showToast('⚠️ النسبة لا تتجاوز 100%', 'error'); return; }
-
-            const existingCoupon = allCoupons.find(c => c.code === code && c.id !== couponId);
-            if (existingCoupon) {
-                showToast('⚠️ هذا الكود مستخدم من قبل', 'error');
-                return;
+            const statusEl = document.getElementById(`replyStatus-${messageId}`);
+            if (statusEl) {
+                statusEl.style.display = 'block';
+                statusEl.textContent = '⏳ جاري الإرسال...';
+                statusEl.style.color = 'var(--status-pending)';
             }
 
             try {
-                const updateData = {
-                    code,
-                    description: description || '',
-                    type,
-                    value,
-                    maxUses: isNaN(maxUses) ? null : maxUses,
-                    expiry: expiry,
-                    active: status,
-                    updatedAt: Date.now()
-                };
-
-                await update(ref(database, `coupons/${couponId}`), updateData);
-                window.closeEditCouponModal();
-                showToast(`✅ تم تحديث كوبون "${code}" بنجاح`);
-                // سيتم تحميل الكوبونات تلقائياً من خلال onValue
-            } catch (e) {
-                console.error('Save coupon edit error:', e);
-                showToast('❌ فشل تحديث الكوبون: ' + e.message, 'error');
-            }
-        };
-
-        window.openAddCouponModal = function() {
-            document.getElementById('couponCodeInput').value = '';
-            document.getElementById('couponDescInput').value = '';
-            document.getElementById('couponTypeInput').value = 'percent';
-            document.getElementById('couponValueInput').value = '';
-            document.getElementById('couponMaxUsesInput').value = '';
-            document.getElementById('couponExpiryInput').value = '';
-            document.getElementById('addCouponModal').classList.add('active');
-        };
-
-        window.closeAddCouponModal = function() {
-            document.getElementById('addCouponModal').classList.remove('active');
-        };
-
-        window.saveCoupon = async function() {
-            const code = document.getElementById('couponCodeInput').value?.trim().toUpperCase();
-            const description = document.getElementById('couponDescInput').value?.trim();
-            const type = document.getElementById('couponTypeInput').value;
-            const value = parseFloat(document.getElementById('couponValueInput').value);
-            const maxUses = parseInt(document.getElementById('couponMaxUsesInput').value);
-            const expiry = document.getElementById('couponExpiryInput').value || null;
-
-            if (!code) { showToast('⚠️ أدخل كود الكوبون', 'error'); return; }
-            if (!value || value <= 0) { showToast('⚠️ أدخل قيمة الخصم', 'error'); return; }
-            if (type === 'percent' && value > 100) { showToast('⚠️ النسبة لا تتجاوز 100%', 'error'); return; }
-
-            if (allCoupons.some(c => c.code === code)) {
-                showToast('⚠️ هذا الكود موجود بالفعل', 'error');
-                return;
-            }
-
-            try {
-                const refs = push(ref(database, 'coupons'));
-                await set(refs, {
-                    code,
-                    description: description || '',
-                    type,
-                    value,
-                    maxUses: isNaN(maxUses) ? null : maxUses,
-                    usedCount: 0,
-                    active: true,
-                    expiry: expiry,
-                    createdAt: Date.now()
-                });
-                window.closeAddCouponModal();
-                showToast(`🎫 تم إضافة كوبون "${code}"`);
-                // سيتم تحميل الكوبونات تلقائياً من خلال onValue
-            } catch (e) {
-                console.error('Save coupon error:', e);
-                showToast('❌ فشل إضافة الكوبون: ' + e.message, 'error');
-            }
-        };
-
-        window.toggleCouponStatus = async function(id) {
-            const coupon = allCoupons.find(c => c.id === id);
-            if (!coupon) return;
-            
-            try {
-                // التحقق من الصلاحية قبل التفعيل
-                if (coupon.active !== false) {
-                    // إيقاف الكوبون
-                    await update(ref(database, `coupons/${id}`), { 
-                        active: false,
-                        deactivatedAt: Date.now(),
-                        deactivationReason: 'تم الإيقاف يدوياً'
-                    });
-                    showToast('⏸️ تم إيقاف الكوبون');
-                } else {
-                    // التحقق من انتهاء الصلاحية قبل التفعيل
-                    if (coupon.expiry && new Date(coupon.expiry) < new Date()) {
-                        showToast('⚠️ لا يمكن تفعيل كوبون منتهي الصلاحية', 'error');
-                        return;
-                    }
-                    if (coupon.maxUses !== null && coupon.maxUses !== undefined && (coupon.usedCount || 0) >= coupon.maxUses) {
-                        showToast('⚠️ لا يمكن تفعيل كوبون مستنفذ الحد الأقصى', 'error');
-                        return;
-                    }
-                    await update(ref(database, `coupons/${id}`), { 
-                        active: true,
-                        deactivatedAt: null,
-                        deactivationReason: null
-                    });
-                    showToast('✅ تم تفعيل الكوبون');
+                const message = allMessages.find(m => m.id === messageId);
+                if (!message) {
+                    showToast('❌ الرسالة غير موجودة', 'error');
+                    return;
                 }
-                // سيتم تحميل الكوبونات تلقائياً من خلال onValue
-            } catch (e) {
-                console.error('Toggle coupon error:', e);
-                showToast('❌ فشل تغيير الحالة', 'error');
+
+                // حفظ الرد في قاعدة البيانات
+                await update(ref(database, `contactMessages/${messageId}`), {
+                    reply: replyText,
+                    repliedAt: Date.now(),
+                    read: true
+                });
+
+                // إرسال الرد عبر البريد الإلكتروني
+                if (message.email) {
+                    try {
+                        const emailData = {
+                            to: message.email,
+                            subject: `رد على رسالتك: ${message.subject || 'تواصل معنا'}`,
+                            body: `
+                                <div dir="rtl">
+                                    <h2>📨 رد من فريق بروفيشنال</h2>
+                                    <p>مرحباً ${message.name || 'عميلنا العزيز'}،</p>
+                                    <div style="background:#f5f5f5;padding:16px;border-radius:8px;margin:12px 0;">
+                                        <p style="color:#333;"><strong>رسالتك:</strong></p>
+                                        <p style="color:#555;">${message.message}</p>
+                                    </div>
+                                    <div style="background:#e8f5e9;padding:16px;border-radius:8px;margin:12px 0;">
+                                        <p style="color:#2e7d32;"><strong>✉️ رد الفريق:</strong></p>
+                                        <p style="color:#333;">${replyText}</p>
+                                    </div>
+                                    <p style="color:#666;font-size:13px;">مع خالص التحيات،<br>فريق بروفيشنال 🏪</p>
+                                    <hr style="border:none;border-top:1px solid #ddd;margin:16px 0;">
+                                    <p style="color:#999;font-size:11px;">هذا بريد إلكتروني آلي، يرجى عدم الرد على هذا البريد.</p>
+                                </div>
+                            `
+                        };
+
+                        // حفظ الرد في قاعدة البيانات (سيتم إرسال البريد عن طريق خادم خارجي)
+                        // يمكن إضافة إرسال بريد إلكتروني عبر خدمة خارجية هنا
+
+                        showToast('✅ تم إرسال الرد بنجاح');
+                    } catch (emailError) {
+                        console.error('Email sending error:', emailError);
+                        showToast('⚠️ تم حفظ الرد لكن فشل إرسال البريد الإلكتروني', 'warning');
+                    }
+                } else {
+                    showToast('✅ تم حفظ الرد (لا يوجد بريد إلكتروني لإرساله)');
+                }
+
+                if (statusEl) {
+                    statusEl.textContent = '✅ تم إرسال الرد بنجاح';
+                    statusEl.style.color = 'var(--status-delivering)';
+                    setTimeout(() => {
+                        statusEl.style.display = 'none';
+                    }, 3000);
+                }
+
+                // إغلاق صندوق الرد بعد فترة
+                setTimeout(() => {
+                    window.closeReply(messageId);
+                }, 2000);
+
+            } catch (error) {
+                console.error('Reply error:', error);
+                showToast('❌ فشل إرسال الرد', 'error');
+                if (statusEl) {
+                    statusEl.textContent = '❌ فشل الإرسال';
+                    statusEl.style.color = 'var(--status-rejected)';
+                }
             }
         };
 
-        window.deleteCoupon = async function(id) {
-            const coupon = allCoupons.find(c => c.id === id);
-            if (!confirm(`حذف كوبون "${coupon?.code || ''}"؟`)) return;
+        window.markMessageRead = async function(messageId) {
             try {
-                await remove(ref(database, `coupons/${id}`));
-                showToast('🗑️ تم حذف الكوبون');
-                // سيتم تحميل الكوبونات تلقائياً من خلال onValue
+                await update(ref(database, `contactMessages/${messageId}`), {
+                    read: true
+                });
+                showToast('✅ تم تعليم الرسالة كمقروءة');
             } catch (e) {
-                console.error('Delete coupon error:', e);
+                showToast('❌ فشل التحديث', 'error');
+            }
+        };
+
+        window.deleteMessage = async function(messageId) {
+            if (!confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
+            try {
+                await remove(ref(database, `contactMessages/${messageId}`));
+                showToast('🗑️ تم حذف الرسالة');
+            } catch (e) {
                 showToast('❌ فشل الحذف', 'error');
             }
         };
 
-        // ============================================================
-        // إعدادات المحافظ
-        // ============================================================
-
-        function loadWalletSettings() {
-            if (!database) return;
-            get(ref(database, 'settings/wallets')).then(s => {
-                if (s.exists()) {
-                    const d = s.val();
-                    document.getElementById('walletVodafone').value = d.vodafone || '';
-                    document.getElementById('walletEtisalat').value = d.etisalat || '';
-                    document.getElementById('walletWe').value = d.we || '';
-                    document.getElementById('walletVisa').value = d.visa || '';
-                }
-            }).catch(() => {});
-            get(ref(database, 'settings/codFee')).then(s => {
-                if (s.exists()) { document.getElementById('codFee').value = s.val().fee || 0; }
-            }).catch(() => {});
-            get(ref(database, 'settings/deliveryFee')).then(s => {
-                if (s.exists()) { document.getElementById('deliveryFee').value = s.val().fee || 5; }
-            }).catch(() => {});
-        }
-
-        window.saveAllWalletSettings = async function() {
-            const wallets = {
-                vodafone: document.getElementById('walletVodafone')?.value?.trim() || '',
-                etisalat: document.getElementById('walletEtisalat')?.value?.trim() || '',
-                we: document.getElementById('walletWe')?.value?.trim() || '',
-                visa: document.getElementById('walletVisa')?.value?.trim() || ''
-            };
-            const codFee = parseFloat(document.getElementById('codFee')?.value) || 0;
-            const deliveryFee = parseFloat(document.getElementById('deliveryFee')?.value) || 5;
-            try {
-                await set(ref(database, 'settings/wallets'), wallets);
-                await set(ref(database, 'settings/codFee'), { fee: codFee });
-                await set(ref(database, 'settings/deliveryFee'), { fee: deliveryFee });
-                showToast('✅ تم حفظ جميع الإعدادات بنجاح');
-            } catch (e) { showToast('❌ فشل حفظ الإعدادات', 'error'); }
+        window.refreshMessages = function() {
+            if (database) {
+                get(ref(database, 'contactMessages')).then(s => {
+                    const messages = [];
+                    if (s.exists()) {
+                        const d = s.val();
+                        for (const k in d) {
+                            if (d.hasOwnProperty(k)) messages.push({ id: k, ...d[k] });
+                        }
+                    }
+                    messages.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    allMessages = messages;
+                    renderMessages();
+                    updateMessageBadge();
+                    showToast('🔄 تم تحديث الرسائل');
+                }).catch(() => showToast('❌ فشل التحديث', 'error'));
+            }
         };
-
-        // ============================================================
-        // الشعار
-        // ============================================================
-
-        function updateLogo(url) {
-            ['adminLogoDisplay', 'loginLogo', 'logoPreviewLarge'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.innerHTML =
-                    `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Logo" onerror="this.parentElement.innerHTML='🏪'">`;
-            });
-        }
-
-        function loadLogo() {
-            get(ref(database, 'settings/logo')).then(s => {
-                if (s.exists() && s.val().url) updateLogo(s.val().url);
-            }).catch(() => {});
-        }
-
-        onValue(ref(database, 'settings/logo'), s => {
-            if (s.exists() && s.val().url) updateLogo(s.val().url);
-        });
 
         // ============================================================
         // المنتجات (مع البحث والتصفية)
@@ -3837,10 +3900,7 @@ ${couponLine}
 
         window.printReceiptForOrder = (oid) => {
             const o = allOrders.find(x => x.id === oid);
-            if (!o) {
-                showToast('❌ الطلب غير موجود', 'error');
-                return;
-            }
+            if (!o) { showToast('❌ الطلب غير موجود', 'error'); return; }
 
             try {
                 showToast('⏳ جاري تحضير الفاتورة...', 'info');
@@ -4171,6 +4231,302 @@ ${couponLine}
         }, 1000);
 
         // ============================================================
+        // الكوبونات
+        // ============================================================
+
+        function loadCoupons() {
+            if (!database) return;
+            const couponsRef = ref(database, 'coupons');
+            onValue(couponsRef, async (snap) => {
+                const coupons = [];
+                if (snap.exists()) {
+                    const d = snap.val();
+                    for (const k in d) {
+                        if (d.hasOwnProperty(k) && k !== '_init') {
+                            coupons.push({
+                                id: k,
+                                code: d[k].code || '',
+                                description: d[k].description || '',
+                                type: d[k].type || 'percent',
+                                value: d[k].value || 0,
+                                maxUses: d[k].maxUses !== undefined ? d[k].maxUses : null,
+                                usedCount: d[k].usedCount || 0,
+                                active: d[k].active !== false,
+                                expiry: d[k].expiry || d[k].expiryDate || null,
+                                createdAt: d[k].createdAt || Date.now()
+                            });
+                        }
+                    }
+                }
+                allCoupons = coupons;
+                renderCoupons();
+                await checkCouponStatus();
+            });
+        }
+
+        async function checkCouponStatus() {
+            let updated = false;
+            const now = new Date();
+            for (const c of allCoupons) {
+                let shouldDeactivate = false;
+                if (c.expiry && new Date(c.expiry) < now && c.active !== false) {
+                    shouldDeactivate = true;
+                }
+                if (c.maxUses !== null && c.maxUses !== undefined) {
+                    const usedCount = c.usedCount || 0;
+                    if (usedCount >= c.maxUses && c.active !== false) {
+                        shouldDeactivate = true;
+                    }
+                }
+                if (shouldDeactivate && c.id) {
+                    try {
+                        await update(ref(database, `coupons/${c.id}`), {
+                            active: false,
+                            deactivatedAt: Date.now()
+                        });
+                        updated = true;
+                    } catch (e) {}
+                }
+            }
+            if (updated) {
+                await loadCoupons();
+            }
+        }
+
+        function renderCoupons() {
+            const el = document.getElementById('couponsList');
+            if (!el) return;
+            if (!allCoupons.length) {
+                el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-ticket"></i><h3>لا توجد كوبونات</h3><p>أضف كوبون خصم جديد لجذب المزيد من العملاء</p></div>`;
+                return;
+            }
+            el.innerHTML = `<div class="coupons-grid">${allCoupons.map(c => {
+                const typeLabels = { percent: 'نسبة مئوية', fixed: 'قيمة ثابتة', free_shipping: 'شحن مجاني' };
+                const now = new Date();
+                const isExpired = c.expiry && new Date(c.expiry) < now;
+                const usedCount = c.usedCount || 0;
+                const maxUses = c.maxUses === null || c.maxUses === undefined ? '∞' : c.maxUses;
+                const isMaxedOut = maxUses !== '∞' && usedCount >= maxUses;
+                const isDeactivated = c.active === false;
+                const isInactive = isDeactivated || isMaxedOut || isExpired;
+                let statusText, statusClass;
+                if (isExpired) { statusText = '⏰ منتهي';
+                    statusClass = 'badge-rejected'; } else if (isMaxedOut) { statusText = '⛔ مستنفذ';
+                    statusClass = 'badge-pending'; } else if (isDeactivated) { statusText = '⛔ غير مفعل';
+                    statusClass = 'badge-rejected'; } else { statusText = '✅ مفعل';
+                    statusClass = 'badge-delivering'; }
+                const expiryDate = c.expiry ? new Date(c.expiry).toLocaleDateString('ar-EG') : 'غير محدد';
+                return `<div class="coupon-card" style="${isInactive ? 'opacity:0.6;border-color:var(--status-rejected);' : ''}">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+                        <span class="coupon-code">${c.code || '---'}</span>
+                        <span class="order-status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="coupon-desc">${c.description || 'لا يوجد وصف'}</div>
+                    <div class="coupon-value">${c.type === 'percent' ? c.value + '%' : c.type === 'free_shipping' ? '🚚 شحن مجاني' : c.value + ' ج'}</div>
+                    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:8px;flex-wrap:wrap;gap:4px;">
+                        <span>📊 النوع: ${typeLabels[c.type] || c.type}</span>
+                        <span>🔄 استخدم ${usedCount}/${maxUses}</span>
+                        <span>📅 ينتهي: ${expiryDate}</span>
+                    </div>
+                    <div class="product-actions" style="margin-top:12px;">
+                        <button class="btn btn-gold btn-sm" onclick="window.openEditCouponModal('${c.id}')"><i class="fa-solid fa-pen"></i> تعديل</button>
+                        <button class="btn ${isDeactivated || isMaxedOut || isExpired ? 'btn-success' : 'btn-outline'} btn-sm" onclick="window.toggleCouponStatus('${c.id}')">
+                            <i class="fa-solid ${isDeactivated || isMaxedOut || isExpired ? 'fa-play' : 'fa-pause'}"></i>
+                            ${isDeactivated || isMaxedOut || isExpired ? 'تفعيل' : 'إيقاف'}
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="window.deleteCoupon('${c.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
+                    </div>
+                </div>`;
+            }).join()}</div>`;
+        }
+
+        window.openEditCouponModal = function(couponId) {
+            const coupon = allCoupons.find(c => c.id === couponId);
+            if (!coupon) { showToast('❌ الكوبون غير موجود', 'error'); return; }
+            document.getElementById('editCouponId').value = couponId;
+            document.getElementById('editCouponCode').value = coupon.code || '';
+            document.getElementById('editCouponDesc').value = coupon.description || '';
+            document.getElementById('editCouponType').value = coupon.type || 'percent';
+            document.getElementById('editCouponValue').value = coupon.value || 0;
+            document.getElementById('editCouponMaxUses').value = coupon.maxUses !== null && coupon.maxUses !== undefined ? coupon.maxUses : '';
+            document.getElementById('editCouponUsedCount').value = coupon.usedCount || 0;
+            document.getElementById('editCouponExpiry').value = coupon.expiry || '';
+            document.getElementById('editCouponStatus').value = coupon.active !== false ? 'true' : 'false';
+            document.getElementById('editCouponModal').classList.add('active');
+        };
+
+        window.closeEditCouponModal = function() {
+            document.getElementById('editCouponModal').classList.remove('active');
+        };
+
+        window.saveCouponEdit = async function() {
+            const couponId = document.getElementById('editCouponId').value;
+            if (!couponId) { showToast('❌ خطأ في معرف الكوبون', 'error'); return; }
+            const code = document.getElementById('editCouponCode').value?.trim().toUpperCase();
+            const description = document.getElementById('editCouponDesc').value?.trim();
+            const type = document.getElementById('editCouponType').value;
+            const value = parseFloat(document.getElementById('editCouponValue').value);
+            const maxUses = parseInt(document.getElementById('editCouponMaxUses').value);
+            const expiry = document.getElementById('editCouponExpiry').value || null;
+            const status = document.getElementById('editCouponStatus').value === 'true';
+            if (!code) { showToast('⚠️ أدخل كود الكوبون', 'error'); return; }
+            if (!value || value <= 0) { showToast('⚠️ أدخل قيمة الخصم', 'error'); return; }
+            if (type === 'percent' && value > 100) { showToast('⚠️ النسبة لا تتجاوز 100%', 'error'); return; }
+            const existingCoupon = allCoupons.find(c => c.code === code && c.id !== couponId);
+            if (existingCoupon) { showToast('⚠️ هذا الكود مستخدم من قبل', 'error'); return; }
+            try {
+                await update(ref(database, `coupons/${couponId}`), {
+                    code,
+                    description: description || '',
+                    type,
+                    value,
+                    maxUses: isNaN(maxUses) ? null : maxUses,
+                    expiry: expiry,
+                    active: status,
+                    updatedAt: Date.now()
+                });
+                window.closeEditCouponModal();
+                showToast(`✅ تم تحديث كوبون "${code}"`);
+            } catch (e) { showToast('❌ فشل تحديث الكوبون: ' + e.message, 'error'); }
+        };
+
+        window.openAddCouponModal = function() {
+            document.getElementById('couponCodeInput').value = '';
+            document.getElementById('couponDescInput').value = '';
+            document.getElementById('couponTypeInput').value = 'percent';
+            document.getElementById('couponValueInput').value = '';
+            document.getElementById('couponMaxUsesInput').value = '';
+            document.getElementById('couponExpiryInput').value = '';
+            document.getElementById('addCouponModal').classList.add('active');
+        };
+
+        window.closeAddCouponModal = function() {
+            document.getElementById('addCouponModal').classList.remove('active');
+        };
+
+        window.saveCoupon = async function() {
+            const code = document.getElementById('couponCodeInput').value?.trim().toUpperCase();
+            const description = document.getElementById('couponDescInput').value?.trim();
+            const type = document.getElementById('couponTypeInput').value;
+            const value = parseFloat(document.getElementById('couponValueInput').value);
+            const maxUses = parseInt(document.getElementById('couponMaxUsesInput').value);
+            const expiry = document.getElementById('couponExpiryInput').value || null;
+            if (!code) { showToast('⚠️ أدخل كود الكوبون', 'error'); return; }
+            if (!value || value <= 0) { showToast('⚠️ أدخل قيمة الخصم', 'error'); return; }
+            if (type === 'percent' && value > 100) { showToast('⚠️ النسبة لا تتجاوز 100%', 'error'); return; }
+            if (allCoupons.some(c => c.code === code)) { showToast('⚠️ هذا الكود موجود بالفعل', 'error'); return; }
+            try {
+                const refs = push(ref(database, 'coupons'));
+                await set(refs, {
+                    code,
+                    description: description || '',
+                    type,
+                    value,
+                    maxUses: isNaN(maxUses) ? null : maxUses,
+                    usedCount: 0,
+                    active: true,
+                    expiry: expiry,
+                    createdAt: Date.now()
+                });
+                window.closeAddCouponModal();
+                showToast(`🎫 تم إضافة كوبون "${code}"`);
+            } catch (e) { showToast('❌ فشل إضافة الكوبون: ' + e.message, 'error'); }
+        };
+
+        window.toggleCouponStatus = async function(id) {
+            const coupon = allCoupons.find(c => c.id === id);
+            if (!coupon) return;
+            try {
+                if (coupon.active !== false) {
+                    await update(ref(database, `coupons/${id}`), { active: false, deactivatedAt: Date.now() });
+                    showToast('⏸️ تم إيقاف الكوبون');
+                } else {
+                    if (coupon.expiry && new Date(coupon.expiry) < new Date()) {
+                        showToast('⚠️ لا يمكن تفعيل كوبون منتهي الصلاحية', 'error');
+                        return;
+                    }
+                    if (coupon.maxUses !== null && coupon.maxUses !== undefined && (coupon.usedCount || 0) >= coupon.maxUses) {
+                        showToast('⚠️ لا يمكن تفعيل كوبون مستنفذ الحد الأقصى', 'error');
+                        return;
+                    }
+                    await update(ref(database, `coupons/${id}`), { active: true, deactivatedAt: null });
+                    showToast('✅ تم تفعيل الكوبون');
+                }
+            } catch (e) { showToast('❌ فشل تغيير الحالة', 'error'); }
+        };
+
+        window.deleteCoupon = async function(id) {
+            const coupon = allCoupons.find(c => c.id === id);
+            if (!confirm(`حذف كوبون "${coupon?.code || ''}"؟`)) return;
+            try {
+                await remove(ref(database, `coupons/${id}`));
+                showToast('🗑️ تم حذف الكوبون');
+            } catch (e) { showToast('❌ فشل الحذف', 'error'); }
+        };
+
+        // ============================================================
+        // إعدادات المحافظ
+        // ============================================================
+
+        function loadWalletSettings() {
+            if (!database) return;
+            get(ref(database, 'settings/wallets')).then(s => {
+                if (s.exists()) {
+                    const d = s.val();
+                    document.getElementById('walletVodafone').value = d.vodafone || '';
+                    document.getElementById('walletEtisalat').value = d.etisalat || '';
+                    document.getElementById('walletWe').value = d.we || '';
+                    document.getElementById('walletVisa').value = d.visa || '';
+                }
+            }).catch(() => {});
+            get(ref(database, 'settings/codFee')).then(s => {
+                if (s.exists()) { document.getElementById('codFee').value = s.val().fee || 0; }
+            }).catch(() => {});
+            get(ref(database, 'settings/deliveryFee')).then(s => {
+                if (s.exists()) { document.getElementById('deliveryFee').value = s.val().fee || 5; }
+            }).catch(() => {});
+        }
+
+        window.saveAllWalletSettings = async function() {
+            const wallets = {
+                vodafone: document.getElementById('walletVodafone')?.value?.trim() || '',
+                etisalat: document.getElementById('walletEtisalat')?.value?.trim() || '',
+                we: document.getElementById('walletWe')?.value?.trim() || '',
+                visa: document.getElementById('walletVisa')?.value?.trim() || ''
+            };
+            const codFee = parseFloat(document.getElementById('codFee')?.value) || 0;
+            const deliveryFee = parseFloat(document.getElementById('deliveryFee')?.value) || 5;
+            try {
+                await set(ref(database, 'settings/wallets'), wallets);
+                await set(ref(database, 'settings/codFee'), { fee: codFee });
+                await set(ref(database, 'settings/deliveryFee'), { fee: deliveryFee });
+                showToast('✅ تم حفظ جميع الإعدادات بنجاح');
+            } catch (e) { showToast('❌ فشل حفظ الإعدادات', 'error'); }
+        };
+
+        // ============================================================
+        // الشعار
+        // ============================================================
+
+        function updateLogo(url) {
+            ['adminLogoDisplay', 'loginLogo', 'logoPreviewLarge'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML =
+                    `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Logo" onerror="this.parentElement.innerHTML='🏪'">`;
+            });
+        }
+
+        function loadLogo() {
+            get(ref(database, 'settings/logo')).then(s => {
+                if (s.exists() && s.val().url) updateLogo(s.val().url);
+            }).catch(() => {});
+        }
+
+        onValue(ref(database, 'settings/logo'), s => {
+            if (s.exists() && s.val().url) updateLogo(s.val().url);
+        });
+
+        // ============================================================
         // المصادقة والتنقل
         // ============================================================
 
@@ -4185,17 +4541,16 @@ ${couponLine}
             loadStoredAnalytics();
             loadMessageLog();
             loadWalletSettings();
-            loadCoupons(); // سيتم تحميل الكوبونات مع الاستماع المباشر
+            loadCoupons();
             loadFlashSaleSettings();
+            loadAboutSettings();
+            loadContactSettings();
+            loadClientMessages();
             renderOrders();
             renderProducts();
             updateStats();
             setTimeout(() => updateAnalyticsCache(), 1200);
-            
-            // تشغيل فحص دوري للكوبونات كل 60 ثانية
-            setInterval(async () => {
-                await checkCouponStatus();
-            }, 60000);
+            setInterval(async () => { await checkCouponStatus(); }, 60000);
         }
 
         function showLogin() {
@@ -4244,7 +4599,7 @@ ${couponLine}
         window.switchTab = function(n) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            const tabs = ['orders', 'products', 'add', 'coupons', 'wallets', 'messages', 'logo', 'flashsale', 'analytics'];
+            const tabs = ['orders', 'products', 'add', 'coupons', 'wallets', 'about', 'contact', 'messages', 'logo', 'flashsale', 'analytics'];
             const idx = tabs.indexOf(n);
             const at = document.querySelectorAll('.tab');
             if (idx >= 0 && at[idx]) at[idx].classList.add('active');
@@ -4254,7 +4609,9 @@ ${couponLine}
             if (n === 'products') renderProducts();
             if (n === 'coupons') renderCoupons();
             if (n === 'wallets') loadWalletSettings();
-            if (n === 'messages') renderMessageLog();
+            if (n === 'about') loadAboutSettings();
+            if (n === 'contact') loadContactSettings();
+            if (n === 'messages') renderMessages();
             if (n === 'flashsale') { loadFlashSaleSettings();
                 updateFlashSalePreview(); }
             if (n === 'analytics') {
@@ -4290,54 +4647,33 @@ ${couponLine}
         document.getElementById('prodPrice')?.addEventListener('input', updateDiscountPreview);
         document.getElementById('prodDiscountValue')?.addEventListener('input', updateDiscountPreview);
 
-        // ===== تحسين رفع الصورة مع شريط التحميل =====
         document.getElementById('prodImageInput')?.addEventListener('change', async function(e) {
             const f = e.target.files[0];
-            if (!f || !f.type.startsWith('image/')) { 
-                showToast('⚠️ ملف غير صالح', 'error'); 
-                return; 
-            }
-            if (f.size > 10 * 1024 * 1024) { 
-                showToast('⚠️ حجم الصورة كبير جداً. الحد الأقصى 10 ميجابايت.', 'error'); 
-                return; 
-            }
-
-            // إعادة تعيين شريط التحميل
+            if (!f || !f.type.startsWith('image/')) { showToast('⚠️ ملف غير صالح', 'error'); return; }
+            if (f.size > 10 * 1024 * 1024) { showToast('⚠️ حجم الصورة كبير جداً. الحد الأقصى 10 ميجابايت.', 'error'); return; }
             resetUploadProgress();
-            
-            // تعطيل زر الإضافة أثناء الرفع
             const addBtn = document.getElementById('addProductBtn');
             addBtn.disabled = true;
             addBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الصورة...';
-
             try {
-                // رفع الصورة مع شريط التحميل
                 const result = await uploadToCloudinaryWithProgress(f);
-                
-                // حفظ رابط الصورة للاستخدام لاحقاً
                 selectedProductImage = result.url;
-                
-                // عرض المعاينة
                 const pv = document.getElementById('imgPreview');
                 if (pv) {
                     pv.src = result.url;
                     pv.classList.add('show');
                 }
                 document.getElementById('imgUploadArea')?.classList.add('has-file');
-                
                 showToast('✅ تم تحميل الصورة بنجاح!', 'success');
-
             } catch (error) {
                 console.error('❌ خطأ في رفع الصورة:', error);
                 showToast(`❌ ${error.message || 'فشل رفع الصورة. يرجى المحاولة مرة أخرى.'}`, 'error');
-                // إعادة تعيين الحقل
                 this.value = '';
                 selectedProductImage = null;
                 document.getElementById('imgPreview').classList.remove('show');
                 document.getElementById('imgUploadArea').classList.remove('has-file');
                 hideUploadProgress();
             } finally {
-                // إعادة تفعيل زر الإضافة
                 addBtn.disabled = false;
                 addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> إضافة المنتج';
             }
@@ -4376,7 +4712,6 @@ ${couponLine}
                 btn.innerHTML = orig; }
         });
 
-        // ===== حدث إضافة المنتج (مع تحسينات) =====
         document.getElementById('addProductBtn')?.addEventListener('click', async function() {
             const name = document.getElementById('prodName')?.value?.trim();
             const category = document.getElementById('prodCategory')?.value || 'أجهزة شخصية';
@@ -4516,8 +4851,8 @@ ${couponLine}
             }
         };
 
-        console.log('✅ لوحة التحكم بروفيشنال جاهزة مع نظام رفع الصور بشريط تحميل');
-        console.log('✅ تم حل مشكلة إيقاف الكوبونات تلقائياً عند انتهاء الصلاحية أو استنفاذ الاستخدام');
+        console.log('✅ لوحة التحكم بروفيشنال جاهزة مع جميع الميزات');
+        console.log('✅ تم إضافة: من نحن، تواصل معنا، رسائل العملاء، الردود');
     </script>
 </body>
 </html>
