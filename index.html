@@ -1576,56 +1576,78 @@
     const database = getDatabase(app);
     const auth = getAuth(app);
 
-    // ============================================================
-    // ===== إعدادات EmailJS =====
-    // ============================================================
-    const EMAILJS_CONFIG = {
-        PUBLIC_KEY: 'WwsyznCAitoTGWICk',
-        SERVICE_ID: 'service_57jhjvj',
-        TEMPLATE_ID: 'template_ihnxbyd'
-    };
+    // ============================================================// ============================================================
+// ===== إعدادات EmailJS =====
+// ============================================================
+const EMAILJS_CONFIG = {
+    PUBLIC_KEY: 'WwsyznCAitoTGWICk',
+    SERVICE_ID: 'service_57jhjvj',
+    TEMPLATE_ID: 'template_ihnxbyd'
+};
 
-    // ============================================================
-    // ===== دالة إرسال البريد الإلكتروني عبر EmailJS =====
-    // ============================================================
-    async function sendReplyEmail(message, replyText) {
-        try {
-            if (!message.email) {
-                return { success: false, error: 'لا يوجد بريد إلكتروني للعميل' };
-            }
-
-            const templateParams = {
-                to_email: message.email,
-                to_name: message.name || 'عميلنا العزيز',
-                subject: message.subject || 'تواصل معنا',
-                original_message: message.message || '',
-                reply_message: replyText,
-                reply_date: new Date().toLocaleString('ar-EG', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })
-            };
-
-            console.log('📧 جاري إرسال البريد الإلكتروني إلى:', message.email);
-
-            const response = await emailjs.send(
-                EMAILJS_CONFIG.SERVICE_ID,
-                EMAILJS_CONFIG.TEMPLATE_ID,
-                templateParams,
-                EMAILJS_CONFIG.PUBLIC_KEY
-            );
-
-            console.log('✅ تم إرسال البريد الإلكتروني:', response);
-            return { success: true, response: response };
-
-        } catch (error) {
-            console.error('❌ فشل إرسال البريد الإلكتروني:', error);
-            return { success: false, error: error.message || 'فشل إرسال البريد' };
+// ============================================================
+// ===== دالة إرسال البريد الإلكتروني =====
+// ============================================================
+async function sendReplyEmail(message, replyText) {
+    try {
+        // التحقق من وجود بريد إلكتروني
+        if (!message.email) {
+            return { success: false, error: 'لا يوجد بريد إلكتروني للعميل' };
         }
+
+        // التحقق من صحة البريد الإلكتروني
+        if (!message.email.includes('@') || !message.email.includes('.')) {
+            return { success: false, error: 'بريد إلكتروني غير صحيح' };
+        }
+
+        // إعداد البيانات للإرسال
+        const templateParams = {
+            to_email: message.email,           // بريد العميل
+            to_name: message.name || 'عميلنا العزيز',
+            subject: message.subject || 'تواصل معنا',
+            original_message: message.message || '',
+            reply_message: replyText,
+            reply_date: new Date().toLocaleString('ar-EG', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }),
+            reply_to: message.email            // للرد على البريد
+        };
+
+        console.log('📧 جاري إرسال البريد الإلكتروني إلى:', templateParams.to_email);
+        console.log('📋 البيانات:', templateParams);
+
+        // إرسال البريد عبر EmailJS
+        const response = await emailjs.send(
+            EMAILJS_CONFIG.SERVICE_ID,
+            EMAILJS_CONFIG.TEMPLATE_ID,
+            templateParams,
+            EMAILJS_CONFIG.PUBLIC_KEY
+        );
+
+        console.log('✅ تم إرسال البريد الإلكتروني:', response);
+        return { success: true, response: response };
+
+    } catch (error) {
+        console.error('❌ فشل إرسال البريد الإلكتروني:', error);
+        
+        // تحليل الخطأ
+        let errorMessage = 'فشل إرسال البريد';
+        if (error.text) {
+            try {
+                const errorData = JSON.parse(error.text);
+                if (errorData.message) {
+                    errorMessage = errorData.message;
+                }
+            } catch (e) {}
+        }
+        
+        return { success: false, error: errorMessage };
     }
+}
 
     const CLOUDINARY_CLOUD_NAME = 'dzprjrvu7';
     const CLOUDINARY_UPLOAD_PRESET = 'rashfa_preset';
@@ -2275,74 +2297,88 @@ ${couponLine}
     // ===== دالة sendReply مع تفعيل EmailJS =====
     // ============================================================
     window.sendReply = async function(messageId) {
-        const textarea = document.getElementById(`replyText-${messageId}`);
-        const replyText = textarea?.value?.trim();
-        if (!replyText) {
-            showToast('⚠️ يرجى كتابة الرد', 'error');
+    const textarea = document.getElementById(`replyText-${messageId}`);
+    const replyText = textarea?.value?.trim();
+    
+    if (!replyText) {
+        showToast('⚠️ يرجى كتابة الرد', 'error');
+        return;
+    }
+
+    const statusEl = document.getElementById(`replyStatus-${messageId}`);
+    if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.textContent = '⏳ جاري الإرسال...';
+        statusEl.style.color = 'var(--status-pending)';
+    }
+
+    try {
+        const message = allMessages.find(m => m.id === messageId);
+        if (!message) {
+            showToast('❌ الرسالة غير موجودة', 'error');
             return;
         }
 
-        const statusEl = document.getElementById(`replyStatus-${messageId}`);
-        if (statusEl) {
-            statusEl.style.display = 'block';
-            statusEl.textContent = '⏳ جاري الإرسال...';
-            statusEl.style.color = 'var(--status-pending)';
-        }
+        // 1. حفظ الرد في قاعدة البيانات
+        await update(ref(database, `contactMessages/${messageId}`), {
+            reply: replyText,
+            repliedAt: Date.now(),
+            read: true
+        });
 
-        try {
-            const message = allMessages.find(m => m.id === messageId);
-            if (!message) {
-                showToast('❌ الرسالة غير موجودة', 'error');
-                return;
-            }
+        // 2. إرسال البريد الإلكتروني
+        let emailSent = false;
+        let emailError = null;
 
-            // 1. حفظ الرد في قاعدة البيانات
-            await update(ref(database, `contactMessages/${messageId}`), {
-                reply: replyText,
-                repliedAt: Date.now(),
-                read: true
-            });
-
-            // 2. إرسال البريد الإلكتروني عبر EmailJS
-            let emailSent = false;
-            if (message.email) {
-                const emailResult = await sendReplyEmail(message, replyText);
-                if (emailResult.success) {
-                    emailSent = true;
-                    showToast('✅ تم إرسال الرد والبريد الإلكتروني بنجاح');
-                } else {
-                    console.warn('⚠️ فشل إرسال البريد الإلكتروني:', emailResult.error);
-                    showToast('⚠️ تم حفظ الرد لكن فشل إرسال البريد', 'warning');
-                }
+        if (message.email) {
+            const emailResult = await sendReplyEmail(message, replyText);
+            if (emailResult.success) {
+                emailSent = true;
+                showToast('✅ تم إرسال الرد والبريد الإلكتروني بنجاح');
             } else {
-                showToast('✅ تم حفظ الرد (لا يوجد بريد إلكتروني)');
+                emailError = emailResult.error;
+                console.warn('⚠️ فشل إرسال البريد الإلكتروني:', emailError);
+                showToast(`⚠️ تم حفظ الرد لكن فشل إرسال البريد: ${emailError}`, 'warning');
             }
-
-            if (statusEl) {
-                statusEl.textContent = emailSent ? '✅ تم إرسال الرد والبريد بنجاح' : '✅ تم حفظ الرد';
-                statusEl.style.color = 'var(--status-delivering)';
-                setTimeout(() => {
-                    statusEl.style.display = 'none';
-                }, 3000);
-            }
-
-            // إغلاق صندوق الرد بعد فترة
-            setTimeout(() => {
-                window.closeReply(messageId);
-            }, 2000);
-
-            // تحديث عرض الرسائل
-            renderMessages();
-
-        } catch (error) {
-            console.error('❌ خطأ في إرسال الرد:', error);
-            showToast('❌ فشل إرسال الرد', 'error');
-            if (statusEl) {
-                statusEl.textContent = '❌ فشل الإرسال';
-                statusEl.style.color = 'var(--status-rejected)';
-            }
+        } else {
+            showToast('✅ تم حفظ الرد (لا يوجد بريد إلكتروني)');
         }
-    };
+
+        // 3. تحديث حالة الرد
+        if (statusEl) {
+            if (emailSent) {
+                statusEl.textContent = '✅ تم إرسال الرد والبريد بنجاح';
+                statusEl.style.color = 'var(--status-delivering)';
+            } else if (message.email) {
+                statusEl.textContent = `⚠️ تم حفظ الرد لكن فشل البريد`;
+                statusEl.style.color = 'var(--status-pending)';
+            } else {
+                statusEl.textContent = '✅ تم حفظ الرد';
+                statusEl.style.color = 'var(--status-delivering)';
+            }
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 4000);
+        }
+
+        // 4. إغلاق صندوق الرد
+        setTimeout(() => {
+            window.closeReply(messageId);
+        }, 2000);
+
+        // 5. تحديث عرض الرسائل
+        renderMessages();
+
+    } catch (error) {
+        console.error('❌ خطأ في إرسال الرد:', error);
+        showToast('❌ فشل إرسال الرد', 'error');
+        if (statusEl) {
+            statusEl.textContent = '❌ فشل الإرسال';
+            statusEl.style.color = 'var(--status-rejected)';
+        }
+    }
+};
 
     window.markMessageRead = async function(messageId) {
         try {
