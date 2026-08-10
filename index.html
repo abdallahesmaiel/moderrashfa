@@ -21,6 +21,7 @@
     </script>
     
     <style>
+        /* ===== نفس الأنماط السابقة مع إضافة أنماط شريط التحميل ===== */
         :root {
             --bg-primary: #0a0a0f;
             --bg-secondary: #12121a;
@@ -718,6 +719,7 @@
         .discount-value-input .currency-symbol { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-weight: 700; font-size: 14px; }
         .discount-value-input .percent-symbol { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-weight: 700; font-size: 14px; }
 
+        /* ===== شريط تحميل الصور المحسن ===== */
         .upload-area {
             border: 2px dashed var(--border-light);
             border-radius: var(--radius-lg);
@@ -742,19 +744,76 @@
         }
         .img-preview.show { display: block; }
 
-        .upload-progress-container { display: none; margin-top: 12px; padding: 12px 16px; background: var(--bg-primary); border-radius: var(--radius-lg); border: 1px solid var(--border-color); }
+        .upload-progress-container {
+            display: none;
+            margin-top: 12px;
+            padding: 16px 20px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+        }
         .upload-progress-container.show { display: block; }
-        .upload-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 13px; }
-        .upload-progress-header .progress-label { color: var(--text-secondary); font-weight: 600; }
-        .upload-progress-header .progress-percent { color: var(--gold-300); font-weight: 800; }
-        .upload-progress-bar { width: 100%; height: 8px; background: var(--bg-secondary); border-radius: 10px; overflow: hidden; position: relative; }
-        .upload-progress-bar .progress-fill { height: 100%; width: 0%; border-radius: 10px; transition: width 0.4s ease; background: linear-gradient(90deg, var(--gold-600), var(--gold-500), var(--gold-400)); }
-        .upload-progress-bar .progress-fill.error { background: linear-gradient(90deg, #991b1b, var(--status-rejected)); }
-        .upload-progress-bar .progress-fill.success { background: linear-gradient(90deg, #047857, var(--status-delivering)); }
-        .upload-status-text { margin-top: 6px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
-        .upload-status-text .status-icon { font-size: 14px; }
-        .upload-status-text.loading .status-icon { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .upload-progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .upload-progress-header .progress-label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .upload-progress-header .progress-label .spinner {
+            display: inline-block;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .upload-progress-header .progress-percent {
+            color: var(--gold-300);
+            font-weight: 800;
+            font-size: 16px;
+        }
+        .upload-progress-bar {
+            width: 100%;
+            height: 10px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .upload-progress-bar .progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            background: linear-gradient(90deg, var(--gold-600), var(--gold-500), var(--gold-400));
+        }
+        .upload-progress-bar .progress-fill.error {
+            background: linear-gradient(90deg, #991b1b, var(--status-rejected));
+        }
+        .upload-progress-bar .progress-fill.success {
+            background: linear-gradient(90deg, #047857, var(--status-delivering));
+        }
+        .upload-status-text {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .upload-status-text .status-icon { font-size: 16px; }
+        .upload-status-text.loading .status-icon {
+            animation: spin 1s linear infinite;
+            color: var(--gold-500);
+        }
         .upload-status-text.success .status-icon { color: var(--status-delivering); }
         .upload-status-text.error .status-icon { color: var(--status-rejected); }
 
@@ -1138,7 +1197,7 @@
             </div>
         </div>
 
-        <!-- Tabs - كل صفحتين بجانب بعض -->
+        <!-- Tabs -->
         <div class="tabs-container">
             <button class="tab active" onclick="window.switchTab('orders')"><i class="fa-solid fa-list-check"></i> الطلبات <span class="tab-badge hidden" id="pendingBadge">0</span></button>
             <button class="tab" onclick="window.switchTab('products')"><i class="fa-solid fa-boxes-stacked"></i> المنتجات <span class="tab-badge warning hidden" id="lowStockBadge">0</span></button>
@@ -1232,14 +1291,14 @@
                             </div>
                             <div class="upload-progress-container" id="uploadProgressContainer">
                                 <div class="upload-progress-header">
-                                    <span class="progress-label" id="progressLabel">جاري رفع الصورة...</span>
+                                    <span class="progress-label" id="progressLabel"><span class="spinner"><i class="fa-solid fa-spinner"></i></span> جاري رفع الصورة...</span>
                                     <span class="progress-percent" id="progressPercent">0%</span>
                                 </div>
                                 <div class="upload-progress-bar">
                                     <div class="progress-fill" id="progressFill" style="width:0%;"></div>
                                 </div>
                                 <div class="upload-status-text" id="uploadStatusText">
-                                    <span class="status-icon"><i class="fa-solid fa-spinner fa-spin"></i></span>
+                                    <span class="status-icon"><i class="fa-solid fa-spinner"></i></span>
                                     <span id="uploadStatusMessage">جاري رفع الصورة...</span>
                                 </div>
                             </div>
@@ -1290,7 +1349,7 @@
             </div>
         </div>
 
-        <!-- ===== Panel: Wallets - جميع طرق الدفع المصرية ===== -->
+        <!-- ===== Panel: Wallets ===== -->
         <div class="panel" id="panel-wallets">
             <div class="card">
                 <div class="card-header">
@@ -1754,6 +1813,20 @@
                     <p>اختر صورة العرض</p>
                     <input type="file" id="promoImageInput" accept="image/*" style="display:none;">
                 </div>
+                <!-- شريط تحميل الصورة -->
+                <div class="upload-progress-container" id="promoUploadProgressContainer">
+                    <div class="upload-progress-header">
+                        <span class="progress-label" id="promoProgressLabel"><span class="spinner"><i class="fa-solid fa-spinner"></i></span> جاري رفع الصورة...</span>
+                        <span class="progress-percent" id="promoProgressPercent">0%</span>
+                    </div>
+                    <div class="upload-progress-bar">
+                        <div class="progress-fill" id="promoProgressFill" style="width:0%;"></div>
+                    </div>
+                    <div class="upload-status-text" id="promoUploadStatusText">
+                        <span class="status-icon"><i class="fa-solid fa-spinner"></i></span>
+                        <span id="promoUploadStatusMessage">جاري رفع الصورة...</span>
+                    </div>
+                </div>
                 <img class="img-preview" id="promoImagePreview" alt="معاينة العرض">
                 <input type="hidden" id="promoImageUrl">
             </div>
@@ -1894,7 +1967,6 @@
         let allProducts = [];
         let allCoupons = [];
         let allMessages = [];
-        // تم إزالة التكرار - تعريف allPromoSlides مرة واحدة
         let allPromoSlides = [];
         let deleteTimers = {};
         let countdownIntervals = {};
@@ -2013,57 +2085,73 @@
         }
 
         // ============================================================
-        // ===== Cloudinary Upload Functions =====
+        // ===== Cloudinary Upload Functions مع شريط تحميل =====
         // ============================================================
 
-        const uploadProgress = {
-            container: document.getElementById('uploadProgressContainer'),
-            label: document.getElementById('progressLabel'),
-            percent: document.getElementById('progressPercent'),
-            fill: document.getElementById('progressFill'),
-            statusText: document.getElementById('uploadStatusText'),
-            statusMessage: document.getElementById('uploadStatusMessage')
-        };
+        function getUploadProgressElements(prefix = '') {
+            const container = document.getElementById(prefix + 'UploadProgressContainer');
+            const label = document.getElementById(prefix + 'ProgressLabel');
+            const percent = document.getElementById(prefix + 'ProgressPercent');
+            const fill = document.getElementById(prefix + 'ProgressFill');
+            const statusText = document.getElementById(prefix + 'UploadStatusText');
+            const statusMessage = document.getElementById(prefix + 'UploadStatusMessage');
+            const preview = document.getElementById(prefix + 'ImagePreview');
+            const uploadArea = document.getElementById(prefix + 'UploadArea');
+            return { container, label, percent, fill, statusText, statusMessage, preview, uploadArea };
+        }
 
-        function updateUploadProgress(percent, message, status = 'loading') {
-            if (!uploadProgress.container) return;
-            uploadProgress.container.classList.add('show');
+        function updateUploadProgress(prefix, percent, message, status = 'loading') {
+            const elements = getUploadProgressElements(prefix);
+            if (!elements.container) return;
+            
+            elements.container.classList.add('show');
             const clampedPercent = Math.min(100, Math.max(0, percent));
-            uploadProgress.percent.textContent = `${clampedPercent}%`;
-            uploadProgress.fill.style.width = `${clampedPercent}%`;
-            uploadProgress.fill.className = 'progress-fill';
-            if (status === 'error') uploadProgress.fill.classList.add('error');
-            else if (status === 'success') uploadProgress.fill.classList.add('success');
-            uploadProgress.label.textContent = message;
-            uploadProgress.statusMessage.textContent = message;
-            const iconEl = uploadProgress.statusText.querySelector('.status-icon');
+            elements.percent.textContent = `${clampedPercent}%`;
+            elements.fill.style.width = `${clampedPercent}%`;
+            elements.fill.className = 'progress-fill';
+            if (status === 'error') elements.fill.classList.add('error');
+            else if (status === 'success') elements.fill.classList.add('success');
+            
+            // تحديث النص مع أيقونة الدوران
+            const spinner = '<span class="spinner"><i class="fa-solid fa-spinner"></i></span>';
+            if (status === 'loading') {
+                elements.label.innerHTML = `${spinner} ${message}`;
+            } else {
+                elements.label.textContent = message;
+            }
+            
+            elements.statusMessage.textContent = message;
+            const iconEl = elements.statusText.querySelector('.status-icon');
             if (iconEl) {
-                if (status === 'loading') iconEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                if (status === 'loading') iconEl.innerHTML = '<i class="fa-solid fa-spinner"></i>';
                 else if (status === 'success') iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
                 else if (status === 'error') iconEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
             }
-            uploadProgress.statusText.className = 'upload-status-text ' + status;
+            elements.statusText.className = 'upload-status-text ' + status;
         }
 
-        function hideUploadProgress() {
-            if (uploadProgress.container) uploadProgress.container.classList.remove('show');
+        function hideUploadProgress(prefix) {
+            const elements = getUploadProgressElements(prefix);
+            if (elements.container) elements.container.classList.remove('show');
         }
 
-        function resetUploadProgress() {
-            if (uploadProgress.container) {
-                uploadProgress.container.classList.remove('show');
-                uploadProgress.percent.textContent = '0%';
-                uploadProgress.fill.style.width = '0%';
-                uploadProgress.fill.className = 'progress-fill';
-                uploadProgress.label.textContent = 'جاري رفع الصورة...';
-                uploadProgress.statusMessage.textContent = 'جاري رفع الصورة...';
-                uploadProgress.statusText.className = 'upload-status-text loading';
-                const iconEl = uploadProgress.statusText.querySelector('.status-icon');
-                if (iconEl) iconEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        function resetUploadProgress(prefix) {
+            const elements = getUploadProgressElements(prefix);
+            if (elements.container) {
+                elements.container.classList.remove('show');
+                elements.percent.textContent = '0%';
+                elements.fill.style.width = '0%';
+                elements.fill.className = 'progress-fill';
+                const spinner = '<span class="spinner"><i class="fa-solid fa-spinner"></i></span>';
+                elements.label.innerHTML = `${spinner} جاري رفع الصورة...`;
+                elements.statusMessage.textContent = 'جاري رفع الصورة...';
+                elements.statusText.className = 'upload-status-text loading';
+                const iconEl = elements.statusText.querySelector('.status-icon');
+                if (iconEl) iconEl.innerHTML = '<i class="fa-solid fa-spinner"></i>';
             }
         }
 
-        async function uploadToCloudinaryWithProgress(file, folder = 'rashfa-products', retryCount = 0) {
+        async function uploadToCloudinaryWithProgress(file, folder = 'rashfa-products', prefix = '', retryCount = 0) {
             if (!file?.type?.startsWith('image/')) {
                 throw new Error('ملف غير صالح. يرجى اختيار صورة بصيغة JPG أو PNG.');
             }
@@ -2077,7 +2165,7 @@
             const progressMessage = retryCount > 0 ? 
                 `جاري إعادة المحاولة ${retryCount + 1}/${maxRetries}...` : 
                 'جاري رفع الصورة...';
-            updateUploadProgress(retryCount > 0 ? 20 : 5, progressMessage, 'loading');
+            updateUploadProgress(prefix, retryCount > 0 ? 20 : 5, progressMessage, 'loading');
 
             const fd = new FormData();
             fd.append('file', file);
@@ -2087,10 +2175,10 @@
 
             try {
                 let progressInterval = setInterval(() => {
-                    const currentPercent = parseInt(uploadProgress.percent.textContent) || 0;
+                    const currentPercent = parseInt(document.getElementById(prefix + 'ProgressPercent')?.textContent) || 0;
                     if (currentPercent < 85) {
                         const newPercent = Math.min(85, currentPercent + Math.random() * 10 + 2);
-                        updateUploadProgress(newPercent, progressMessage, 'loading');
+                        updateUploadProgress(prefix, newPercent, progressMessage, 'loading');
                     }
                 }, 500);
 
@@ -2105,7 +2193,7 @@
                 clearTimeout(timeout);
                 clearInterval(progressInterval);
 
-                updateUploadProgress(90, 'جاري معالجة الصورة...', 'loading');
+                updateUploadProgress(prefix, 90, 'جاري معالجة الصورة...', 'loading');
 
                 if (!r.ok) {
                     throw new Error(`فشل الرفع: ${r.status} ${r.statusText}`);
@@ -2116,8 +2204,8 @@
                     throw new Error(d.error.message || 'خطأ في Cloudinary');
                 }
 
-                updateUploadProgress(100, '✅ تم تحميل الصورة بنجاح!', 'success');
-                setTimeout(() => hideUploadProgress(), 1500);
+                updateUploadProgress(prefix, 100, '✅ تم تحميل الصورة بنجاح!', 'success');
+                setTimeout(() => hideUploadProgress(prefix), 1500);
 
                 return { url: d.secure_url, public_id: d.public_id };
 
@@ -2125,13 +2213,13 @@
                 console.warn(`⚠️ محاولة رفع الصورة ${retryCount + 1} فشلت:`, e.message);
 
                 if (retryCount < maxRetries - 1) {
-                    updateUploadProgress(30, `⚠️ فشل المحاولة ${retryCount + 1}، جاري إعادة المحاولة...`, 'error');
+                    updateUploadProgress(prefix, 30, `⚠️ فشل المحاولة ${retryCount + 1}، جاري إعادة المحاولة...`, 'error');
                     await new Promise(resolve => setTimeout(resolve, delay));
-                    return uploadToCloudinaryWithProgress(file, folder, retryCount + 1);
+                    return uploadToCloudinaryWithProgress(file, folder, prefix, retryCount + 1);
                 }
 
-                updateUploadProgress(0, `❌ فشل رفع الصورة: ${e.message}`, 'error');
-                setTimeout(() => hideUploadProgress(), 3000);
+                updateUploadProgress(prefix, 0, `❌ فشل رفع الصورة: ${e.message}`, 'error');
+                setTimeout(() => hideUploadProgress(prefix), 3000);
 
                 if (e.name === 'AbortError') {
                     throw new Error('انتهت مهلة رفع الصورة. يرجى المحاولة مرة أخرى.');
@@ -2885,8 +2973,8 @@
             selectedProductImage = null;
             document.getElementById('imgPreview').classList.remove('show');
             document.getElementById('imgUploadArea').classList.remove('has-file');
-            resetUploadProgress();
-            hideUploadProgress();
+            resetUploadProgress('');
+            hideUploadProgress('');
             const cs = document.getElementById('prodCategory');
             if (cs) cs.value = 'أجهزة شخصية';
             window.updateCategoryEmoji();
@@ -2921,7 +3009,7 @@
         window.editSelectDiscountType = function(type) {
             editCurrentDiscountType = type;
             document.querySelectorAll('#editDiscountTypeSelector .discount-type-btn').forEach(b => b.classList.remove(
-            'active'));
+                'active'));
             const ab = document.querySelector(`#editDiscountTypeSelector .discount-type-btn[data-type="${type}"]`);
             if (ab) ab.classList.add('active');
             const vg = document.getElementById('editDiscountValueGroup');
@@ -4031,8 +4119,6 @@
         // ===== إدارة العروض الحصرية =====
         // ============================================================
 
-        // تم إزالة let allPromoSlides = [] من هنا لأنها معرفة أعلاه
-        
         let isEditPromo = false;
 
         function loadPromoSlides() {
@@ -4120,6 +4206,9 @@
             document.getElementById('promoUploadArea').classList.remove('has-file');
             selectedPromoImage = null;
             document.getElementById('promoImageInput').value = '';
+            // إخفاء شريط التحميل
+            hideUploadProgress('promo');
+            resetUploadProgress('promo');
             document.getElementById('promoModal').classList.add('active');
         };
 
@@ -4149,11 +4238,16 @@
                 document.getElementById('promoUploadArea').classList.remove('has-file');
             }
             
+            // إخفاء شريط التحميل
+            hideUploadProgress('promo');
+            resetUploadProgress('promo');
             document.getElementById('promoModal').classList.add('active');
         };
 
         window.closePromoModal = function() {
             document.getElementById('promoModal').classList.remove('active');
+            hideUploadProgress('promo');
+            resetUploadProgress('promo');
         };
 
         document.getElementById('promoImageInput')?.addEventListener('change', async function(e) {
@@ -4166,7 +4260,9 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الرفع...';
             
             try {
-                const result = await uploadToCloudinaryWithProgress(f, 'rashfa-promo');
+                // إظهار شريط التحميل
+                resetUploadProgress('promo');
+                const result = await uploadToCloudinaryWithProgress(f, 'rashfa-promo', 'promo');
                 selectedPromoImage = result.url;
                 document.getElementById('promoImageUrl').value = result.url;
                 const preview = document.getElementById('promoImagePreview');
@@ -4405,12 +4501,12 @@
             const f = e.target.files[0];
             if (!f || !f.type.startsWith('image/')) { showToast('⚠️ ملف غير صالح', 'error'); return; }
             if (f.size > 10 * 1024 * 1024) { showToast('⚠️ حجم الصورة كبير جداً. الحد الأقصى 10 ميجابايت.', 'error'); return; }
-            resetUploadProgress();
+            resetUploadProgress('');
             const addBtn = document.getElementById('addProductBtn');
             addBtn.disabled = true;
             addBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري رفع الصورة...';
             try {
-                const result = await uploadToCloudinaryWithProgress(f);
+                const result = await uploadToCloudinaryWithProgress(f, 'rashfa-products', '');
                 selectedProductImage = result.url;
                 const pv = document.getElementById('imgPreview');
                 if (pv) {
@@ -4426,7 +4522,7 @@
                 selectedProductImage = null;
                 document.getElementById('imgPreview').classList.remove('show');
                 document.getElementById('imgUploadArea').classList.remove('has-file');
-                hideUploadProgress();
+                hideUploadProgress('');
             } finally {
                 addBtn.disabled = false;
                 addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> إضافة المنتج';
@@ -4455,7 +4551,7 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الرفع...';
             try {
-                const ld = await uploadToCloudinaryWithProgress(f, 'rashfa-logo');
+                const ld = await uploadToCloudinaryWithProgress(f, 'rashfa-logo', '');
                 await set(ref(database, 'settings/logo'), { url: ld.url, cloudinary_public_id: ld.public_id,
                     updatedAt: Date.now() });
                 updateLogo(ld.url);
@@ -4634,7 +4730,7 @@
 
         console.log('✅ لوحة التحكم بروفيشنال جاهزة مع جميع الميزات');
         console.log('✅ طرق الدفع المتاحة: فودافون كاش، اتصالات كاش، أورنج كاش، وي بي، إنستا باي، تحويل بنكي، فيزا كارد، الدفع عند الاستلام');
-        console.log('✅ تم إضافة العروض الحصرية (Promotional Slideshow)');
+        console.log('✅ تم إضافة العروض الحصرية (Promotional Slideshow) مع شريط تحميل');
         console.log('📧 EmailJS Config:', EMAILJS_CONFIG);
     </script>
 </body>
