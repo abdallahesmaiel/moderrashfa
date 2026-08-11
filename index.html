@@ -1855,14 +1855,14 @@
             
             <div class="form-group">
                 <label class="form-label">عدد الثواني بين العروض</label>
-                <input type="number" id="promoInterval" class="form-input" placeholder="مثال: 3" min="1" max="60" value="3">
-                <small style="color:var(--text-muted);font-size:11px;display:block;margin-top:4px;">عدد الثواني التي يظهر فيها كل عرض قبل الانتقال إلى التالي</small>
+                <input type="number" id="promoInterval" class="form-input" placeholder="مثال: 5" min="1" max="60" value="5">
+                <small style="color:var(--text-muted);font-size:11px;display:block;margin-top:4px;">عدد الثواني التي يظهر فيها كل عرض قبل الانتقال إلى التالي (القيمة الافتراضية 5 ثواني)</small>
             </div>
             
             <div class="form-group">
                 <label class="form-label">ترتيب العرض</label>
-                <input type="number" id="promoOrder" class="form-input" placeholder="مثال: 1" min="0" value="0">
-                <small style="color:var(--text-muted);font-size:11px;display:block;margin-top:4px;">الأرقام الأصغر تظهر أولاً</small>
+                <input type="number" id="promoOrder" class="form-input" placeholder="سيتم تعيينه تلقائياً" min="0" value="0" disabled style="opacity:0.6;background:var(--bg-primary);">
+                <small style="color:var(--text-muted);font-size:11px;display:block;margin-top:4px;">يتم تعيين الترتيب تلقائياً بناءً على آخر رقم موجود.</small>
             </div>
             
             <div class="form-group">
@@ -4174,7 +4174,7 @@
                         <div style="display:none;height:120px;background:var(--bg-primary);border-radius:var(--radius-sm);border:1px solid var(--border-color);align-items:center;justify-content:center;color:var(--text-muted);font-size:40px;">🖼️</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--text-secondary);">
                             <span><i class="fa-solid fa-tag"></i> ${slide.category || 'الكل'}</span>
-                            <span><i class="fa-solid fa-clock"></i> ${slide.interval || 3} ثانية</span>
+                            <span><i class="fa-solid fa-clock"></i> ${slide.interval || 5} ثانية</span>
                             <span><i class="fa-solid fa-arrow-up-wide-short"></i> ترتيب: ${slide.order || 0}</span>
                         </div>
                         <div class="promo-actions">
@@ -4190,15 +4190,26 @@
             }).join('')}</div>`;
         }
 
-        window.openAddPromoModal = function() {
+        window.openAddPromoModal = async function() {
             isEditPromo = false;
             document.getElementById('editPromoId').value = '';
             document.getElementById('promoModalTitle').textContent = '🎯 إضافة عرض حصري جديد';
             document.getElementById('promoTitle').value = '';
             document.getElementById('promoDescription').value = '';
             document.getElementById('promoCategory').value = 'all';
-            document.getElementById('promoInterval').value = '3';
-            document.getElementById('promoOrder').value = '0';
+            
+            // تعيين عدد الثواني الافتراضي إلى 5
+            document.getElementById('promoInterval').value = '5';
+            
+            // حساب الترتيب التلقائي (أكبر رقم موجود + 1)
+            let maxOrder = 0;
+            if (allPromoSlides.length > 0) {
+                allPromoSlides.forEach(slide => {
+                    if (slide.order && slide.order > maxOrder) maxOrder = slide.order;
+                });
+            }
+            document.getElementById('promoOrder').value = maxOrder + 1; // تعيين الترتيب تلقائياً
+            
             document.getElementById('promoStatus').value = 'true';
             document.getElementById('promoImageUrl').value = '';
             document.getElementById('promoImagePreview').classList.remove('show');
@@ -4222,7 +4233,8 @@
             document.getElementById('promoTitle').value = slide.title || '';
             document.getElementById('promoDescription').value = slide.description || '';
             document.getElementById('promoCategory').value = slide.category || 'all';
-            document.getElementById('promoInterval').value = slide.interval || 3;
+            // إذا كان الوقت غير موجود أو صفر، نضعه 5
+            document.getElementById('promoInterval').value = parseInt(slide.interval) || 5;
             document.getElementById('promoOrder').value = slide.order || 0;
             document.getElementById('promoStatus').value = slide.active !== false ? 'true' : 'false';
             
@@ -4288,7 +4300,9 @@
             const title = document.getElementById('promoTitle').value?.trim() || 'عرض مميز';
             const description = document.getElementById('promoDescription').value?.trim() || '';
             const category = document.getElementById('promoCategory').value || 'all';
-            const interval = parseInt(document.getElementById('promoInterval').value) || 3;
+            // إذا كان الحقل فارغاً، نضع 5 افتراضياً
+            let interval = parseInt(document.getElementById('promoInterval').value);
+            if (isNaN(interval) || interval < 1) interval = 5;
             const order = parseInt(document.getElementById('promoOrder').value) || 0;
             const active = document.getElementById('promoStatus').value === 'true';
             const image = document.getElementById('promoImageUrl').value || selectedPromoImage;
