@@ -3121,17 +3121,26 @@
             if (el('statLowStock')) el('statLowStock').textContent = low;
             if (el('statWarningCard')) el('statWarningCard').classList.toggle('warning-stat', low > 0);
             
-            // حساب المبيعات الشهرية المحفوظة في قاعدة البيانات
+            // حساب المبيعات الشهرية - استخدام التخزين المحلي كبديل
             const now = new Date();
             const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            
+            // محاولة جلب البيانات من Firebase أولاً، وإلا استخدام localStorage
             getSalesData(monthKey).then(salesData => {
-                const monthlySales = salesData ? salesData.total : 0;
+                let monthlySales = 0;
+                if (salesData) {
+                    monthlySales = salesData.total || 0;
+                } else {
+                    // استخدام localStorage كبديل
+                    const localData = getLocalSalesData(monthKey);
+                    monthlySales = localData ? localData.total : 0;
+                }
                 if (el('statTotalSales')) el('statTotalSales').textContent = monthlySales.toFixed(0) + ' ج';
             }).catch(() => {
-                // في حالة فشل التحميل نستخدم الطريقة القديمة
-                const ms = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-                const total = allOrders.filter(o => o.status === 'delivered' && o.createdAt >= ms).reduce((s, o) => s + (Number(o.total) || 0), 0);
-                if (el('statTotalSales')) el('statTotalSales').textContent = total.toFixed(0) + ' ج';
+                // في حالة فشل التحميل نستخدم localStorage
+                const localData = getLocalSalesData(monthKey);
+                const monthlySales = localData ? localData.total : 0;
+                if (el('statTotalSales')) el('statTotalSales').textContent = monthlySales.toFixed(0) + ' ج';
             });
             
             const pb = el('pendingBadge'),
@@ -3144,40 +3153,93 @@
         }
 
         // ============================================================
-        // ===== Sales Data Management (محفوظ في قاعدة البيانات) =====
+        // ===== Sales Data Management (محفوظ في قاعدة البيانات مع نسخ احتياطي محلي) =====
         // ============================================================
 
+        // دالة لحفظ البيانات محلياً كنسخة احتياطية
+        function saveLocalSalesData(monthKey, total, orders = []) {
+            try {
+                const salesData = {
+                    total: total,
+                    orders: orders,
+                    updatedAt: Date.now(),
+                    isLocal: true
+                };
+                localStorage.setItem(`sales_${monthKey}`, JSON.stringify(salesData));
+                return true;
+            } catch (e) {
+                console.warn('⚠️ فشل حفظ بيانات المبيعات محلياً:', e);
+                return false;
+            }
+        }
+
+        // دالة لجلب البيانات من localStorage
+        function getLocalSalesData(monthKey) {
+            try {
+                const data = localStorage.getItem(`sales_${monthKey}`);
+                if (data) {
+                    return JSON.parse(data);
+                }
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // دالة لحفظ بيانات المبيعات (مع محاولة Firebase أولاً، ثم localStorage)
         async function saveSalesData(monthKey, total, orders = []) {
+            let saved = false;
+            let errorMessage = '';
+            
+            // محاولة الحفظ في Firebase
             try {
                 await set(ref(database, `sales/${monthKey}`), {
                     total: total,
                     orders: orders,
                     updatedAt: Date.now()
                 });
-                return true;
+                saved = true;
+                console.log(`✅ تم حفظ بيانات المبيعات في Firebase: ${monthKey}`);
             } catch (e) {
-                console.error('❌ فشل حفظ بيانات المبيعات:', e);
-                return false;
+                errorMessage = e.message;
+                console.warn(`⚠️ فشل حفظ بيانات المبيعات في Firebase: ${e.message}`);
+                // حفظ محلياً كنسخة احتياطية
+                saveLocalSalesData(monthKey, total, orders);
+                saved = false;
             }
+            
+            return { success: saved, error: errorMessage };
         }
 
+        // دالة لجلب بيانات المبيعات (محاولة Firebase أولاً، ثم localStorage)
         async function getSalesData(monthKey) {
+            let data = null;
+            
+            // محاولة جلب من Firebase
             try {
                 const snap = await get(ref(database, `sales/${monthKey}`));
                 if (snap.exists()) {
-                    return snap.val();
+                    data = snap.val();
+                    console.log(`✅ تم جلب بيانات المبيعات من Firebase: ${monthKey}`);
+                    return data;
                 }
-                return null;
             } catch (e) {
-                console.error('❌ فشل جلب بيانات المبيعات:', e);
-                return null;
+                console.warn(`⚠️ فشل جلب بيانات المبيعات من Firebase: ${e.message}`);
             }
+            
+            // في حالة الفشل، جلب من localStorage
+            data = getLocalSalesData(monthKey);
+            if (data) {
+                console.log(`📦 تم جلب بيانات المبيعات من localStorage: ${monthKey}`);
+                return data;
+            }
+            
+            return null;
         }
 
-        async function updateMonthlySales() {
+        // دالة لحساب المبيعات الشهرية من الطلبات
+        function calculateMonthlySalesFromOrders() {
             const now = new Date();
-            const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            
             const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
             const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
             
@@ -3190,12 +3252,31 @@
             const totalSales = deliveredOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
             const orderIds = deliveredOrders.map(o => o.id);
             
-            await saveSalesData(monthKey, totalSales, orderIds);
+            return { totalSales, deliveredOrders, orderIds };
+        }
+
+        // دالة تحديث المبيعات الشهرية المحسنة
+        async function updateMonthlySales() {
+            const now = new Date();
+            const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             
+            // حساب المبيعات من الطلبات
+            const { totalSales, deliveredOrders, orderIds } = calculateMonthlySalesFromOrders();
+            
+            // محاولة حفظ البيانات
+            const result = await saveSalesData(monthKey, totalSales, orderIds);
+            
+            if (!result.success) {
+                // إذا فشل الحفظ في Firebase، نستخدم localStorage
+                saveLocalSalesData(monthKey, totalSales, orderIds);
+                console.log('📦 تم حفظ بيانات المبيعات محلياً كنسخة احتياطية');
+            }
+            
+            // تحديث العرض
             const el = document.getElementById('statTotalSales');
             if (el) el.textContent = totalSales.toFixed(0) + ' ج';
             
-            return { totalSales, deliveredOrders };
+            return { totalSales, deliveredOrders, saved: result.success };
         }
 
         // ============================================================
@@ -3209,6 +3290,8 @@
             
             const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             let monthlySales = 0;
+            
+            // محاولة جلب المبيعات الشهرية المحفوظة
             getSalesData(monthKey).then(data => {
                 if (data) {
                     monthlySales = data.total || 0;
@@ -3261,6 +3344,10 @@
             const salesData = await getSalesData(monthKey);
             if (salesData) {
                 d.monthlySales = salesData.total || 0;
+            } else {
+                // إذا لم توجد بيانات، نستخدم البيانات المحسوبة من الطلبات
+                const { totalSales } = calculateMonthlySalesFromOrders();
+                d.monthlySales = totalSales;
             }
             saveAnalytics(d);
             if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(d);
@@ -3334,7 +3421,7 @@
                 </div>
                 <div style="text-align:center;margin-top:16px;color:var(--text-muted);font-size:12px;">
                     آخر تحديث: ${new Date(d.timestamp).toLocaleString('ar-EG')}
-                    <br><span style="font-size:11px;">📌 يتم حفظ بيانات المبيعات الشهرية في قاعدة البيانات</span>
+                    <br><span style="font-size:11px;">📌 يتم حفظ بيانات المبيعات الشهرية في قاعدة البيانات (مع نسخة احتياطية محلية)</span>
                 </div>
             `;
         }
@@ -4971,7 +5058,8 @@
         console.log('✅ طرق الدفع المتاحة: فودافون كاش، اتصالات كاش، أورنج كاش، وي بي، إنستا باي، تحويل بنكي، فيزا كارد، الدفع عند الاستلام');
         console.log('✅ تم إضافة العروض الحصرية مع ربط المنتج (Promotional Slideshow with Product Linking)');
         console.log('📧 EmailJS Config:', EMAILJS_CONFIG);
-        console.log('📊 يتم حفظ المبيعات الشهرية في قاعدة البيانات تحت المسار sales/YYYY-MM');
+        console.log('📊 يتم حفظ المبيعات الشهرية في قاعدة البيانات تحت المسار sales/YYYY-MM مع نسخة احتياطية محلية');
+        console.log('💾 في حالة فشل Firebase، يتم حفظ البيانات محلياً في localStorage');
     </script>
 </body>
 </html>
