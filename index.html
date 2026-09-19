@@ -1465,7 +1465,19 @@
                 </div>
                 <div class="delivery-fee-section">
                     <div class="delivery-fee-header"><i class="fa-solid fa-truck-fast"></i><h3>🚚 إعدادات رسوم التوصيل</h3></div>
-                    <div class="form-group"><label class="form-label">رسوم التوصيل (جنيه) - الطلب الأول مجاني</label><input type="number" id="deliveryFee" class="form-input" placeholder="مثال: 5" min="0" step="0.01"><small style="color:var(--text-muted);font-size:11px;margin-top:4px;display:block;">أول طلب لكل عميل مجاني، ثم تطبق هذه الرسوم على الطلبات التالية.</small></div>
+                    <div class="form-group">
+  <label class="form-label">رسوم التوصيل (جنيه)</label>
+  <input type="number" id="deliveryFee" class="form-input" placeholder="مثال: 5" min="0" step="0.01">
+</div>
+<div class="form-group" style="margin-top:14px;padding:14px;border:1px solid var(--border-color);border-radius:var(--radius);background:var(--bg-primary);">
+  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:800;">
+    <input type="checkbox" id="firstOrderFreeDelivery" style="width:20px;height:20px;accent-color:var(--gold-500);">
+    <span>🎁 الطلب الأول — التوصيل مجانًا</span>
+  </label>
+  <small style="color:var(--text-muted);font-size:11px;margin-top:7px;display:block;">
+    عند تفعيل هذا الخيار يظهر العرض في المتجر، ويصبح التوصيل مجانًا للعميل في أول طلب له فقط.
+  </small>
+</div>
                 </div>
                 <div class="cod-fee-section">
                     <div class="cod-fee-header"><i class="fa-solid fa-hand-holding-dollar"></i><h3>💰 إعدادات الدفع عند الاستلام</h3></div>
@@ -4768,7 +4780,16 @@
             }).catch(() => {});
             
             get(ref(database, 'settings/deliveryFee')).then(s => {
-                if (s.exists()) { document.getElementById('deliveryFee').value = s.val().fee || 5; }
+                if (s.exists()) {
+                    const d = s.val() || {};
+                    document.getElementById('deliveryFee').value = d.fee ?? 5;
+                    const firstOrderToggle = document.getElementById('firstOrderFreeDelivery');
+                    if (firstOrderToggle) firstOrderToggle.checked = d.firstOrderFree !== false;
+                } else {
+                    document.getElementById('deliveryFee').value = 5;
+                    const firstOrderToggle = document.getElementById('firstOrderFreeDelivery');
+                    if (firstOrderToggle) firstOrderToggle.checked = true;
+                }
             }).catch(() => {});
         }
 
@@ -4784,10 +4805,11 @@
             };
             const codFee = parseFloat(document.getElementById('codFee')?.value) || 0;
             const deliveryFee = parseFloat(document.getElementById('deliveryFee')?.value) || 5;
+            const firstOrderFree = document.getElementById('firstOrderFreeDelivery')?.checked !== false;
             try {
                 await set(ref(database, 'settings/wallets'), wallets);
                 await set(ref(database, 'settings/codFee'), { fee: codFee });
-                await set(ref(database, 'settings/deliveryFee'), { fee: deliveryFee });
+                await set(ref(database, 'settings/deliveryFee'), { fee: deliveryFee, firstOrderFree });
                 showToast('✅ تم حفظ جميع الإعدادات بنجاح');
             } catch (e) { showToast('❌ فشل حفظ الإعدادات', 'error'); }
         };
