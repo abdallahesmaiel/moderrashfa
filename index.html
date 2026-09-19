@@ -1067,6 +1067,62 @@
             .print-btn, .no-print { display: none !important; }
         }
 
+
+        /* ===== Barcode tools ===== */
+        .barcode-tools {
+            display:grid;
+            grid-template-columns:1fr auto auto;
+            gap:10px;
+            align-items:end;
+        }
+        .barcode-input-wrap { position:relative; }
+        .barcode-input-wrap .barcode-icon {
+            position:absolute; right:14px; top:50%; transform:translateY(-50%);
+            color:var(--gold-500); pointer-events:none;
+        }
+        .barcode-input-wrap input { padding-right:44px; direction:ltr; text-align:left; }
+        .barcode-hint { display:block; margin-top:6px; color:var(--text-muted); font-size:11px; }
+        .barcode-status {
+            margin-top:10px; padding:10px 12px; border-radius:var(--radius-sm);
+            background:var(--bg-primary); border:1px dashed var(--border-color);
+            color:var(--text-secondary); font-size:12px; display:none;
+        }
+        .barcode-status.show { display:block; }
+        .barcode-scan-modal .modal-dialog { max-width:620px; }
+        .barcode-camera-box {
+            position:relative; background:#000; border-radius:var(--radius-lg);
+            overflow:hidden; min-height:280px; display:flex; align-items:center; justify-content:center;
+        }
+        .barcode-camera-box video { width:100%; max-height:60vh; object-fit:cover; display:block; }
+        .barcode-scan-frame {
+            position:absolute; left:10%; right:10%; top:30%; height:40%;
+            border:2px solid var(--gold-300); border-radius:12px;
+            box-shadow:0 0 0 9999px rgba(0,0,0,.22);
+            pointer-events:none;
+        }
+        .barcode-scan-frame::after {
+            content:''; position:absolute; left:4%; right:4%; top:50%; height:2px;
+            background:var(--gold-300); box-shadow:0 0 12px var(--gold-300);
+            animation:barcodeScanLine 1.4s ease-in-out infinite;
+        }
+        @keyframes barcodeScanLine {
+            0%,100% { transform:translateY(-55px); opacity:.55; }
+            50% { transform:translateY(55px); opacity:1; }
+        }
+        .barcode-camera-message { color:var(--text-secondary); text-align:center; padding:30px 16px; }
+        .barcode-result-box {
+            margin-top:14px; padding:12px 14px; background:var(--bg-tertiary);
+            border:1px solid var(--border-color); border-radius:var(--radius);
+            display:none; word-break:break-all;
+        }
+        .barcode-result-box.show { display:block; }
+        .barcode-result-value { color:var(--gold-300); font-weight:900; direction:ltr; display:inline-block; }
+        .barcode-actions { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:16px; }
+        @media (max-width:700px) {
+            .barcode-tools { grid-template-columns:1fr 1fr; }
+            .barcode-tools .barcode-input-wrap { grid-column:1/-1; }
+        }
+
         .category-select-wrapper { position: relative; }
         .category-select-wrapper .category-emoji { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; pointer-events: none; }
         .category-select-wrapper select { padding-right: 44px; }
@@ -1314,6 +1370,25 @@
                         </div>
                         <div class="form-group"><label class="form-label">السعر الأساسي (جنيه) *</label><input type="number" id="prodPrice" class="form-input" placeholder="0.00" min="0" step="0.01"></div>
                         <div class="form-group"><label class="form-label">الكمية المتوفرة *</label><input type="number" id="prodQty" class="form-input" placeholder="0" min="0"></div>
+                        <div class="form-group">
+                            <label class="form-label">باركود المنتج (اختياري)</label>
+                            <div class="barcode-tools">
+                                <div class="barcode-input-wrap">
+                                    <i class="fa-solid fa-barcode barcode-icon"></i>
+                                    <input type="text" id="prodBarcode" class="form-input" inputmode="text"
+                                           autocomplete="off" placeholder="اكتب الباركود أو امسحه" dir="ltr">
+                                </div>
+                                <button type="button" class="btn btn-info btn-sm" onclick="window.openBarcodeCamera('add')">
+                                    <i class="fa-solid fa-camera"></i> الكاميرا
+                                </button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('prodBarcodeImageInput').click()">
+                                    <i class="fa-solid fa-image"></i> من صورة
+                                </button>
+                            </div>
+                            <input type="file" id="prodBarcodeImageInput" accept="image/*" capture="environment" style="display:none;">
+                            <small class="barcode-hint">يمكنك كتابة الباركود، تصويره بالكاميرا، أو اختيار صورة واضحة للباركود.</small>
+                            <div class="barcode-status" id="prodBarcodeStatus"></div>
+                        </div>
                     </div>
                     <div>
                         <div class="form-group"><label class="form-label">صورة المنتج *</label>
@@ -1729,6 +1804,25 @@
             </div>
             <div class="form-group"><label class="form-label">السعر الأساسي</label><input type="number" id="editProdPrice" class="form-input" min="0" step="0.01"></div>
             <div class="form-group"><label class="form-label">الكمية</label><input type="number" id="editProdQty" class="form-input" min="0"></div>
+            <div class="form-group">
+                <label class="form-label">باركود المنتج</label>
+                <div class="barcode-tools">
+                    <div class="barcode-input-wrap">
+                        <i class="fa-solid fa-barcode barcode-icon"></i>
+                        <input type="text" id="editProdBarcode" class="form-input" inputmode="text" autocomplete="off"
+                               placeholder="الباركود" dir="ltr">
+                    </div>
+                    <button type="button" class="btn btn-info btn-sm" onclick="window.openBarcodeCamera('edit')">
+                        <i class="fa-solid fa-camera"></i> الكاميرا
+                    </button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('editProdBarcodeImageInput').click()">
+                        <i class="fa-solid fa-image"></i> من صورة
+                    </button>
+                </div>
+                <input type="file" id="editProdBarcodeImageInput" accept="image/*" capture="environment" style="display:none;">
+                <small class="barcode-hint">اتركه فارغاً إذا كان المنتج بدون باركود.</small>
+                <div class="barcode-status" id="editProdBarcodeStatus"></div>
+            </div>
             <div class="form-group"><label class="form-label">الوصف</label><textarea id="editProdDesc" class="form-input form-textarea"></textarea></div>
             <div class="discount-group">
                 <div class="discount-group-title"><i class="fa-solid fa-tag"></i> إعدادات الخصم</div>
@@ -1750,6 +1844,38 @@
                 <button class="btn btn-outline" onclick="window.closeEditModal()">إلغاء</button>
                 <button class="btn btn-gold" onclick="window.saveProductEdit()"><i class="fa-solid fa-check"></i> حفظ التعديلات</button>
             </div>
+        </div>
+    </div>
+
+
+    <!-- ===== Modal: Barcode Scanner ===== -->
+    <div class="modal-overlay barcode-scan-modal" id="barcodeScannerModal">
+        <div class="modal-dialog">
+            <h2><i class="fa-solid fa-barcode"></i> قراءة باركود المنتج</h2>
+            <div class="barcode-camera-box" id="barcodeCameraBox">
+                <video id="barcodeScannerVideo" playsinline muted></video>
+                <div class="barcode-scan-frame"></div>
+                <div class="barcode-camera-message" id="barcodeCameraMessage">
+                    <i class="fa-solid fa-camera" style="font-size:42px;color:var(--gold-500);display:block;margin-bottom:12px;"></i>
+                    اضغط تشغيل الكاميرا ووجّهها إلى الباركود
+                </div>
+            </div>
+            <div class="barcode-result-box" id="barcodeScanResult">
+                <span>الباركود المقروء: </span>
+                <span class="barcode-result-value" id="barcodeScanResultValue"></span>
+            </div>
+            <div class="barcode-actions">
+                <button class="btn btn-info" id="startBarcodeCameraBtn" type="button" onclick="window.startBarcodeCamera()">
+                    <i class="fa-solid fa-camera"></i> تشغيل الكاميرا
+                </button>
+                <button class="btn btn-gold" id="useBarcodeResultBtn" type="button" onclick="window.useScannedBarcode()" disabled>
+                    <i class="fa-solid fa-check"></i> استخدام الباركود
+                </button>
+                <button class="btn btn-outline" type="button" onclick="window.closeBarcodeCamera()">إغلاق</button>
+            </div>
+            <p id="barcodeScannerStatus" style="text-align:center;color:var(--text-muted);font-size:12px;margin-top:12px;">
+                يدعم الباركودات الشائعة مثل EAN وUPC وCode 128 وQR.
+            </p>
         </div>
     </div>
 
@@ -1926,7 +2052,7 @@
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, get, set, push, update, remove, onValue, runTransaction, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         // ============================================================
         // ===== Firebase Configuration =====
@@ -1941,9 +2067,68 @@
             appId: "1:973516999258:web:e71f8d42efd8e461e0a663"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-        const auth = getAuth(app);
+        let app = null;
+        let database = null;
+        let auth = null;
+        let firebaseReady = false;
+        let firebaseInitError = null;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            database = getDatabase(app);
+            auth = getAuth(app);
+            firebaseReady = true;
+        } catch (error) {
+            firebaseInitError = error;
+            console.error('Firebase initialization failed:', error);
+        }
+
+        function firebaseErrorMessage(error, fallback = 'تعذر الاتصال بقاعدة البيانات') {
+            const code = String(error?.code || '');
+            const message = String(error?.message || '');
+            if (code.includes('permission-denied')) return '❌ ليس لديك صلاحية للوصول إلى بيانات Firebase';
+            if (code.includes('network') || message.toLowerCase().includes('network')) return '❌ تعذر الاتصال بـ Firebase. تحقق من الإنترنت أو إعدادات الشبكة';
+            if (code.includes('auth/invalid-credential') || code.includes('auth/invalid-login-credentials')) return '❌ البريد الإلكتروني أو كلمة المرور غير صحيحة';
+            if (code.includes('auth/user-not-found')) return '❌ المستخدم غير موجود';
+            if (code.includes('auth/wrong-password')) return '❌ كلمة المرور غير صحيحة';
+            if (code.includes('auth/too-many-requests')) return '❌ محاولات كثيرة، انتظر قليلاً ثم حاول مرة أخرى';
+            return fallback;
+        }
+
+        function requireFirebase() {
+            if (!firebaseReady || !database || !auth) {
+                throw firebaseInitError || new Error('Firebase غير مهيأ');
+            }
+            return true;
+        }
+
+        async function safeFirebaseCall(fn, fallbackValue = null, label = 'Firebase') {
+            try {
+                requireFirebase();
+                return await fn();
+            } catch (error) {
+                console.error(`${label} error:`, error);
+                showToast(firebaseErrorMessage(error), 'error');
+                return fallbackValue;
+            }
+        }
+
+        window.addEventListener('unhandledrejection', (event) => {
+            const msg = String(event?.reason?.message || '');
+            if (msg.includes('Firebase') || String(event?.reason?.code || '').startsWith('auth/')) {
+                console.error('Unhandled Firebase rejection:', event.reason);
+                event.preventDefault();
+            }
+        });
+
+        if (database) {
+            onValue(ref(database, '.info/connected'), (snap) => {
+                const connected = snap.val() === true;
+                document.documentElement.dataset.firebaseConnected = connected ? 'true' : 'false';
+            }, (error) => {
+                console.error('Firebase connection monitor error:', error);
+            });
+        }
 
         // ============================================================
         // ===== EmailJS Configuration =====
@@ -2022,6 +2207,15 @@
         let currentSearchQuery = '';
         let currentDiscountType = 'none';
         let editCurrentDiscountType = 'none';
+
+        let barcodeScannerStream = null;
+        let barcodeScannerReader = null;
+        let barcodeScannerLoop = false;
+        let barcodeScannerTarget = 'add';
+        let barcodeScannedValue = '';
+        let barcodeLastCandidate = '';
+        let barcodeCandidateHits = 0;
+
         const deductedOrders = new Set();
 
         let flashSaleSettings = {
@@ -2835,12 +3029,13 @@
         // ============================================================
 
         async function loadProducts() {
+            requireFirebase();
             const s = await get(ref(database, 'products'));
             const p = [];
             if (s.exists()) {
                 const d = s.val();
                 for (const k in d) {
-                    if (d.hasOwnProperty(k)) p.push({ id: k, ...d[k] });
+                    if (Object.prototype.hasOwnProperty.call(d, k)) p.push({ id: k, ...d[k] });
                 }
             }
             return p;
@@ -2848,10 +3043,15 @@
 
         function setupProducts() {
             if (productsListener) return;
-            loadProducts().then(p => { allProducts = p;
+            loadProducts().then(p => {
+                allProducts = p;
                 updateStats();
                 renderProducts();
-                updateAnalyticsCache(); });
+                updateAnalyticsCache();
+            }).catch(error => {
+                console.error('Products initial load error:', error);
+                showToast(firebaseErrorMessage(error, '❌ فشل جلب المنتجات من Firebase'), 'error');
+            });
             productsListener = onValue(ref(database, 'products'), (s) => {
                 const p = [];
                 if (s.exists()) {
@@ -2867,6 +3067,9 @@
                 updateFlashSalePreview();
                 // تحديث قائمة المنتجات في نموذج العروض الحصرية
                 updatePromoProductsList();
+            }, (error) => {
+                console.error('Products listener error:', error);
+                showToast(firebaseErrorMessage(error, '❌ فشل مزامنة المنتجات مع Firebase'), 'error');
             });
         }
 
@@ -2898,7 +3101,8 @@
                 filtered = filtered.filter(p =>
                     (p.name || '').toLowerCase().includes(currentSearchQuery) ||
                     (p.category || '').toLowerCase().includes(currentSearchQuery) ||
-                    (p.description || '').toLowerCase().includes(currentSearchQuery)
+                    (p.description || '').toLowerCase().includes(currentSearchQuery) ||
+                    String(p.barcode || '').toLowerCase().includes(currentSearchQuery)
                 );
             }
 
@@ -2932,7 +3136,7 @@
                     `<div><span class="product-original-price">${bp.toFixed(2)} ج</span><span class="product-final-price">${fp.toFixed(2)} ج</span></div><span class="product-discount-badge"><i class="fa-solid fa-tag"></i> ${dt === 'amount' ? `خصم ${dv.toFixed(2)} ج` : `خصم ${dv}%`}</span>` :
                     `<span class="product-price-tag">${bp.toFixed(2)} ج</span>`;
                 const emoji = getCategoryEmoji(cat);
-                return `<div class="product-card-admin ${cls}">
+                return `<div class="product-card-admin ${cls}" data-product-barcode="${String(p.barcode || '').replace(/"/g, '&quot;')}" data-product-id="${p.id}">
                     <img class="product-img-admin" src="${p.image || ''}" alt="${p.name || ''}" loading="lazy" onerror="this.style.background='var(--bg-primary)';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2240%22>🏪</text></svg>';">
                     <div class="product-card-body">
                         <h4>${p.name || '---'}</h4>
@@ -2953,6 +3157,232 @@
                 </div>`;
             }).join('');
         }
+
+
+        // ============================================================
+        // ===== Barcode: input / image / camera
+        // ============================================================
+
+        function normalizeBarcode(value) {
+            const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+            const easternDigits = '۰۱۲۳۴۵۶۷۸۹';
+            return String(value || '').trim()
+                .replace(/[٠-٩]/g, ch => String(arabicDigits.indexOf(ch)))
+                .replace(/[۰-۹]/g, ch => String(easternDigits.indexOf(ch)))
+                .replace(/\s+/g, '');
+        }
+
+        function hasDuplicateBarcode(barcode, exceptId = '') {
+            const b = normalizeBarcode(barcode).toLowerCase();
+            if (!b) return false;
+            return allProducts.some(p => p.id !== exceptId && normalizeBarcode(p.barcode).toLowerCase() === b);
+        }
+
+        function setBarcodeStatus(target, message, type = 'info') {
+            const id = target === 'edit' ? 'editProdBarcodeStatus' : 'prodBarcodeStatus';
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = message || '';
+            el.className = 'barcode-status' + (message ? ' show' : '');
+            if (type === 'success') el.style.color = 'var(--status-delivering)';
+            else if (type === 'error') el.style.color = 'var(--status-rejected)';
+            else el.style.color = 'var(--text-secondary)';
+        }
+
+        function putBarcodeInTarget(value) {
+            const clean = normalizeBarcode(value);
+            if (!clean) return;
+            const id = barcodeScannerTarget === 'edit' ? 'editProdBarcode' : 'prodBarcode';
+            const input = document.getElementById(id);
+            if (input) {
+                input.value = clean;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            setBarcodeStatus(barcodeScannerTarget, `✅ تم قراءة الباركود: ${clean}`, 'success');
+        }
+
+        function registerBarcodeCandidate(value) {
+            const clean = normalizeBarcode(value);
+            if (!clean || clean.length < 3) return false;
+            if (clean === barcodeLastCandidate) barcodeCandidateHits++;
+            else {
+                barcodeLastCandidate = clean;
+                barcodeCandidateHits = 1;
+            }
+            // Require the same result twice to reduce accidental/false camera reads.
+            if (barcodeCandidateHits >= 2) {
+                barcodeScannedValue = clean;
+                const result = document.getElementById('barcodeScanResult');
+                const resultValue = document.getElementById('barcodeScanResultValue');
+                const useBtn = document.getElementById('useBarcodeResultBtn');
+                if (resultValue) resultValue.textContent = clean;
+                result?.classList.add('show');
+                if (useBtn) useBtn.disabled = false;
+                window.stopBarcodeCamera();
+                const st = document.getElementById('barcodeScannerStatus');
+                if (st) st.textContent = '✅ تم تثبيت الباركود. اضغط «استخدام الباركود».';
+                return true;
+            }
+            return false;
+        }
+
+        async function decodeBarcodeFromImageFile(file, target) {
+            if (!file || !file.type?.startsWith('image/')) {
+                showToast('⚠️ اختر صورة باركود صحيحة', 'error'); return;
+            }
+            barcodeScannerTarget = target;
+            setBarcodeStatus(target, '🔎 جاري تحليل الصورة...', 'info');
+            try {
+                const img = document.createElement('img');
+                const url = URL.createObjectURL(file);
+                img.onload = async () => {
+                    try {
+                        let result = null;
+                        if ('BarcodeDetector' in window) {
+                            const detector = new BarcodeDetector({
+                                formats: ['aztec','code_128','code_39','code_93','codabar','data_matrix','ean_8','ean_13','itf','pdf417','qr_code','upc_a','upc_e']
+                            });
+                            const found = await detector.detect(img);
+                            if (found?.length) result = found[0].rawValue;
+                        }
+                        if (!result) {
+                            const mod = await import('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm');
+                            const reader = new mod.BrowserMultiFormatReader();
+                            if (typeof reader.decodeFromImageElement === 'function') {
+                                const decoded = await reader.decodeFromImageElement(img);
+                                result = decoded?.getText?.() || decoded?.text || '';
+                            } else if (typeof reader.decodeFromImageUrl === 'function') {
+                                const decoded = await reader.decodeFromImageUrl(url);
+                                result = decoded?.getText?.() || decoded?.text || '';
+                            }
+                        }
+                        if (!result) throw new Error('لم يتم العثور على باركود واضح في الصورة');
+                        const clean = normalizeBarcode(result);
+                        if (hasDuplicateBarcode(clean, target === 'edit' ? document.getElementById('editProductId')?.value : '')) {
+                            setBarcodeStatus(target, '⚠️ تم العثور على باركود لكنه مستخدم لمنتج آخر', 'error');
+                            return;
+                        }
+                        putBarcodeInTarget(clean);
+                    } catch (err) {
+                        console.error('Barcode image decode:', err);
+                        setBarcodeStatus(target, '❌ لم يتم العثور على باركود واضح. استخدم صورة أقرب وأكثر وضوحاً أو الكاميرا.', 'error');
+                    } finally {
+                        URL.revokeObjectURL(url);
+                    }
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    setBarcodeStatus(target, '❌ تعذر قراءة الصورة', 'error');
+                };
+                img.src = url;
+            } catch (err) {
+                console.error(err);
+                setBarcodeStatus(target, '❌ فشل تحليل صورة الباركود', 'error');
+            }
+        }
+
+        window.openBarcodeCamera = function(target = 'add') {
+            barcodeScannerTarget = target;
+            barcodeScannedValue = '';
+            barcodeLastCandidate = '';
+            barcodeCandidateHits = 0;
+            document.getElementById('barcodeScanResult')?.classList.remove('show');
+            const useBtn = document.getElementById('useBarcodeResultBtn');
+            if (useBtn) useBtn.disabled = true;
+            const msg = document.getElementById('barcodeCameraMessage');
+            if (msg) msg.style.display = 'block';
+            const st = document.getElementById('barcodeScannerStatus');
+            if (st) st.textContent = 'اضغط تشغيل الكاميرا ثم ثبّت الباركود داخل الإطار.';
+            document.getElementById('barcodeScannerModal')?.classList.add('active');
+        };
+
+        window.startBarcodeCamera = async function() {
+            window.stopBarcodeCamera();
+            const video = document.getElementById('barcodeScannerVideo');
+            const msg = document.getElementById('barcodeCameraMessage');
+            const st = document.getElementById('barcodeScannerStatus');
+            const btn = document.getElementById('startBarcodeCameraBtn');
+            if (!video) return;
+            try {
+                barcodeScannerStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                video.srcObject = barcodeScannerStream;
+                await video.play();
+                if (msg) msg.style.display = 'none';
+                if (st) st.textContent = '🔎 جاري البحث... حرّك الكاميرا ببطء فوق الباركود.';
+                if (btn) btn.disabled = true;
+
+                if ('BarcodeDetector' in window) {
+                    const detector = new BarcodeDetector({
+                        formats: ['aztec','code_128','code_39','code_93','codabar','data_matrix','ean_8','ean_13','itf','pdf417','qr_code','upc_a','upc_e']
+                    });
+                    barcodeScannerLoop = true;
+                    const scan = async () => {
+                        if (!barcodeScannerLoop || video.readyState < 2) return;
+                        try {
+                            const found = await detector.detect(video);
+                            if (found?.length) {
+                                const candidate = found[0]?.rawValue || '';
+                                if (registerBarcodeCandidate(candidate)) return;
+                            }
+                        } catch (e) {}
+                        if (barcodeScannerLoop) setTimeout(scan, 90);
+                    };
+                    scan();
+                } else {
+                    // Fallback for browsers without BarcodeDetector.
+                    const mod = await import('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm');
+                    barcodeScannerReader = new mod.BrowserMultiFormatReader();
+                    barcodeScannerLoop = true;
+                    await barcodeScannerReader.decodeFromVideoDevice(undefined, video, (result) => {
+                        if (!barcodeScannerLoop || !result) return;
+                        const candidate = result.getText?.() || result.text || '';
+                        registerBarcodeCandidate(candidate);
+                    });
+                }
+            } catch (err) {
+                console.error('Barcode camera:', err);
+                if (st) st.textContent = '❌ تعذر تشغيل الكاميرا. اسمح للموقع باستخدام الكاميرا أو استخدم «من صورة».';
+                if (btn) btn.disabled = false;
+                window.stopBarcodeCamera();
+            }
+        };
+
+        window.stopBarcodeCamera = function() {
+            barcodeScannerLoop = false;
+            try { barcodeScannerReader?.reset?.(); } catch (e) {}
+            barcodeScannerReader = null;
+            if (barcodeScannerStream) {
+                barcodeScannerStream.getTracks().forEach(track => track.stop());
+                barcodeScannerStream = null;
+            }
+            const video = document.getElementById('barcodeScannerVideo');
+            if (video) {
+                try { video.pause(); } catch (e) {}
+                video.srcObject = null;
+            }
+            const btn = document.getElementById('startBarcodeCameraBtn');
+            if (btn) btn.disabled = false;
+        };
+
+        window.closeBarcodeCamera = function() {
+            window.stopBarcodeCamera();
+            document.getElementById('barcodeScannerModal')?.classList.remove('active');
+            barcodeScannedValue = '';
+        };
+
+        window.useScannedBarcode = function() {
+            const value = normalizeBarcode(barcodeScannedValue);
+            if (!value) return;
+            const exceptId = barcodeScannerTarget === 'edit' ? document.getElementById('editProductId')?.value : '';
+            if (hasDuplicateBarcode(value, exceptId)) {
+                showToast('⚠️ هذا الباركود مستخدم لمنتج آخر', 'error'); return;
+            }
+            putBarcodeInTarget(value);
+            window.closeBarcodeCamera();
+        };
 
         // ============================================================
         // ===== Add Product =====
@@ -3005,7 +3435,7 @@
         }
 
         window.resetAddProductForm = function() {
-            ['prodName', 'prodPrice', 'prodQty', 'prodDesc', 'prodDiscountValue'].forEach(id => {
+            ['prodName', 'prodPrice', 'prodQty', 'prodDesc', 'prodDiscountValue', 'prodBarcode'].forEach(id => {
                 const e = document.getElementById(id);
                 if (e) e.value = '';
             });
@@ -3035,6 +3465,7 @@
             document.getElementById('editProdCategory').value = p.category || 'أجهزة شخصية';
             document.getElementById('editProdPrice').value = p.price || 0;
             document.getElementById('editProdQty').value = p.quantity || 0;
+            document.getElementById('editProdBarcode').value = p.barcode || '';
             document.getElementById('editProdDesc').value = p.description || '';
             editCurrentDiscountType = p.discountType || 'none';
             document.getElementById('editProdDiscountValue').value = p.discountValue || '';
@@ -3076,9 +3507,13 @@
                 category = document.getElementById('editProdCategory')?.value || 'أجهزة شخصية',
                 price = parseFloat(document.getElementById('editProdPrice')?.value),
                 qty = parseInt(document.getElementById('editProdQty')?.value),
+                barcode = normalizeBarcode(document.getElementById('editProdBarcode')?.value),
                 desc = document.getElementById('editProdDesc')?.value?.trim(),
                 dv = parseFloat(document.getElementById('editProdDiscountValue')?.value) || 0;
             if (!pid || !name || isNaN(price) || isNaN(qty)) { showToast('⚠️ بيانات غير صحيحة', 'error'); return; }
+            if (barcode && hasDuplicateBarcode(barcode, pid)) {
+                showToast('⚠️ هذا الباركود مرتبط بمنتج آخر بالفعل', 'error'); return;
+            }
             if (editCurrentDiscountType === 'percent' && dv > 100) { showToast('⚠️ نسبة الخصم لا تتجاوز 100%', 'error'); return; }
             try {
                 await update(ref(database, `products/${pid}`), {
@@ -3087,6 +3522,7 @@
                     finalPrice: calculateFinalPrice(price, editCurrentDiscountType, dv),
                     category,
                     quantity: qty,
+                    barcode: barcode || '',
                     description: desc,
                     discountType: editCurrentDiscountType,
                     discountValue: dv,
@@ -3522,6 +3958,9 @@
                 updateStats();
                 updateAnalyticsCache();
                 if (document.getElementById('panel-orders')?.classList.contains('active')) renderOrders();
+            }, (error) => {
+                console.error('Orders listener error:', error);
+                showToast(firebaseErrorMessage(error, '❌ فشل مزامنة الطلبات مع Firebase'), 'error');
             });
         }
 
@@ -4691,6 +5130,18 @@
             window.updatePromoProductsList();
         });
 
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) window.stopBarcodeCamera?.();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('barcodeScannerModal');
+                if (modal?.classList.contains('active')) window.closeBarcodeCamera();
+            }
+        });
+
         // ============================================================
         // ===== Auth =====
         // ============================================================
@@ -4699,26 +5150,35 @@
             document.getElementById('loginFullscreen')?.classList.add('hidden');
             document.getElementById('adminBar').style.display = 'flex';
             document.getElementById('mainContent').style.display = 'block';
+            if (!firebaseReady) {
+                showLogin();
+                return;
+            }
             if (!productsListener) setupProducts();
-            if (!window._ordersSetup) { setupOrders();
-                window._ordersSetup = true; }
-            loadLogo();
-            loadStoredAnalytics();
-            loadMessageLog();
-            loadWalletSettings();
-            loadCoupons();
-            loadFlashSaleSettings();
-            loadAboutSettings();
-            loadContactSettings();
-            loadClientMessages();
-            loadPromoSlides();
+            if (!window._ordersSetup) {
+                setupOrders();
+                window._ordersSetup = true;
+            }
+            Promise.allSettled([
+                safeFirebaseCall(() => loadLogo(), null, 'loadLogo'),
+                safeFirebaseCall(() => loadStoredAnalytics(), null, 'loadStoredAnalytics'),
+                safeFirebaseCall(() => loadMessageLog(), null, 'loadMessageLog'),
+                safeFirebaseCall(() => loadWalletSettings(), null, 'loadWalletSettings'),
+                safeFirebaseCall(() => loadCoupons(), null, 'loadCoupons'),
+                safeFirebaseCall(() => loadFlashSaleSettings(), null, 'loadFlashSaleSettings'),
+                safeFirebaseCall(() => loadAboutSettings(), null, 'loadAboutSettings'),
+                safeFirebaseCall(() => loadContactSettings(), null, 'loadContactSettings'),
+                safeFirebaseCall(() => loadClientMessages(), null, 'loadClientMessages'),
+                safeFirebaseCall(() => loadPromoSlides(), null, 'loadPromoSlides')
+            ]);
             renderOrders();
             renderProducts();
             updateStats();
-            updateMonthlySales().then(() => {
-                setTimeout(() => updateAnalyticsCache(), 800);
-            });
-            setInterval(async () => { await checkCouponStatus(); }, 60000);
+            safeFirebaseCall(() => updateMonthlySales(), null, 'updateMonthlySales')
+                .then(() => setTimeout(() => safeFirebaseCall(() => updateAnalyticsCache(), null, 'updateAnalyticsCache'), 800));
+            if (!window._couponInterval) {
+                window._couponInterval = setInterval(() => safeFirebaseCall(() => checkCouponStatus(), null, 'checkCouponStatus'), 60000);
+            }
         }
 
         function showLogin() {
@@ -4728,28 +5188,57 @@
         }
 
         window.loginAdmin = async () => {
-            const e = document.getElementById('loginEmail')?.value.trim(),
-                p = document.getElementById('loginPassword')?.value,
-                er = document.getElementById('loginError'),
-                b = document.getElementById('loginBtn');
+            const e = document.getElementById('loginEmail')?.value.trim() || '';
+            const p = document.getElementById('loginPassword')?.value || '';
+            const er = document.getElementById('loginError');
+            const b = document.getElementById('loginBtn');
+
+            if (er) { er.textContent = ''; er.style.display = 'none'; }
+
             if (!e || !p) {
-                if (er) { er.textContent = '❌ يرجى إدخال البريد وكلمة المرور';
-                    er.style.display = 'block'; }
+                if (er) {
+                    er.textContent = '❌ يرجى إدخال البريد وكلمة المرور';
+                    er.style.display = 'block';
+                }
                 return;
             }
-            if (b) { b.disabled = true;
-                b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الدخول...'; }
+
+            if (!firebaseReady || !auth) {
+                const msg = firebaseErrorMessage(firebaseInitError, '❌ تعذر تشغيل Firebase');
+                if (er) { er.textContent = msg; er.style.display = 'block'; }
+                return;
+            }
+
+            if (b) {
+                b.disabled = true;
+                b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الدخول...';
+            }
+
             try {
-                const u = await signInWithEmailAndPassword(auth, e, p);
-                if (!ADMIN_UIDS.includes(u.user.uid)) { await signOut(auth);
-                    throw new Error('غير مصرح'); }
+                await setPersistence(auth, browserLocalPersistence);
+                const credential = await signInWithEmailAndPassword(auth, e, p);
+                const uid = credential?.user?.uid || '';
+
+                if (!ADMIN_UIDS.includes(uid)) {
+                    await signOut(auth).catch(() => {});
+                    throw new Error('غير مصرح');
+                }
+
+                if (er) { er.textContent = ''; er.style.display = 'none'; }
                 showToast('✅ تم تسجيل الدخول');
             } catch (ex) {
-                if (er) { er.textContent = '❌ ' + (ex.message === 'غير مصرح' ? ex.message : 'فشل تسجيل الدخول');
-                    er.style.display = 'block'; }
+                console.error('Admin login error:', ex);
+                if (er) {
+                    er.textContent = ex?.message === 'غير مصرح'
+                        ? '❌ هذا الحساب ليس لديه صلاحية المدير'
+                        : firebaseErrorMessage(ex, '❌ فشل تسجيل الدخول');
+                    er.style.display = 'block';
+                }
             } finally {
-                if (b) { b.disabled = false;
-                    b.innerHTML = '<i class="fa-solid fa-lock"></i> تسجيل الدخول'; }
+                if (b) {
+                    b.disabled = false;
+                    b.innerHTML = '<i class="fa-solid fa-lock"></i> تسجيل الدخول';
+                }
             }
         };
 
@@ -4758,11 +5247,27 @@
                 showToast('👋 تم الخروج', 'info'); }
         };
 
-        onAuthStateChanged(auth, (u) => {
-            currentUser = u;
-            if (ADMIN_UIDS.includes(u?.uid)) showAdmin();
-            else showLogin();
-        });
+        if (auth) {
+            onAuthStateChanged(auth, (u) => {
+                currentUser = u;
+                if (ADMIN_UIDS.includes(u?.uid)) {
+                    showAdmin();
+                } else {
+                    showLogin();
+                }
+            }, (error) => {
+                console.error('Auth state error:', error);
+                currentUser = null;
+                showLogin();
+                const er = document.getElementById('loginError');
+                if (er) {
+                    er.textContent = firebaseErrorMessage(error, '❌ تعذر التحقق من حالة تسجيل الدخول');
+                    er.style.display = 'block';
+                }
+            });
+        } else {
+            showLogin();
+        }
 
         // ============================================================
         // ===== Tab Switching =====
@@ -4855,6 +5360,36 @@
             }
         });
 
+
+        document.getElementById('prodBarcodeImageInput')?.addEventListener('change', async function(e) {
+            const f = e.target.files?.[0];
+            await decodeBarcodeFromImageFile(f, 'add');
+            this.value = '';
+        });
+
+        document.getElementById('editProdBarcodeImageInput')?.addEventListener('change', async function(e) {
+            const f = e.target.files?.[0];
+            await decodeBarcodeFromImageFile(f, 'edit');
+            this.value = '';
+        });
+
+        document.getElementById('prodBarcode')?.addEventListener('input', function() {
+            const value = normalizeBarcode(this.value);
+            if (value && hasDuplicateBarcode(value)) setBarcodeStatus('add', '⚠️ هذا الباركود مستخدم لمنتج آخر', 'error');
+            else setBarcodeStatus('add', value ? '✓ باركود جاهز للحفظ' : '', 'success');
+        });
+
+        document.getElementById('editProdBarcode')?.addEventListener('input', function() {
+            const value = normalizeBarcode(this.value);
+            const pid = document.getElementById('editProductId')?.value || '';
+            if (value && hasDuplicateBarcode(value, pid)) setBarcodeStatus('edit', '⚠️ هذا الباركود مستخدم لمنتج آخر', 'error');
+            else setBarcodeStatus('edit', value ? '✓ باركود جاهز للحفظ' : '', 'success');
+        });
+
+        document.getElementById('barcodeScannerModal')?.addEventListener('click', function(e) {
+            if (e.target === this) window.closeBarcodeCamera();
+        });
+
         document.getElementById('logoFileInput')?.addEventListener('change', function(e) {
             const f = e.target.files[0];
             if (!f?.type?.startsWith('image/')) return;
@@ -4893,6 +5428,7 @@
             const category = document.getElementById('prodCategory')?.value || 'أجهزة شخصية';
             const price = parseFloat(document.getElementById('prodPrice')?.value);
             const qty = parseInt(document.getElementById('prodQty')?.value);
+            const barcode = normalizeBarcode(document.getElementById('prodBarcode')?.value);
             const desc = document.getElementById('prodDesc')?.value?.trim();
             const img = selectedProductImage;
             const dv = parseFloat(document.getElementById('prodDiscountValue')?.value) || 0;
@@ -4901,6 +5437,9 @@
             if (isNaN(price) || price < 0) { showToast('⚠️ يرجى إدخال سعر صحيح', 'error'); return; }
             if (isNaN(qty) || qty < 0) { showToast('⚠️ يرجى إدخال كمية صحيحة', 'error'); return; }
             if (!desc) { showToast('⚠️ يرجى إدخال وصف المنتج', 'error'); return; }
+            if (barcode && hasDuplicateBarcode(barcode)) {
+                showToast('⚠️ هذا الباركود مرتبط بمنتج آخر بالفعل', 'error'); return;
+            }
             if (!img) { showToast('⚠️ يرجى رفع صورة للمنتج أولاً', 'error'); return; }
             if (currentDiscountType === 'percent' && (dv > 100 || dv < 0)) {
                 showToast('⚠️ نسبة الخصم يجب أن تكون بين 0 و 100', 'error');
@@ -4925,6 +5464,7 @@
                     category,
                     quantity: qty,
                     initialStock: qty,
+                    barcode: barcode || '',
                     description: desc,
                     image: img,
                     discountType: currentDiscountType,
@@ -4977,6 +5517,10 @@
 
         document.getElementById('loginPassword')?.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') window.loginAdmin();
+        });
+        document.getElementById('loginBtn')?.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.loginAdmin();
         });
 
         // ============================================================
