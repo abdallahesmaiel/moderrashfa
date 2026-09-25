@@ -934,6 +934,17 @@
         .toast-warning { background: var(--status-pending); color: #000; }
         .toast-info { background: var(--status-accepted); color: white; }
 
+        /* ===== تحسينات التحميل والإغلاق ===== */
+        .btn.is-loading { pointer-events:none; opacity:.75; cursor:wait; }
+        .page-loading-overlay{position:fixed;inset:0;z-index:12000;display:none;align-items:center;justify-content:center;background:rgba(5,5,10,.72);backdrop-filter:blur(5px)}
+        .page-loading-overlay.show{display:flex}
+        .page-loading-card{width:min(92vw,380px);padding:26px;border:1px solid var(--border-light);border-radius:var(--radius-xl);background:var(--bg-card);box-shadow:var(--shadow-xl);text-align:center}
+        .page-loading-spinner{width:54px;height:54px;margin:0 auto 14px;border:4px solid var(--border-color);border-top-color:var(--gold-500);border-radius:50%;animation:spin .8s linear infinite}
+        .page-loading-title{font-weight:800;color:var(--gold-300);font-size:17px}
+        .page-loading-subtitle{margin-top:6px;color:var(--text-secondary);font-size:12px}
+        body.is-busy{overflow:hidden}
+
+
         .empty-state { text-align: center; padding: clamp(60px, 10vw, 80px) clamp(16px, 3vw, 20px); color: var(--text-muted); }
         .empty-state i { font-size: clamp(56px, 12vw, 72px); opacity: 0.3; margin-bottom: 20px; display: block; }
         .empty-state h3 { font-size: clamp(16px, 3vw, 20px); margin-bottom: 8px; color: var(--text-secondary); }
@@ -1788,7 +1799,11 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-title"><i class="fa-solid fa-chart-simple"></i> التحليلات والإحصائيات</div>
-                    <button class="btn btn-gold btn-sm" onclick="window.refreshAnalytics()"><i class="fa-solid fa-rotate"></i> تحديث</button>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+                        <button class="btn btn-gold btn-sm" onclick="window.refreshAnalytics()"><i class="fa-solid fa-rotate"></i> تحديث</button>
+                        <button class="btn btn-info btn-sm" onclick="window.exportAnalyticsCSV()"><i class="fa-solid fa-file-csv"></i> تصدير CSV</button>
+                        <button class="btn btn-danger btn-sm" onclick="window.deleteAnalytics()"><i class="fa-solid fa-trash"></i> حذف التحليلات</button>
+                    </div>
                 </div>
                 <div id="analyticsContent"><div class="empty-state"><i class="fa-solid fa-chart-bar"></i><h3>جاري تحميل التحليلات...</h3></div></div>
             </div>
@@ -2114,6 +2129,41 @@
             return true;
         }
 
+        // ===== مدير تحميل موحد لكل العمليات الطويلة =====
+        function ensurePageLoadingOverlay() {
+            let el = document.getElementById('pageLoadingOverlay');
+            if (el) return el;
+            el = document.createElement('div');
+            el.id = 'pageLoadingOverlay';
+            el.className = 'page-loading-overlay';
+            el.innerHTML = '<div class="page-loading-card"><div class="page-loading-spinner"></div><div class="page-loading-title" id="pageLoadingTitle">جاري الحفظ...</div><div class="page-loading-subtitle" id="pageLoadingSubtitle">يرجى الانتظار حتى تكتمل العملية</div></div>';
+            document.body.appendChild(el);
+            return el;
+        }
+        function showPageLoading(title='جاري الحفظ...', subtitle='يرجى الانتظار حتى تكتمل العملية') {
+            const el = ensurePageLoadingOverlay();
+            document.getElementById('pageLoadingTitle').textContent = title;
+            document.getElementById('pageLoadingSubtitle').textContent = subtitle;
+            el.classList.add('show');
+            document.body.classList.add('is-busy');
+        }
+        function hidePageLoading() {
+            document.getElementById('pageLoadingOverlay')?.classList.remove('show');
+            document.body.classList.remove('is-busy');
+        }
+        function setButtonLoading(btn, loadingText='جاري الحفظ...') {
+            if (!btn) return () => {};
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.classList.add('is-loading');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + loadingText;
+            return () => {
+                btn.disabled = false;
+                btn.classList.remove('is-loading');
+                btn.innerHTML = original;
+            };
+        }
+
         async function safeFirebaseCall(fn, fallbackValue = null, label = 'Firebase') {
             try {
                 requireFirebase();
@@ -2404,12 +2454,8 @@
             }
 
             const maxRetries = 3;
-            const delay = 1000 * (retryCount + 1);
-
-            const progressMessage = retryCount > 0 ? 
-                `جاري إعادة المحاولة ${retryCount + 1}/${maxRetries}...` : 
-                'جاري رفع الصورة...';
-            updateUploadProgress(prefix, retryCount > 0 ? 20 : 5, progressMessage, 'loading');
+            updateUploadProgress(prefix, retryCount > 0 ? 5 : 0,
+                retryCount > 0 ? `جاري إعادة المحاولة ${retryCount + 1}/${maxRetries}...` : 'بدء رفع الصورة...', 'loading');
 
             const fd = new FormData();
             fd.append('file', file);
@@ -2418,57 +2464,56 @@
             fd.append('api_key', CLOUDINARY_API_KEY);
 
             try {
-                let progressInterval = setInterval(() => {
-                    const currentPercent = parseInt(document.getElementById(prefix + 'ProgressPercent')?.textContent) || 0;
-                    if (currentPercent < 85) {
-                        const newPercent = Math.min(85, currentPercent + Math.random() * 10 + 2);
-                        updateUploadProgress(prefix, newPercent, progressMessage, 'loading');
-                    }
-                }, 500);
+                const result = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', CLOUDINARY_UPLOAD_URL, true);
+                    xhr.timeout = 120000;
 
-                const ctrl = new AbortController();
-                const timeout = setTimeout(() => ctrl.abort(), 60000);
+                    xhr.upload.addEventListener('loadstart', () => {
+                        updateUploadProgress(prefix, 1, 'جاري بدء رفع الصورة...', 'loading');
+                    });
 
-                const r = await fetch(CLOUDINARY_UPLOAD_URL, {
-                    method: 'POST',
-                    body: fd,
-                    signal: ctrl.signal
+                    xhr.upload.addEventListener('progress', (event) => {
+                        if (event.lengthComputable) {
+                            const percent = Math.min(99, Math.round((event.loaded / event.total) * 100));
+                            updateUploadProgress(prefix, percent, `جاري رفع الصورة... ${percent}%`, 'loading');
+                        }
+                    });
+
+                    xhr.upload.addEventListener('load', () => {
+                        updateUploadProgress(prefix, 99, 'اكتمل رفع الملف، جاري معالجة الصورة...', 'loading');
+                    });
+
+                    xhr.addEventListener('load', () => {
+                        let data = null;
+                        try { data = JSON.parse(xhr.responseText || '{}'); } catch (_) {}
+                        if (xhr.status >= 200 && xhr.status < 300 && data?.secure_url) {
+                            updateUploadProgress(prefix, 100, '✅ تم تحميل الصورة بنجاح!', 'success');
+                            resolve({ url: data.secure_url, public_id: data.public_id });
+                        } else {
+                            reject(new Error(data?.error?.message || `فشل الرفع: ${xhr.status}`));
+                        }
+                    });
+
+                    xhr.addEventListener('error', () => reject(new Error('تعذر الاتصال بخدمة رفع الصور.')));
+                    xhr.addEventListener('abort', () => reject(new Error('تم إلغاء رفع الصورة.')));
+                    xhr.addEventListener('timeout', () => reject(new Error('انتهت مهلة رفع الصورة.')));
+
+                    xhr.send(fd);
                 });
-                clearTimeout(timeout);
-                clearInterval(progressInterval);
 
-                updateUploadProgress(prefix, 90, 'جاري معالجة الصورة...', 'loading');
-
-                if (!r.ok) {
-                    throw new Error(`فشل الرفع: ${r.status} ${r.statusText}`);
-                }
-
-                const d = await r.json();
-                if (d.error) {
-                    throw new Error(d.error.message || 'خطأ في Cloudinary');
-                }
-
-                updateUploadProgress(prefix, 100, '✅ تم تحميل الصورة بنجاح!', 'success');
-                setTimeout(() => hideUploadProgress(prefix), 1500);
-
-                return { url: d.secure_url, public_id: d.public_id };
-
+                setTimeout(() => hideUploadProgress(prefix), 1800);
+                return result;
             } catch (e) {
                 console.warn(`⚠️ محاولة رفع الصورة ${retryCount + 1} فشلت:`, e.message);
-
                 if (retryCount < maxRetries - 1) {
-                    updateUploadProgress(prefix, 30, `⚠️ فشل المحاولة ${retryCount + 1}، جاري إعادة المحاولة...`, 'error');
-                    await new Promise(resolve => setTimeout(resolve, delay));
+                    updateUploadProgress(prefix, 0, `⚠️ فشلت المحاولة ${retryCount + 1}، جاري إعادة المحاولة...`, 'error');
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
                     return uploadToCloudinaryWithProgress(file, folder, prefix, retryCount + 1);
                 }
-
                 updateUploadProgress(prefix, 0, `❌ فشل رفع الصورة: ${e.message}`, 'error');
-                setTimeout(() => hideUploadProgress(prefix), 3000);
-
-                if (e.name === 'AbortError') {
-                    throw new Error('انتهت مهلة رفع الصورة. يرجى المحاولة مرة أخرى.');
-                }
-                throw new Error(`فشل رفع الصورة: ${e.message}`);
+                setTimeout(() => hideUploadProgress(prefix), 3500);
+                throw e;
             }
         }
 
@@ -2756,6 +2801,10 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 return;
             }
 
+            const _actionButton = document.activeElement?.tagName === 'BUTTON' ? document.activeElement : null;
+            const _restoreButton = setButtonLoading(_actionButton, 'جاري الحفظ...');
+            showPageLoading('جاري حفظ إعدادات من نحن...', 'يتم تحديث إعدادات الموقع في Firebase');
+
             try {
                 await set(ref(database, 'settings/about'), {
                     title,
@@ -2766,6 +2815,10 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 showToast('✅ تم حفظ صفحة "من نحن" بنجاح');
             } catch (e) {
                 showToast('❌ فشل حفظ البيانات', 'error');
+            }
+            finally {
+                _restoreButton?.();
+                hidePageLoading();
             }
         };
 
@@ -2804,6 +2857,10 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
             const facebook = document.getElementById('contactFacebook').value?.trim() || '';
             const email = document.getElementById('contactEmail').value?.trim() || '';
 
+            const _actionButton = document.activeElement?.tagName === 'BUTTON' ? document.activeElement : null;
+            const _restoreButton = setButtonLoading(_actionButton, 'جاري الحفظ...');
+            showPageLoading('جاري حفظ بيانات التواصل...', 'يتم تحديث بيانات التواصل في Firebase');
+
             try {
                 await set(ref(database, 'settings/contact'), {
                     phone,
@@ -2815,6 +2872,10 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 showToast('✅ تم حفظ صفحة "تواصل معنا" بنجاح');
             } catch (e) {
                 showToast('❌ فشل حفظ البيانات', 'error');
+            }
+            finally {
+                _restoreButton?.();
+                hidePageLoading();
             }
         };
 
@@ -3528,6 +3589,9 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 showToast('⚠️ هذا الباركود مرتبط بمنتج آخر بالفعل', 'error'); return;
             }
             if (editCurrentDiscountType === 'percent' && dv > 100) { showToast('⚠️ نسبة الخصم لا تتجاوز 100%', 'error'); return; }
+            const saveBtn = document.querySelector('#editProductModal .btn-gold');
+            const restoreButton = setButtonLoading(saveBtn, 'جاري الحفظ...');
+            showPageLoading('جاري حفظ تعديل المنتج...', 'يتم تحديث البيانات في Firebase');
             try {
                 await update(ref(database, `products/${pid}`), {
                     name,
@@ -3543,7 +3607,12 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 });
                 window.closeEditModal();
                 showToast('✅ تم تحديث المنتج');
-            } catch (e) { showToast('❌ فشل التحديث', 'error'); }
+            } catch (e) {
+                showToast('❌ فشل التحديث: ' + (e.message || ''), 'error');
+            } finally {
+                restoreButton();
+                hidePageLoading();
+            }
         };
 
         window.deleteProduct = async function(pid) {
@@ -3781,33 +3850,146 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
             };
         }
 
-        function saveAnalytics(d) {
-            try { localStorage.setItem('pro_analytics', JSON.stringify(d));
-                analyticsCache = d; } catch (e) {}
+        let analyticsSuppressed = false;
+
+        function saveAnalyticsLocal(d) {
+            try {
+                localStorage.setItem('pro_analytics', JSON.stringify(d));
+                analyticsCache = d;
+            } catch (e) {
+                console.warn('Analytics local save error:', e);
+            }
         }
 
-        async function updateAnalyticsCache() {
+        async function saveAnalyticsToFirebase(d, force = false) {
+            if (!firebaseReady || !database || (!force && analyticsSuppressed)) return false;
+            try {
+                await set(ref(database, `analytics/${d.monthKey}`), {
+                    ...d,
+                    savedAt: Date.now(),
+                    schemaVersion: 2
+                });
+                return true;
+            } catch (e) {
+                console.warn('❌ فشل حفظ التحليلات في Firebase:', e.message);
+                return false;
+            }
+        }
+
+        function saveAnalytics(d, force = false) {
+            if (!d) return;
+            if (!force && analyticsSuppressed) return;
+            saveAnalyticsLocal(d);
+            saveAnalyticsToFirebase(d, force).catch(() => {});
+        }
+
+        async function updateAnalyticsCache(force = false) {
+            if (analyticsSuppressed && !force) {
+                analyticsCache = null;
+                if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(null);
+                return;
+            }
+
             const d = calcAnalytics();
             await updateMonthlySales();
             const monthKey = d.monthKey;
             const salesData = await getSalesData(monthKey);
             if (salesData) {
-                d.monthlySales = salesData.total || 0;
+                d.monthlySales = Number(salesData.total) || 0;
             } else {
-                // إذا لم توجد بيانات، نستخدم البيانات المحسوبة من الطلبات
                 const { totalSales } = calculateMonthlySalesFromOrders();
                 d.monthlySales = totalSales;
             }
-            saveAnalytics(d);
+
+            saveAnalyticsLocal(d);
+            await saveAnalyticsToFirebase(d, force);
+
             if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(d);
         }
 
-        function loadStoredAnalytics() {
+        async function loadStoredAnalytics() {
+            analyticsSuppressed = false;
+            analyticsCache = null;
+
+            // حالة الحذف محفوظة في Firebase حتى لا تعود البيانات تلقائياً بعد إعادة فتح الموقع.
             try {
-                const d = localStorage.getItem('pro_analytics');
-                if (d) analyticsCache = JSON.parse(d);
+                const controlSnap = await get(ref(database, 'settings/analyticsControl'));
+                if (controlSnap.exists() && controlSnap.val()?.cleared === true) {
+                    analyticsSuppressed = true;
+                    localStorage.removeItem('pro_analytics');
+                    return;
+                }
+            } catch (e) {
+                console.warn('Analytics control load failed:', e.message);
+            }
+
+            const now = new Date();
+            const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+            try {
+                const snap = await get(ref(database, `analytics/${monthKey}`));
+                if (snap.exists()) {
+                    analyticsCache = snap.val();
+                    localStorage.setItem('pro_analytics', JSON.stringify(analyticsCache));
+                    return;
+                }
+            } catch (e) {
+                console.warn('❌ فشل جلب التحليلات من Firebase:', e.message);
+            }
+
+            try {
+                const local = localStorage.getItem('pro_analytics');
+                if (local) analyticsCache = JSON.parse(local);
             } catch (e) {}
         }
+
+        window.exportAnalyticsCSV = function() {
+            const d = analyticsCache;
+            if (!d) {
+                showToast('⚠️ لا توجد تحليلات لتصديرها', 'error');
+                return;
+            }
+            let csv = '\uFEFFالبند,القيمة\n';
+            csv += `المبيعات الشهرية,"${Number(d.monthlySales || 0).toFixed(2)}"\n`;
+            csv += `إجمالي المبيعات,"${Number(d.totalSalesAll || 0).toFixed(2)}"\n`;
+            csv += `إجمالي الطلبات,"${d.totalOrders || 0}"\n`;
+            csv += `الطلبات المكتملة,"${d.deliveredCount || 0}"\n`;
+            csv += `الطلبات المرفوضة,"${d.rejectedOrders || 0}"\n`;
+            csv += `معدل التحويل,"${d.conversionRate || 0}%"\n`;
+            csv += '\nأفضل المنتجات,الكمية,الإيراد\n';
+            (d.topProducts || []).forEach(p => {
+                csv += `"${String(p[0] || '').replace(/"/g, '""')}","${p[1]?.q || 0}","${Number(p[1]?.r || 0).toFixed(2)}"\n`;
+            });
+            const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `analytics-${d.monthKey || new Date().toISOString().slice(0,7)}.csv`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast('📥 تم تصدير التحليلات بصيغة CSV');
+        };
+
+        window.deleteAnalytics = async function() {
+            if (!confirm('حذف جميع التحليلات المحفوظة من Firebase والجهاز؟\nلن يتم حذف الطلبات أو المنتجات أو المبيعات الأصلية.')) return;
+
+            showPageLoading('جاري حذف التحليلات...', 'يتم حذف سجل التحليلات فقط دون المساس بالطلبات');
+            try {
+                await remove(ref(database, 'analytics'));
+                await set(ref(database, 'settings/analyticsControl'), {
+                    cleared: true,
+                    clearedAt: Date.now()
+                });
+                localStorage.removeItem('pro_analytics');
+                analyticsCache = null;
+                analyticsSuppressed = true;
+                renderAnalyticsHTML(null);
+                showToast('🗑️ تم حذف التحليلات المحفوظة بنجاح', 'success');
+            } catch (e) {
+                showToast('❌ فشل حذف التحليلات: ' + e.message, 'error');
+            } finally {
+                hidePageLoading();
+            }
+        };
 
         function renderAnalyticsHTML(d) {
             const c = document.getElementById('analyticsContent');
@@ -3875,14 +4057,20 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
             `;
         }
 
-        window.refreshAnalytics = () => {
-            updateStats();
-            updateMonthlySales().then(() => {
-                const d = calcAnalytics();
-                saveAnalytics(d);
-                renderAnalyticsHTML(d);
-                showToast('🔄 تم تحديث التحليلات');
-            });
+        window.refreshAnalytics = async () => {
+            showPageLoading('جاري تحديث التحليلات...', 'جاري إعادة الحساب والحفظ في Firebase');
+            try {
+                // زر التحديث يعيد إنشاء التحليلات بعد الحذف عند الطلب.
+                analyticsSuppressed = false;
+                await set(ref(database, 'settings/analyticsControl'), { cleared: false, restoredAt: Date.now() });
+                await updateAnalyticsCache(true);
+                updateStats();
+                showToast('🔄 تم تحديث التحليلات وحفظها في Firebase');
+            } catch (e) {
+                showToast('❌ فشل تحديث التحليلات: ' + e.message, 'error');
+            } finally {
+                hidePageLoading();
+            }
         };
 
         // ============================================================
@@ -4174,6 +4362,9 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 details = document.getElementById('rejectDetails')?.value?.trim();
             if (!oid || !reason) { showToast('⚠️ اختر سبب الرفض', 'error'); return; }
             const o = allOrders.find(x => x.id === oid);
+            const saveBtn = document.querySelector('#rejectModal .btn-danger');
+            const restoreButton = setButtonLoading(saveBtn, 'جاري الرفض...');
+            showPageLoading('جاري رفض الطلب...', 'يتم تحديث حالة الطلب وإرسال الإشعار');
             try {
                 await update(ref(database, `orders/${oid}`), { status: 'rejected', rejectionReason: reason,
                     rejectionDetails: details, rejectedAt: Date.now() });
@@ -4184,6 +4375,10 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 window.closeRejectModal();
                 showToast('❌ تم رفض الطلب', 'info');
             } catch (e) { showToast('❌ فشل رفض الطلب', 'error'); }
+            finally {
+                restoreButton();
+                hidePageLoading();
+            }
         };
 
         // ============================================================
@@ -4455,6 +4650,10 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 updatedAt: Date.now()
             };
 
+            const _actionButton = document.activeElement?.tagName === 'BUTTON' ? document.activeElement : null;
+            const _restoreButton = setButtonLoading(_actionButton, 'جاري الحفظ...');
+            showPageLoading('جاري حفظ إعدادات الخصومات...', 'يتم تحديث إعدادات العروض في Firebase');
+
             try {
                 await set(ref(database, 'settings/flashSale'), settings);
                 flashSaleSettings = settings;
@@ -4463,6 +4662,10 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 showToast('✅ تم حفظ إعدادات عروض الخصم');
             } catch (e) {
                 showToast('❌ فشل حفظ الإعدادات', 'error');
+            }
+            finally {
+                _restoreButton?.();
+                hidePageLoading();
             }
         };
 
@@ -4666,6 +4869,9 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
             if (type === 'percent' && value > 100) { showToast('⚠️ النسبة لا تتجاوز 100%', 'error'); return; }
             const existingCoupon = allCoupons.find(c => c.code === code && c.id !== couponId);
             if (existingCoupon) { showToast('⚠️ هذا الكود مستخدم من قبل', 'error'); return; }
+            const saveBtn = document.querySelector('#editCouponModal .btn-gold');
+            const restoreButton = setButtonLoading(saveBtn, 'جاري الحفظ...');
+            showPageLoading('جاري تحديث الكوبون...', 'يتم حفظ التعديلات في Firebase');
             try {
                 await update(ref(database, `coupons/${couponId}`), {
                     code,
@@ -4680,6 +4886,10 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 window.closeEditCouponModal();
                 showToast(`✅ تم تحديث كوبون "${code}"`);
             } catch (e) { showToast('❌ فشل تحديث الكوبون: ' + e.message, 'error'); }
+            finally {
+                restoreButton();
+                hidePageLoading();
+            }
         };
 
         window.openAddCouponModal = function() {
@@ -4707,6 +4917,9 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
             if (!value || value <= 0) { showToast('⚠️ أدخل قيمة الخصم', 'error'); return; }
             if (type === 'percent' && value > 100) { showToast('⚠️ النسبة لا تتجاوز 100%', 'error'); return; }
             if (allCoupons.some(c => c.code === code)) { showToast('⚠️ هذا الكود موجود بالفعل', 'error'); return; }
+            const saveBtn = document.querySelector('#addCouponModal .btn-gold');
+            const restoreButton = setButtonLoading(saveBtn, 'جاري الإضافة...');
+            showPageLoading('جاري إضافة الكوبون...', 'يتم حفظ الكوبون في Firebase');
             try {
                 const refs = push(ref(database, 'coupons'));
                 await set(refs, {
@@ -4723,6 +4936,10 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 window.closeAddCouponModal();
                 showToast(`🎫 تم إضافة كوبون "${code}"`);
             } catch (e) { showToast('❌ فشل إضافة الكوبون: ' + e.message, 'error'); }
+            finally {
+                restoreButton();
+                hidePageLoading();
+            }
         };
 
         window.toggleCouponStatus = async function(id) {
@@ -4807,12 +5024,20 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
             const codFee = parseFloat(document.getElementById('codFee')?.value) || 0;
             const deliveryFee = parseFloat(document.getElementById('deliveryFee')?.value) || 5;
             const firstOrderFree = document.getElementById('firstOrderFreeDelivery')?.checked !== false;
+            const _actionButton = document.activeElement?.tagName === 'BUTTON' ? document.activeElement : null;
+            const _restoreButton = setButtonLoading(_actionButton, 'جاري الحفظ...');
+            showPageLoading('جاري حفظ إعدادات الدفع...', 'يتم تحديث المحافظ وطرق الدفع في Firebase');
+
             try {
                 await set(ref(database, 'settings/wallets'), wallets);
                 await set(ref(database, 'settings/codFee'), { fee: codFee });
                 await set(ref(database, 'settings/deliveryFee'), { fee: deliveryFee, firstOrderFree });
                 showToast('✅ تم حفظ جميع الإعدادات بنجاح');
             } catch (e) { showToast('❌ فشل حفظ الإعدادات', 'error'); }
+            finally {
+                _restoreButton?.();
+                hidePageLoading();
+            }
         };
 
         // ============================================================
@@ -5094,9 +5319,9 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
             };
             
             const btn = document.getElementById('savePromoBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
-            
+            const restoreButton = setButtonLoading(btn, 'جاري الحفظ...');
+            showPageLoading('جاري حفظ العرض...', 'يتم حفظ البيانات في Firebase');
+
             try {
                 if (id) {
                     await update(ref(database, `settings/promotionalSlides/${id}`), data);
@@ -5111,8 +5336,8 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 console.error('❌ خطأ في حفظ العرض:', error);
                 showToast(`❌ ${error.message || 'فشل حفظ العرض'}`, 'error');
             } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> حفظ العرض';
+                restoreButton();
+                hidePageLoading();
             }
         };
 
@@ -5317,9 +5542,21 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
             if (n === 'promo') { loadPromoSlides(); }
             if (n === 'analytics') {
                 updateStats();
-                updateMonthlySales().then(() => {
-                    if (analyticsCache) renderAnalyticsHTML(analyticsCache);
-                    else updateAnalyticsCache().then(() => { if (analyticsCache) renderAnalyticsHTML(analyticsCache); });
+                loadStoredAnalytics().then(async () => {
+                    if (analyticsSuppressed) {
+                        renderAnalyticsHTML(null);
+                        return;
+                    }
+                    if (analyticsCache) {
+                        renderAnalyticsHTML(analyticsCache);
+                        // مزامنة الأرقام الحالية دون محو البيانات المحفوظة.
+                        await updateAnalyticsCache();
+                    } else {
+                        await updateAnalyticsCache();
+                    }
+                }).catch(e => {
+                    console.warn('Analytics tab load error:', e);
+                    renderAnalyticsHTML(analyticsCache);
                 });
             }
         };
@@ -5474,10 +5711,8 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
             }
 
             const btn = this;
-            const orig = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإضافة...';
-
+            const restoreButton = setButtonLoading(btn, 'جاري الإضافة...');
+            showPageLoading('جاري إضافة المنتج...', 'يتم حفظ المنتج في Firebase، ثم سيتم الانتقال تلقائياً');
             try {
                 const newProductRef = push(ref(database, 'products'));
                 await set(newProductRef, {
@@ -5496,15 +5731,14 @@ return `مرحباً ${o.recipientName || 'عميلنا'}،
                 });
 
                 window.resetAddProductForm();
+                window.switchTab('products');
                 showToast(`🎉 تمت إضافة المنتج "${name}" بنجاح!`);
-                setTimeout(() => window.switchTab('products'), 500);
-
             } catch (error) {
                 console.error('❌ خطأ في إضافة المنتج:', error);
                 showToast(`❌ ${error.message || 'فشل إضافة المنتج. يرجى المحاولة مرة أخرى.'}`, 'error');
             } finally {
-                btn.disabled = false;
-                btn.innerHTML = orig;
+                restoreButton();
+                hidePageLoading();
             }
         });
 
