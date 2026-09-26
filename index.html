@@ -2887,8 +2887,12 @@
 
         const ADMIN_UIDS = ['bGaNd7dz74VaffyUlkWwAl9BTCq2', 'GYfllL1eBmgtbF6mc2dCHnyWhXp2'];
         const STATUS_FLOW = ['pending', 'accepted', 'delivering', 'delivered'];
-        const DELETE_AFTER_MINUTES = 5;
-        const RETURN_WINDOW_HOURS = 24;
+        
+        // ✅ ثوابت المؤقتات (المطلوبة)
+        const DELETE_FROM_PAGE_MINUTES = 5; // اختفاء الطلبات المكتملة/طلبات المتجر من صفحة الطلبات فقط
+        const REJECTED_RETURN_HIDE_MINUTES = 10; // اختفاء المرتجعات المرفوضة من صفحة المرتجعات
+        const DELETE_FROM_DB_HOURS = 24; // حذف من قاعدة البيانات
+        const RETURN_WINDOW_HOURS = 24; // نافذة الاسترجاع للعميل
 
         // ============================================================
         // ===== State =====
@@ -2898,8 +2902,16 @@
         let allCoupons = [];
         let allMessages = [];
         let allPromoSlides = [];
-        let deleteTimers = {};
-        let countdownIntervals = {};
+        
+        // ✅ timers for hiding from page only (5 minutes)
+        let hideFromPageTimers = {};
+        let hideFromPageCountdowns = {};
+        
+        // ✅ timers for deleting from DB (24 hours)
+        let deleteFromDBTimers = {};
+        let rejectedReturnHideTimers = {};
+        let rejectedReturnHideCountdowns = {};
+        
         let previousStatuses = {};
         let currentFilter = 'all';
         let productsListener = null;
@@ -2942,6 +2954,9 @@
         let returnRequestsCache = [];
         let currentReturnsTab = 'requests';
 
+        // ✅ Hidden orders IDs (الطلبات المخفية من الصفحة لمدة 5 دقائق)
+        let hiddenOrderIds = new Set();
+
         // ============================================================
         // ===== Utility Functions =====
         // ============================================================
@@ -2963,6 +2978,14 @@
         function formatTime(s) {
             const m = Math.floor(s / 60);
             const sec = s % 60;
+            return `${m}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        function formatTimeLong(s) {
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+            if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
             return `${m}:${sec.toString().padStart(2, '0')}`;
         }
 
@@ -3990,57 +4013,174 @@
         };
 
         // ============================================================
-        // ===== Orders =====
+        // ===== Orders (FIXED - نظام 3 مؤقتات)
         // ============================================================
-        function scheduleDelete(oid, ct) {
-            if (deleteTimers[oid]) { clearTimeout(deleteTimers[oid].tid); clearInterval(deleteTimers[oid].iid); }
-            if (countdownIntervals[oid]) { clearInterval(countdownIntervals[oid]); delete countdownIntervals[oid]; }
-            const dt = (ct || Date.now()) + (DELETE_AFTER_MINUTES * 60 * 1000), rem = Math.max(0, dt - Date.now());
-            if (rem <= 0) { removeOrder(oid); return; }
-            const tid = setTimeout(() => { removeOrder(oid); if (countdownIntervals[oid]) { clearInterval(countdownIntervals[oid]); delete countdownIntervals[oid]; } delete deleteTimers[oid]; }, rem);
+        // ✅ المؤقت 1: إخفاء الطلب من الصفحة بعد 5 دقائق (تسليم أو رفض)
+        // ✅ المؤقت 2: حذف الطلب من قاعدة البيانات بعد 24 ساعة
+        // ✅ النظام الجديد: الطلب يبقى في DB حتى يستطيع العميل عمل استرجاع
+        
+        function scheduleHideFromPage(oid, ct) {
+            // إلغاء المؤقتات القديمة
+            if (hideFromPageTimers[oid]) { clearTimeout(hideFromPageTimers[oid]); }
+            if (hideFromPageCountdowns[oid]) { clearInterval(hideFromPageCountdowns[oid]); }
+            
+            const hideAt = (ct || Date.now()) + (DELETE_FROM_PAGE_MINUTES * 60 * 1000);
+            const rem = Math.max(0, hideAt - Date.now());
+            
+            if (rem <= 0) {
+                // إخفاء فوري
+                hideOrderFromPage(oid);
+                return;
+            }
+            
+            // جدولة الإخفاء
+            const tid = setTimeout(() => {
+                hideOrderFromPage(oid);
+                if (hideFromPageCountdowns[oid]) { 
+                    clearInterval(hideFromPageCountdowns[oid]); 
+                    delete hideFromPageCountdowns[oid]; 
+                }
+                delete hideFromPageTimers[oid];
+            }, rem);
+            
+            // عداد تنازلي للعرض
             const iid = setInterval(() => {
-                const r = Math.max(0, Math.ceil((dt - Date.now()) / 1000));
-                const el = document.getElementById(`cd-${oid}`); if (el) el.textContent = `⏱️ ${formatTime(r)}`;
-                if (r <= 0) { clearInterval(iid); delete countdownIntervals[oid]; }
+                const r = Math.max(0, Math.ceil((hideAt - Date.now()) / 1000));
+                const el = document.getElementById(`cd-${oid}`); 
+                if (el) el.textContent = `⏱️ ${formatTime(r)}`;
+                if (r <= 0) { 
+                    clearInterval(iid); 
+                    delete hideFromPageCountdowns[oid]; 
+                }
             }, 1000);
-            deleteTimers[oid] = { tid, iid, dt };
-            countdownIntervals[oid] = iid;
+            
+            hideFromPageTimers[oid] = tid;
+            hideFromPageCountdowns[oid] = iid;
         }
-        async function removeOrder(oid) {
+        
+        function scheduleDeleteFromDB(oid, ct) {
+            if (deleteFromDBTimers[oid]) { clearTimeout(deleteFromDBTimers[oid]); }
+            const deleteAt = (ct || Date.now()) + (DELETE_FROM_DB_HOURS * 60 * 60 * 1000);
+            const rem = Math.max(0, deleteAt - Date.now());
+            
+            if (rem <= 0) {
+                deleteOrderFromDB(oid);
+                return;
+            }
+            
+            const tid = setTimeout(() => {
+                deleteOrderFromDB(oid);
+                delete deleteFromDBTimers[oid];
+            }, rem);
+            
+            deleteFromDBTimers[oid] = tid;
+        }
+        
+        function hideOrderFromPage(oid) {
+            // إضافة الطلب لقائمة المخفية
+            hiddenOrderIds.add(oid);
+            
+            // إعادة رسم الطلبات
+            if (document.getElementById('panel-orders')?.classList.contains('active')) {
+                renderOrders();
+            }
+            
+            console.log(`👁️ تم إخفاء الطلب ${oid} من الصفحة بعد 5 دقائق`);
+        }
+        
+        async function deleteOrderFromDB(oid) {
             try {
                 await remove(ref(database, `orders/${oid}`));
+                console.log(`🗑️ تم حذف الطلب ${oid} من قاعدة البيانات بعد 24 ساعة`);
+                // حذف من الذاكرة
                 allOrders = allOrders.filter(o => o.id !== oid);
+                hiddenOrderIds.delete(oid);
                 deductedOrders.delete(oid);
-                updateStats(); updateAnalyticsCache(); renderOrders();
-            } catch (e) {}
+                updateStats();
+                updateAnalyticsCache();
+                renderOrders();
+            } catch (e) {
+                console.error(`فشل حذف الطلب ${oid}:`, e);
+            }
         }
-        function cancelDelete(oid) {
-            if (deleteTimers[oid]) { clearTimeout(deleteTimers[oid].tid); clearInterval(deleteTimers[oid].iid); delete deleteTimers[oid]; }
-            if (countdownIntervals[oid]) { clearInterval(countdownIntervals[oid]); delete countdownIntervals[oid]; }
+        
+        function cancelTimers(oid) {
+            if (hideFromPageTimers[oid]) { clearTimeout(hideFromPageTimers[oid]); delete hideFromPageTimers[oid]; }
+            if (hideFromPageCountdowns[oid]) { clearInterval(hideFromPageCountdowns[oid]); delete hideFromPageCountdowns[oid]; }
+            if (deleteFromDBTimers[oid]) { clearTimeout(deleteFromDBTimers[oid]); delete deleteFromDBTimers[oid]; }
+        }
+        
+        function cleanupTimers() {
+            // إلغاء جميع المؤقتات
+            Object.keys(hideFromPageTimers).forEach(oid => clearTimeout(hideFromPageTimers[oid]));
+            Object.keys(hideFromPageCountdowns).forEach(oid => clearInterval(hideFromPageCountdowns[oid]));
+            Object.keys(deleteFromDBTimers).forEach(oid => clearTimeout(deleteFromDBTimers[oid]));
+            hideFromPageTimers = {};
+            hideFromPageCountdowns = {};
+            deleteFromDBTimers = {};
         }
 
         function setupOrders() {
             onValue(ref(database, 'orders'), async (snap) => {
                 const orders = [];
-                if (snap.exists()) { const d = snap.val(); for (const k in d) if (d.hasOwnProperty(k)) orders.push({ id: k, ...d[k] }); }
+                if (snap.exists()) { 
+                    const d = snap.val(); 
+                    for (const k in d) if (d.hasOwnProperty(k)) orders.push({ id: k, ...d[k] }); 
+                }
                 orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                
+                // إرسال رسائل WhatsApp عند تغير الحالة
                 for (const o of orders) {
                     const ws = previousStatuses[o.id];
                     if (ws && ws !== o.status) {
                         setTimeout(async () => {
                             if (o.status === 'accepted') await sendWhatsApp(o.phone, msgAccept(o), 'قبول');
                             else if (o.status === 'delivering') await sendWhatsApp(o.phone, msgDelivering(o), 'توصيل');
-                            else if (o.status === 'delivered') { await deductStock(o); await recordDeliveredSale(o); await sendWhatsApp(o.phone, msgDelivered(o), 'تسليم'); await updateMonthlySales(); }
+                            else if (o.status === 'delivered') { 
+                                await deductStock(o); 
+                                await recordDeliveredSale(o); 
+                                await sendWhatsApp(o.phone, msgDelivered(o), 'تسليم'); 
+                                await updateMonthlySales(); 
+                            }
                             else if (o.status === 'rejected') await sendWhatsApp(o.phone, msgRejected(o), 'رفض');
                         }, 300);
                     }
                     previousStatuses[o.id] = o.status;
                 }
+                
                 allOrders = orders;
+                
+                // إعداد المؤقتات لكل طلب
                 for (const o of orders) {
-                    if (o.status === 'delivered' || o.status === 'rejected') { if (!deleteTimers[o.id]) scheduleDelete(o.id, o.deliveredAt || o.rejectedAt || o.createdAt); }
-                    else if (deleteTimers[o.id]) cancelDelete(o.id);
+                    // إذا كان الطلب delivered أو rejected
+                    if (o.status === 'delivered' || o.status === 'rejected') {
+                        // ✅ التحقق من الوقت المنقضي
+                        const relevantTime = o.status === 'delivered' ? (o.deliveredAt || Date.now()) : (o.rejectedAt || Date.now());
+                        const elapsed = Date.now() - relevantTime;
+                        const hideThresholdMs = DELETE_FROM_PAGE_MINUTES * 60 * 1000;
+                        const dbDeleteThresholdMs = DELETE_FROM_DB_HOURS * 60 * 60 * 1000;
+                        
+                        // إذا مرت أكثر من 5 دقائق - أخفِ من الصفحة
+                        if (elapsed > hideThresholdMs) {
+                            hiddenOrderIds.add(o.id);
+                        } else if (!hideFromPageTimers[o.id]) {
+                            scheduleHideFromPage(o.id, relevantTime);
+                        }
+                        
+                        // ✅ جدولة الحذف من DB بعد 24 ساعة
+                        if (elapsed > dbDeleteThresholdMs) {
+                            // حذف فوري من DB
+                            deleteOrderFromDB(o.id);
+                        } else if (!deleteFromDBTimers[o.id]) {
+                            scheduleDeleteFromDB(o.id, relevantTime);
+                        }
+                    } else {
+                        // إذا تغيرت الحالة - إلغاء المؤقتات
+                        if (hiddenOrderIds.has(o.id)) hiddenOrderIds.delete(o.id);
+                        cancelTimers(o.id);
+                    }
                 }
+                
                 updateStats();
                 updateAnalyticsCache();
                 if (document.getElementById('panel-orders')?.classList.contains('active')) renderOrders();
@@ -4060,10 +4200,18 @@
         function renderOrders() {
             const c = document.getElementById('ordersList');
             if (!c || !document.getElementById('panel-orders')?.classList.contains('active')) return;
-            let f = [...allOrders];
-            if (currentFilter === 'pending') f = allOrders.filter(o => o.status === 'pending');
-            else if (currentFilter === 'active') f = allOrders.filter(o => o.status === 'accepted' || o.status === 'delivering');
-            if (!f.length) { c.innerHTML = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>لا توجد طلبات</h3></div>'; return; }
+            
+            // ✅ فلترة الطلبات - استثناء المخفية من الصفحة
+            let f = allOrders.filter(o => !hiddenOrderIds.has(o.id));
+            
+            if (currentFilter === 'pending') f = f.filter(o => o.status === 'pending');
+            else if (currentFilter === 'active') f = f.filter(o => o.status === 'accepted' || o.status === 'delivering');
+            
+            if (!f.length) { 
+                c.innerHTML = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>لا توجد طلبات</h3><p style="font-size:12px;color:var(--text-muted);margin-top:8px;">الطلبات المكتملة/المرفوضة تختفي من هنا بعد 5 دقائق (لكنها محفوظة 24 ساعة للاسترجاع)</p></div>'; 
+                return; 
+            }
+            
             c.innerHTML = f.map(o => {
                 const date = o.createdAt ? new Date(o.createdAt).toLocaleString('ar-EG') : '';
                 const isRej = o.status === 'rejected', isDone = o.status === 'delivered', isReturned = o.status === 'returned';
@@ -4095,11 +4243,18 @@
                     btns += `<button class="btn btn-whatsapp btn-sm" onclick="window.sendWAtoClient('${o.id}')"><i class="fa-brands fa-whatsapp"></i></button>`;
                 }
                 if (o.status === 'pending') btns += `<button class="btn btn-success btn-sm" onclick="window.manualAcceptOrder('${o.id}')">✅ قبول</button>`;
+                
+                // عداد تنازلي للإخفاء من الصفحة
                 let cd = '';
-                if ((isDone || isRej) && deleteTimers[o.id]) {
-                    const rem = Math.max(0, Math.ceil((deleteTimers[o.id].dt - Date.now()) / 1000));
-                    cd = `<span class="countdown-timer" id="cd-${o.id}">⏱️ ${formatTime(rem)}</span>`;
+                if ((isDone || isRej) && hideFromPageTimers[o.id]) {
+                    const relevantTime = isDone ? (o.deliveredAt || Date.now()) : (o.rejectedAt || Date.now());
+                    const hideAt = relevantTime + (DELETE_FROM_PAGE_MINUTES * 60 * 1000);
+                    const rem = Math.max(0, Math.ceil((hideAt - Date.now()) / 1000));
+                    cd = `<div style="margin-top:8px;text-align:center;background:rgba(245,158,11,0.1);border:1px dashed rgba(245,158,11,0.3);padding:6px 12px;border-radius:var(--radius-sm);font-size:11px;color:var(--status-pending);font-weight:700;">
+                        ⏱️ <span id="cd-${o.id}">${formatTime(rem)}</span> حتى يختفي من الصفحة (محفوظ 24 ساعة للاسترجاع)
+                    </div>`;
                 }
+                
                 let couponLine = '';
                 if (discount > 0) couponLine = `<div class="breakdown-row discount-row"><span>🎫 خصم (${coupon.code || ''}):</span><span>-${discount.toFixed(2)} ج</span></div>`;
                 return `<div class="order-card ${o.status === 'pending' && !o._seen ? 'new-order' : ''}">
@@ -4739,8 +4894,20 @@
         document.addEventListener('visibilitychange', function() { if (document.hidden) window.stopBarcodeCamera?.(); });
 
         // ============================================================
-        // ===== Returns Management (FIXED VERSION - مع الحذف الكامل) =====
+        // ===== Returns Management (نظام 3 مراحل)
         // ============================================================
+        // المرحلة 1: طلب استرجاع (pending) - العميل يطلب
+        // المرحلة 2: اعتماد (approved) - المدير يوافق ويستلم المرتجع
+        // المرحلة 3: تم التسليم (completed) - المدير سلّم الأموال واستلم المرتجع
+        // ✅ بعد المرحلة 3: الطلب يختفي من الصفحة بعد 5 دقائق (ويُحذف من DB بعد 24 ساعة)
+        // ============================================================
+        
+        // ✅ مؤقتات إخفاء المرتجعات المكتملة
+        let hiddenReturnRequestIds = new Set();
+        let hideReturnFromPageTimers = {};
+        let hideReturnFromPageCountdowns = {};
+        let deleteReturnFromDBTimers = {};
+        
         async function loadReturns() {
             try {
                 const snap = await get(ref(database, 'returns'));
@@ -4750,6 +4917,7 @@
             } catch (e) { returnsCache = []; }
             return returnsCache;
         }
+        
         async function loadReturnRequests() {
             try {
                 const snap = await get(ref(database, 'returnRequests'));
@@ -4759,6 +4927,7 @@
             } catch (e) { returnRequestsCache = []; }
             return returnRequestsCache;
         }
+        
         function returnedQtyMap(orderId) {
             const m = {};
             returnsCache.filter(r => r.orderId === orderId && r.status !== 'cancelled').forEach(r => {
@@ -4766,6 +4935,7 @@
             });
             return m;
         }
+        
         function updateReturnsBadge() {
             const pc = returnRequestsCache.filter(r => r.status === 'pending').length;
             const b = document.getElementById('pendingReturnsBadge');
@@ -4773,6 +4943,7 @@
             if (b) { b.textContent = pc; b.style.display = pc > 0 ? 'inline-block' : 'none'; }
             if (tb) { tb.textContent = pc; tb.classList.toggle('hidden', pc === 0); }
         }
+        
         window.switchReturnsTab = function(tab) {
             currentReturnsTab = tab;
             document.getElementById('tabReturnRequests')?.classList.toggle('active', tab === 'requests');
@@ -4785,25 +4956,38 @@
             if (bar) bar.style.display = tab === 'completed' ? 'flex' : 'none';
             window.renderReturnsContent();
         };
+        
         window.renderReturnsContent = function() {
+            setupRejectedReturnTimers();
             const q = String(document.getElementById('returnsSearch')?.value || '').trim().toLowerCase();
             if (currentReturnsTab === 'requests') renderReturnRequests(q);
             else renderCompletedReturns(q);
         };
         
-        // ✅ عرض طلبات الاسترجاع مع زر حذف لكل فاتورة (مكتملة أو مرفوضة)
+        // ✅ عرض طلبات الاسترجاع (3 مراحل)
         function renderReturnRequests(searchQuery = '') {
             const c = document.getElementById('returnRequestsList');
             if (!c) return;
-            let list = returnRequestsCache;
+            
+            // ✅ فلترة الطلبات المخفية من الصفحة
+            let list = returnRequestsCache.filter(r => {
+                if (hiddenReturnRequestIds.has(r.id)) return false;
+                const status = String(r.status || '').toLowerCase();
+                if (status === 'rejected' && r.rejectedAt) {
+                    return (Date.now() - Number(r.rejectedAt)) < REJECTED_RETURN_HIDE_MINUTES * 60 * 1000;
+                }
+                return true;
+            });
+            
             if (searchQuery) list = list.filter(r => [r.invoiceCode, r.orderId, r.customerName, r.phone, r.reason].join(' ').toLowerCase().includes(searchQuery));
+            
             if (!list.length) { 
                 c.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>لا توجد طلبات استرجاع</h3><p>ستظهر هنا طلبات العملاء</p></div>`; 
                 return; 
             }
             
-            // ✅ زر حذف الكل (يظهر فقط إذا كان هناك طلبات مكتملة أو مرفوضة)
-            const finishedRequests = list.filter(r => ['completed', 'rejected'].includes(String(r.status || '').toLowerCase()));
+            // ✅ زر حذف الكل للطلبات المكتملة
+            const finishedRequests = list.filter(r => String(r.status || '').toLowerCase() === 'completed');
             const showBulkDelete = finishedRequests.length > 0;
             
             let html = '';
@@ -4812,10 +4996,10 @@
                     <div style="grid-column:1/-1;background:rgba(239,68,68,0.05);border:1px dashed rgba(239,68,68,0.3);border-radius:var(--radius);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
                         <span style="font-size:12px;color:var(--text-secondary);">
                             <i class="fa-solid fa-info-circle" style="color:var(--status-rejected);"></i>
-                            يوجد <strong>${finishedRequests.length}</strong> طلب منتهي (مكتمل أو مرفوض) - يمكنك حذفها من الموقع وقاعدة البيانات
+                            يوجد <strong>${finishedRequests.length}</strong> طلب مكتمل - يمكنك حذفها من الموقع وقاعدة البيانات
                         </span>
-                        <button class="btn btn-danger btn-sm" onclick="window.deleteAllFinishedReturnRequests()">
-                            <i class="fa-solid fa-trash-can"></i> حذف كل الطلبات المنتهية
+                        <button class="btn btn-danger btn-sm" onclick="window.deleteAllCompletedReturns()">
+                            <i class="fa-solid fa-trash-can"></i> حذف كل الطلبات المكتملة
                         </button>
                     </div>
                 `;
@@ -4823,16 +5007,63 @@
             
             html += list.map(r => {
                 const status = String(r.status || 'pending').toLowerCase();
-                const sl = { pending: '⏳ قيد المراجعة', approved: '✅ معتمد', completed: '✅ مكتمل', rejected: '❌ مرفوض' };
-                const sc = { pending: 'badge-pending', approved: 'badge-delivering', completed: 'badge-delivered', rejected: 'badge-rejected' };
+                const sl = { 
+                    pending: '⏳ بانتظار الاعتماد', 
+                    approved: '📦 جاري استلام المرتجع', 
+                    completed: '✅ تم استلام المرتجع والأموال', 
+                    rejected: '❌ مرفوض' 
+                };
+                const sc = { 
+                    pending: 'badge-pending', 
+                    approved: 'badge-accepted', 
+                    completed: 'badge-delivering', 
+                    rejected: 'badge-rejected' 
+                };
                 const rd = r.requestedAt ? new Date(r.requestedAt).toLocaleString('ar-EG') : '';
-                const pd = r.approvedAt || r.rejectedAt ? new Date(r.approvedAt || r.rejectedAt).toLocaleString('ar-EG') : '';
+                const pd = r.approvedAt || r.completedAt || r.rejectedAt ? new Date(r.approvedAt || r.completedAt || r.rejectedAt).toLocaleString('ar-EG') : '';
                 
-                // ✅ عرض زر الحذف فقط للطلبات المنتهية
+                // زر الحذف يظهر فقط للطلبات المكتملة/المرفوضة
                 const isFinished = status === 'completed' || status === 'rejected';
                 const deleteBtn = isFinished 
-                    ? `<button class="btn btn-danger btn-sm" onclick="window.deleteReturnRequest('${r.id}')" title="حذف نهائياً من الموقع وقاعدة البيانات"><i class="fa-solid fa-trash"></i> حذف</button>` 
+                    ? `<button class="btn btn-danger btn-sm" onclick="window.deleteReturnRequest('${r.id}')" title="حذف نهائياً"><i class="fa-solid fa-trash"></i> حذف</button>` 
                     : '';
+                
+                // ✅ الأزرار بناءً على الحالة (3 مراحل)
+                let actionButtons = '';
+                if (status === 'pending') {
+                    // المرحلة 1: بانتظار الاعتماد
+                    actionButtons = `
+                        <button class="btn btn-success btn-sm" onclick="window.approveReturnRequest('${r.id}')"><i class="fa-solid fa-check"></i> اعتماد الاسترجاع</button>
+                        <button class="btn btn-danger btn-sm" onclick="window.rejectReturnRequest('${r.id}')"><i class="fa-solid fa-times"></i> رفض</button>
+                    `;
+                } else if (status === 'approved') {
+                    // المرحلة 2: جاري استلام المرتجع - المدير يستلم من العميل ويعطيه الأموال
+                    actionButtons = `
+                        <button class="btn btn-gold btn-sm" style="flex:1;justify-content:center;padding:12px;font-size:14px;font-weight:900;" onclick="window.completeReturnRequest('${r.id}')">
+                            <i class="fa-solid fa-money-bill-wave"></i> ✅ تم استلام المرتجع وتسليم الأموال
+                        </button>
+                    `;
+                } else if (status === 'completed') {
+                    // المرحلة 3: تم استلام المرتجع والأموال
+                    actionButtons = `
+                        <div style="width:100%;text-align:center;padding:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:var(--radius-sm);font-size:12px;color:var(--status-delivering);font-weight:700;margin-bottom:8px;">
+                            <i class="fa-solid fa-check-circle"></i> تم استلام المرتجع وتسليم الأموال بنجاح
+                        </div>
+                        ${deleteBtn}
+                    `;
+                } else if (status === 'rejected') {
+                    const rejectedAt = Number(r.rejectedAt || r.requestedAt || Date.now());
+                    const rem = Math.max(0, Math.ceil((rejectedAt + REJECTED_RETURN_HIDE_MINUTES * 60 * 1000 - Date.now()) / 1000));
+                    actionButtons = `
+                        <div style="width:100%;text-align:center;padding:9px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:var(--radius-sm);font-size:12px;color:var(--status-rejected);font-weight:700;margin-bottom:8px;">
+                            ❌ تم رفض طلب الاسترجاع
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;width:100%;">
+                            <span style="font-size:11px;color:var(--text-muted);">⏱️ يختفي من الصفحة بعد: <strong id="rejected-cd-${r.id}">${formatTime(rem)}</strong></span>
+                            ${deleteBtn}
+                        </div>
+                    `;
+                }
                 
                 return `<div class="return-request-card ${status}">
                     <div class="order-header">
@@ -4851,26 +5082,53 @@
                         <div style="font-weight:700;color:var(--gold-300);margin-bottom:6px;font-size:12px;">🛒 المنتجات:</div>
                         ${(r.items || []).map(i => `<div class="return-item-line"><span>${escapeHtml(i.name || '---')} × ${Number(i.quantity || 0)}</span><span style="font-weight:700;">${moneyText(money(i.price) * Number(i.quantity || 0))} ج</span></div>`).join('')}
                     </div>
-                    <div class="return-summary"><span>💰 المبلغ المسترجع:</span><span class="amount">${moneyText(r.total || 0)} ج</span></div>
-                    ${status === 'pending' ? `
-                        <div class="return-card-actions">
-                            <button class="btn btn-success btn-sm" onclick="window.approveReturnRequest('${r.id}')"><i class="fa-solid fa-check"></i> اعتماد</button>
-                            <button class="btn btn-danger btn-sm" onclick="window.rejectReturnRequest('${r.id}')"><i class="fa-solid fa-times"></i> رفض</button>
-                        </div>` : ''}
-                    ${isFinished ? `
-                        <div class="return-card-actions">
-                            ${deleteBtn}
-                        </div>
-                        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">
-                            ${status === 'rejected' ? '❌ تم الرفض' : '✅ تم المعالجة'}: ${pd}
-                        </div>
-                    ` : ''}
+                    <div class="return-summary"><span>💰 المبلغ المطلوب إرجاعه:</span><span class="amount">${moneyText(r.total || 0)} ج</span></div>
+                    ${actionButtons ? `<div class="return-card-actions">${actionButtons}</div>` : ''}
+                    ${pd && isFinished ? `<div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">
+                        ${status === 'rejected' ? '❌ تم الرفض' : '✅ تم الإكمال'}: ${pd}
+                    </div>` : ''}
                 </div>`;
             }).join('');
             
             c.innerHTML = html;
         }
         
+        function scheduleRejectedReturnHide(requestId, rejectedAt) {
+            if (rejectedReturnHideTimers[requestId]) clearTimeout(rejectedReturnHideTimers[requestId]);
+            if (rejectedReturnHideCountdowns[requestId]) clearInterval(rejectedReturnHideCountdowns[requestId]);
+            const hideAt = Number(rejectedAt || Date.now()) + REJECTED_RETURN_HIDE_MINUTES * 60 * 1000;
+            const updateCountdown = () => {
+                const rem = Math.max(0, Math.ceil((hideAt - Date.now()) / 1000));
+                const el = document.getElementById(`rejected-cd-${requestId}`);
+                if (el) el.textContent = formatTime(rem);
+                if (rem <= 0) {
+                    clearInterval(rejectedReturnHideCountdowns[requestId]);
+                    delete rejectedReturnHideCountdowns[requestId];
+                }
+            };
+            updateCountdown();
+            rejectedReturnHideCountdowns[requestId] = setInterval(updateCountdown, 1000);
+            const remMs = Math.max(0, hideAt - Date.now());
+            rejectedReturnHideTimers[requestId] = setTimeout(() => {
+                hiddenReturnRequestIds.add(requestId);
+                delete rejectedReturnHideTimers[requestId];
+                if (rejectedReturnHideCountdowns[requestId]) clearInterval(rejectedReturnHideCountdowns[requestId]);
+                delete rejectedReturnHideCountdowns[requestId];
+                window.renderReturnsContent();
+            }, remMs);
+        }
+
+        function setupRejectedReturnTimers() {
+            Object.keys(rejectedReturnHideTimers).forEach(id => clearTimeout(rejectedReturnHideTimers[id]));
+            Object.keys(rejectedReturnHideCountdowns).forEach(id => clearInterval(rejectedReturnHideCountdowns[id]));
+            rejectedReturnHideTimers = {};
+            rejectedReturnHideCountdowns = {};
+            returnRequestsCache.filter(r => String(r.status || '').toLowerCase() === 'rejected' && r.rejectedAt).forEach(r => {
+                if (Date.now() - Number(r.rejectedAt) >= REJECTED_RETURN_HIDE_MINUTES * 60 * 1000) hiddenReturnRequestIds.add(r.id);
+                else scheduleRejectedReturnHide(r.id, r.rejectedAt);
+            });
+        }
+
         function renderCompletedReturns(searchQuery = '') {
             const c = document.getElementById('returnsList');
             if (!c) return;
@@ -4907,7 +5165,229 @@
             }).join('');
         }
         
-        // ✅ دالة حذف طلب استرجاع واحد (من الموقع + قاعدة البيانات)
+        // ✅ المرحلة 2: اعتماد طلب الاسترجاع (يبدأ جاري استلام المرتجع)
+        window.approveReturnRequest = async function(requestId) {
+            const r = returnRequestsCache.find(x => x.id === requestId);
+            if (!r || r.status !== 'pending') { showToast('⚠️ تمت المعالجة', 'error'); return; }
+            
+            const o = allOrders.find(x => x.id === r.orderId);
+            if (!o) { showToast('❌ الطلب غير موجود', 'error'); return; }
+            
+            const deliveredAt = Number(o.deliveredAt || 0);
+            if (!deliveredAt || Date.now() - deliveredAt > RETURN_WINDOW_HOURS * 60 * 60 * 1000) { 
+                showToast(`⏰ انتهت المهلة (${RETURN_WINDOW_HOURS} ساعة)`, 'error'); 
+                return; 
+            }
+            
+            if (!confirm(`اعتماد طلب استرجاع بقيمة ${moneyText(r.total || 0)} ج؟\n\n✅ سيتم تحويل الطلب إلى "جاري استلام المرتجع"\n✅ ستحتاج لتسليم الأموال للعميل واستلام المرتجع`)) return;
+            
+            showPageLoading('جاري اعتماد الاسترجاع...');
+            try {
+                await loadReturns();
+                const prev = returnedQtyMap(o.id);
+                const su = {}, items = [];
+                
+                for (const ri of (r.items || [])) {
+                    const oi = (o.items || []).find(x => String(x.productId || '') === String(ri.productId || ''));
+                    if (!oi) throw new Error(`المنتج ${ri.name || ''} غير موجود`);
+                    const orig = Number(oi.quantity || 0);
+                    const alr = prev[String(ri.productId || '')] || 0;
+                    const qty = Math.floor(Number(ri.quantity || 0));
+                    if (qty < 1 || qty > orig - alr) throw new Error(`كمية ${ri.name || 'المنتج'} غير صالحة. المتاح: ${Math.max(0, orig - alr)}`);
+                    items.push({ productId: ri.productId || '', name: ri.name || oi.name || '', quantity: qty, price: money(ri.price ?? oi.price) });
+                    
+                    // ✅ إرجاع الكميات للمخزون عند الاعتماد
+                    const p = allProducts.find(x => String(x.id) === String(ri.productId || ''));
+                    if (p) su[`products/${ri.productId}/quantity`] = Number(p.quantity || 0) + qty;
+                }
+                
+                const total = items.reduce((x, i) => x + i.price * i.quantity, 0);
+                const returnId = push(ref(database, 'returns')).key;
+                const now = Date.now();
+                
+                const full = (o.items || []).every(oi => {
+                    const pq = prev[String(oi.productId || '')] || 0;
+                    const rn = items.filter(i => String(i.productId) === String(oi.productId)).reduce((x, i) => x + i.quantity, 0);
+                    return Number(oi.quantity || 0) <= (pq + rn);
+                });
+                
+              // ✅ إنشاء سجل في returns
+su[`returns/${returnId}`] = { 
+    orderId: o.id, 
+    invoiceCode: String(o.invoiceCode || o.invoiceNumber || o.id || '').slice(-8), 
+    customerName: o.recipientName || r.customerName || '', 
+    phone: o.phone || r.phone || '', 
+    phoneHash: r.phoneHash || '', 
+    items, total, 
+    returnedProductsTotal: total, 
+    deliveryRefund: 0, 
+    refundTotal: total, 
+    customerRefund: total, 
+    cashboxImpact: -total, 
+    financialType: 'customer_refund', 
+    reason: r.reason || '', 
+    originalStatus: o.status || '', 
+    returnedAt: now, 
+    requestedAt: r.requestedAt || now, 
+    isFullReturn: full, 
+    status: 'approved', // ✅ المرحلة 2
+    sourceRequestId: requestId 
+};
+
+// ✅ تحديث حالة الطلب
+su[`returnRequests/${requestId}/status`] = 'approved';
+su[`returnRequests/${requestId}/approvedAt`] = now;
+su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
+                if (r.phoneHash) {
+                    su[`returnRequestIndex/${r.phoneHash}/${requestId}/status`] = 'approved';
+                    su[`returnRequestIndex/${r.phoneHash}/${requestId}/approvedAt`] = now;
+                    su[`returnRequestIndex/${r.phoneHash}/${requestId}/returnId`] = returnId;
+                }
+                // ✅ سجل دائم للكميات المسترجعة داخل الطلب نفسه.
+                // هذا السجل لا يُحذف عند حذف سجل المرتجع من لوحة الإدارة،
+                // وبالتالي تظل الكمية المتبقية صحيحة في متجر العميل.
+                for (const ri of items) {
+                    const pid = String(ri.productId || '');
+                    if (!pid) continue;
+                    const prevQty = Number(o.returnedQuantities?.[pid] || prev[pid] || 0);
+                    su[`orders/${o.id}/returnedQuantities/${pid}`] = prevQty + Number(ri.quantity || 0);
+                }
+
+                // إذا كان إرجاع كامل - تحديث حالة الطلب الأصلي.
+                if (full) { 
+                    su[`orders/${o.id}/status`] = 'returned'; 
+                    su[`orders/${o.id}/returnedAt`] = now; 
+                }
+                
+                await update(ref(database), su);
+                await loadReturns();
+                await recordReturnFinancialImpact(returnId, total, now);
+                await updateMonthlySales();
+                await refreshReturns();
+                
+                showToast(`✅ تم الاعتماد - جاري استلام المرتجع من العميل`);
+            } catch (e) { 
+                console.error(e); 
+                showToast('❌ فشل: ' + (e.message || ''), 'error'); 
+            }
+            finally { hidePageLoading(); }
+        };
+        
+        // ✅ المرحلة 3: إكمال الاسترجاع (استلام المرتجع + تسليم الأموال)
+        window.completeReturnRequest = async function(requestId) {
+            const r = returnRequestsCache.find(x => x.id === requestId);
+            if (!r || r.status !== 'approved') { 
+                showToast('⚠️ يجب اعتماد الطلب أولاً', 'error'); 
+                return; 
+            }
+            
+            if (!confirm(`✅ تم استلام المرتجع من العميل وتسليمه مبلغ ${moneyText(r.total || 0)} ج؟\n\n⚠️ بعد التأكيد: سيختفي الطلب من هذه القائمة بعد 5 دقائق (محفوظ 24 ساعة)`)) return;
+            
+            showPageLoading('جاري إكمال الاسترجاع...');
+            try {
+                const su = {};
+                const now = Date.now();
+                
+                // ✅ تحديث حالة الطلب إلى completed
+                su[`returnRequests/${requestId}/status`] = 'completed';
+                su[`returnRequests/${requestId}/completedAt`] = now;
+                su[`returnRequests/${requestId}/completedBy`] = currentUser?.uid || 'admin';
+                if (r.phoneHash) {
+                    su[`returnRequestIndex/${r.phoneHash}/${requestId}/status`] = 'completed';
+                    su[`returnRequestIndex/${r.phoneHash}/${requestId}/completedAt`] = now;
+                    su[`returnRequestIndex/${r.phoneHash}/${requestId}/completedBy`] = currentUser?.uid || 'admin';
+                }
+                
+                // ✅ تحديث سجل returns أيضاً
+                if (r.returnId) {
+                    su[`returns/${r.returnId}/status`] = 'completed';
+                    su[`returns/${r.returnId}/completedAt`] = now;
+                }
+                
+                await update(ref(database), su);
+                await refreshReturns();
+                
+                // ✅ جدولة الإخفاء من الصفحة بعد 5 دقائق
+                scheduleHideReturnFromPage(requestId, now);
+                
+                // ✅ جدولة الحذف من DB بعد 24 ساعة
+                scheduleDeleteReturnFromDB(requestId, now);
+                
+                showToast(`✅ تم استلام المرتجع وتسليم الأموال - سيختفي الطلب بعد 5 دقائق`);
+            } catch (e) { 
+                console.error(e); 
+                showToast('❌ فشل: ' + (e.message || ''), 'error'); 
+            }
+            finally { hidePageLoading(); }
+        };
+        
+        // ✅ جدولة إخفاء طلب الاسترجاع من الصفحة بعد 5 دقائق
+        function scheduleHideReturnFromPage(requestId, ct) {
+            if (hideReturnFromPageTimers[requestId]) { clearTimeout(hideReturnFromPageTimers[requestId]); }
+            if (hideReturnFromPageCountdowns[requestId]) { clearInterval(hideReturnFromPageCountdowns[requestId]); }
+            
+            const hideAt = (ct || Date.now()) + (DELETE_FROM_PAGE_MINUTES * 60 * 1000);
+            const rem = Math.max(0, hideAt - Date.now());
+            
+            if (rem <= 0) {
+                hiddenReturnRequestIds.add(requestId);
+                window.renderReturnsContent();
+                return;
+            }
+            
+            const tid = setTimeout(() => {
+                hiddenReturnRequestIds.add(requestId);
+                window.renderReturnsContent();
+                if (hideReturnFromPageCountdowns[requestId]) { 
+                    clearInterval(hideReturnFromPageCountdowns[requestId]); 
+                    delete hideReturnFromPageCountdowns[requestId]; 
+                }
+                delete hideReturnFromPageTimers[requestId];
+                console.log(`👁️ تم إخفاء طلب الاسترجاع ${requestId} من الصفحة`);
+            }, rem);
+            
+            hideReturnFromPageTimers[requestId] = tid;
+        }
+        
+        // ✅ جدولة حذف طلب الاسترجاع من DB بعد 24 ساعة
+        function scheduleDeleteReturnFromDB(requestId, ct) {
+            if (deleteReturnFromDBTimers[requestId]) { clearTimeout(deleteReturnFromDBTimers[requestId]); }
+            
+            const deleteAt = (ct || Date.now()) + (DELETE_FROM_DB_HOURS * 60 * 60 * 1000);
+            const rem = Math.max(0, deleteAt - Date.now());
+            
+            if (rem <= 0) {
+                deleteReturnRequestFromDB(requestId);
+                return;
+            }
+            
+            const tid = setTimeout(() => {
+                deleteReturnRequestFromDB(requestId);
+                delete deleteReturnFromDBTimers[requestId];
+            }, rem);
+            
+            deleteReturnFromDBTimers[requestId] = tid;
+        }
+        
+        async function deleteReturnRequestFromDB(requestId) {
+            try {
+                const r = returnRequestsCache.find(x => x.id === requestId);
+                const updates = {};
+                updates[`returnRequests/${requestId}`] = null;
+                if (r?.phoneHash) {
+                    updates[`returnRequestIndex/${r.phoneHash}/${requestId}`] = null;
+                }
+                await update(ref(database), updates);
+                returnRequestsCache = returnRequestsCache.filter(x => x.id !== requestId);
+                hiddenReturnRequestIds.delete(requestId);
+                console.log(`🗑️ تم حذف طلب الاسترجاع ${requestId} من DB`);
+                window.renderReturnsContent();
+            } catch (e) {
+                console.error(`فشل حذف طلب الاسترجاع ${requestId}:`, e);
+            }
+        }
+        
+        // ✅ دالة حذف طلب استرجاع يدوياً (من الموقع + قاعدة البيانات)
         window.deleteReturnRequest = async function(requestId) {
             const r = returnRequestsCache.find(x => x.id === requestId);
             if (!r) { showToast('⚠️ الطلب غير موجود', 'error'); return; }
@@ -4924,31 +5404,21 @@
             showPageLoading('جاري الحذف...');
             try {
                 const updates = {};
-                // ✅ حذف من returnRequests
                 updates[`returnRequests/${requestId}`] = null;
                 
-                // ✅ حذف من returnRequestIndex إذا كان موجوداً
-                if (r.phone) {
-                    // نحاول الحصول على phoneHash
-                    if (r.phoneHash) {
-                        updates[`returnRequestIndex/${r.phoneHash}/${requestId}`] = null;
-                    } else {
-                        // قد نحتاج لحساب hash
-                        // سنتركه فارغاً - سيتم حذفه تلقائياً من client side
-                    }
+                if (r.phoneHash) {
+                    updates[`returnRequestIndex/${r.phoneHash}/${requestId}`] = null;
                 }
                 
                 await update(ref(database), updates);
                 
-                // ✅ حذف من الذاكرة المحلية
                 returnRequestsCache = returnRequestsCache.filter(x => x.id !== requestId);
+                hiddenReturnRequestIds.delete(requestId);
                 
                 showToast('🗑️ تم حذف طلب الاسترجاع من الموقع وقاعدة البيانات');
                 
-                // ✅ إعادة عرض
                 window.renderReturnsContent();
                 updateReturnsBadge();
-                await updateReturnsBadge();
             } catch (e) {
                 console.error('Delete return request failed:', e);
                 showToast('❌ فشل الحذف: ' + (e.message || ''), 'error');
@@ -4957,52 +5427,40 @@
             }
         };
         
-        // ✅ دالة حذف كل الطلبات المنتهية (مكتملة + مرفوضة)
-        window.deleteAllFinishedReturnRequests = async function() {
-            const finished = returnRequestsCache.filter(r => ['completed', 'rejected'].includes(String(r.status || '').toLowerCase()));
-            if (!finished.length) { 
-                showToast('⚠️ لا توجد طلبات منتهية للحذف', 'warning'); 
+        // ✅ دالة حذف كل الطلبات المكتملة
+        window.deleteAllCompletedReturns = async function() {
+            const completed = returnRequestsCache.filter(r => String(r.status || '').toLowerCase() === 'completed');
+            if (!completed.length) { 
+                showToast('⚠️ لا توجد طلبات مكتملة للحذف', 'warning'); 
                 return; 
             }
             
-            if (!confirm(`⚠️ حذف ${finished.length} طلب استرجاع منتهي نهائياً؟\n\n✅ سيتم الحذف من الموقع\n✅ سيتم الحذف من قاعدة البيانات\n\n⚠️ لا يمكن التراجع!`)) return;
+            if (!confirm(`⚠️ حذف ${completed.length} طلب استرجاع مكتمل نهائياً؟\n\n✅ سيتم الحذف من الموقع\n✅ سيتم الحذف من قاعدة البيانات\n\n⚠️ لا يمكن التراجع!`)) return;
             
-            showPageLoading(`جاري حذف ${finished.length} طلب...`);
+            showPageLoading(`جاري حذف ${completed.length} طلب...`);
             try {
                 const updates = {};
                 const removedIds = new Set();
-                const phoneHashes = new Set();
                 
-                for (const r of finished) {
-                    // ✅ حذف من returnRequests
+                for (const r of completed) {
                     updates[`returnRequests/${r.id}`] = null;
-                    removedIds.add(r.id);
-                    
-                    // ✅ جمع phoneHash إن وُجد
-                    if (r.phoneHash) {
-                        phoneHashes.add(r.phoneHash);
-                    }
-                }
-                
-                // ✅ حذف من returnRequestIndex
-                for (const r of finished) {
                     if (r.phoneHash) {
                         updates[`returnRequestIndex/${r.phoneHash}/${r.id}`] = null;
                     }
+                    removedIds.add(r.id);
                 }
                 
                 await update(ref(database), updates);
                 
-                // ✅ حذف من الذاكرة المحلية
                 returnRequestsCache = returnRequestsCache.filter(x => !removedIds.has(x.id));
+                removedIds.forEach(id => hiddenReturnRequestIds.delete(id));
                 
-                showToast(`🗑️ تم حذف ${finished.length} طلب من الموقع وقاعدة البيانات`);
+                showToast(`🗑️ تم حذف ${completed.length} طلب مكتمل`);
                 
-                // ✅ إعادة عرض
                 window.renderReturnsContent();
                 await updateReturnsBadge();
             } catch (e) {
-                console.error('Delete all finished returns failed:', e);
+                console.error('Delete all completed returns failed:', e);
                 showToast('❌ فشل الحذف: ' + (e.message || ''), 'error');
             } finally {
                 hidePageLoading();
@@ -5010,57 +5468,40 @@
         };
         
         window.renderReturns = function() { window.renderReturnsContent(); };
+        
         window.refreshReturns = async function() {
             await Promise.all([loadReturns(), loadReturnRequests()]);
+            
+            // ✅ التحقق من الطلبات المكتملة وحذفها إذا مرت 24 ساعة
+            const now = Date.now();
+            const dbDeleteMs = DELETE_FROM_DB_HOURS * 60 * 60 * 1000;
+            const hideMs = DELETE_FROM_PAGE_MINUTES * 60 * 1000;
+            
+            for (const r of returnRequestsCache) {
+                if (r.status === 'completed' && r.completedAt) {
+                    const elapsed = now - r.completedAt;
+                    
+                    // إخفاء بعد 5 دقائق
+                    if (elapsed > hideMs) {
+                        hiddenReturnRequestIds.add(r.id);
+                    } else if (!hideReturnFromPageTimers[r.id]) {
+                        scheduleHideReturnFromPage(r.id, r.completedAt);
+                    }
+                    
+                    // حذف من DB بعد 24 ساعة
+                    if (elapsed > dbDeleteMs) {
+                        deleteReturnRequestFromDB(r.id);
+                    } else if (!deleteReturnFromDBTimers[r.id]) {
+                        scheduleDeleteReturnFromDB(r.id, r.completedAt);
+                    }
+                }
+            }
+            
             window.renderReturnsContent();
             updateReturnsBadge();
             showToast('🔄 تم التحديث');
         };
-        window.approveReturnRequest = async function(requestId) {
-            const r = returnRequestsCache.find(x => x.id === requestId);
-            if (!r || r.status !== 'pending') { showToast('⚠️ تمت المعالجة', 'error'); return; }
-            const o = allOrders.find(x => x.id === r.orderId);
-            if (!o) { showToast('❌ الطلب غير موجود', 'error'); return; }
-            const deliveredAt = Number(o.deliveredAt || 0);
-            if (!deliveredAt || Date.now() - deliveredAt > RETURN_WINDOW_HOURS * 60 * 60 * 1000) { showToast(`⏰ انتهت المهلة (${RETURN_WINDOW_HOURS} ساعة)`, 'error'); return; }
-            if (!confirm(`اعتماد استرجاع بقيمة ${moneyText(r.total || 0)} ج؟\n\n⚠️ لا يتم رد رسوم التوصيل.`)) return;
-            showPageLoading('جاري اعتماد الاسترجاع...');
-            try {
-                await loadReturns();
-                const prev = returnedQtyMap(o.id);
-                const su = {}, items = [];
-                for (const ri of (r.items || [])) {
-                    const oi = (o.items || []).find(x => String(x.productId || '') === String(ri.productId || ''));
-                    if (!oi) throw new Error(`المنتج ${ri.name || ''} غير موجود`);
-                    const orig = Number(oi.quantity || 0);
-                    const alr = prev[String(ri.productId || '')] || 0;
-                    const qty = Math.floor(Number(ri.quantity || 0));
-                    if (qty < 1 || qty > orig - alr) throw new Error(`كمية ${ri.name || 'المنتج'} غير صالحة. المتاح: ${Math.max(0, orig - alr)}`);
-                    items.push({ productId: ri.productId || '', name: ri.name || oi.name || '', quantity: qty, price: money(ri.price ?? oi.price) });
-                    const p = allProducts.find(x => String(x.id) === String(ri.productId || ''));
-                    if (p) su[`products/${ri.productId}/quantity`] = Number(p.quantity || 0) + qty;
-                }
-                const total = items.reduce((x, i) => x + i.price * i.quantity, 0);
-                const returnId = push(ref(database, 'returns')).key;
-                const now = Date.now();
-                const full = (o.items || []).every(oi => {
-                    const pq = prev[String(oi.productId || '')] || 0;
-                    const rn = items.filter(i => String(i.productId) === String(oi.productId)).reduce((x, i) => x + i.quantity, 0);
-                    return Number(oi.quantity || 0) <= (pq + rn);
-                });
-                su[`returns/${returnId}`] = { orderId: o.id, invoiceCode: String(o.invoiceCode || o.invoiceNumber || o.id || '').slice(-8), customerName: o.recipientName || r.customerName || '', phone: o.phone || r.phone || '', phoneHash: r.phoneHash || '', items, total, returnedProductsTotal: total, deliveryRefund: 0, refundTotal: total, customerRefund: total, cashboxImpact: -total, financialType: 'customer_refund', reason: r.reason || '', originalStatus: o.status || '', returnedAt: now, requestedAt: r.requestedAt || now, isFullReturn: full, status: 'completed', sourceRequestId: requestId };
-                su[`returnRequests/${requestId}/status`] = 'completed';
-                su[`returnRequests/${requestId}/approvedAt`] = now;
-                if (full) { su[`orders/${o.id}/status`] = 'returned'; su[`orders/${o.id}/returnedAt`] = now; }
-                await update(ref(database), su);
-                await loadReturns();
-                await recordReturnFinancialImpact(returnId, total, now);
-                await updateMonthlySales();
-                await refreshReturns();
-                showToast(`✅ تم الاعتماد ورد ${moneyText(total)} ج`);
-            } catch (e) { console.error(e); showToast('❌ فشل: ' + (e.message || ''), 'error'); }
-            finally { hidePageLoading(); }
-        };
+        
         window.rejectReturnRequest = async function(requestId) {
             const r = returnRequestsCache.find(x => x.id === requestId);
             if (!r) return;
@@ -5068,20 +5509,33 @@
             if (reason === null) return;
             try {
                 const u = {};
+                const rejectedAt = Date.now();
                 u[`returnRequests/${requestId}/status`] = 'rejected';
                 u[`returnRequests/${requestId}/rejectionReason`] = reason;
-                u[`returnRequests/${requestId}/rejectedAt`] = Date.now();
+                u[`returnRequests/${requestId}/rejectedAt`] = rejectedAt;
+                if (r.phoneHash) {
+                    u[`returnRequestIndex/${r.phoneHash}/${requestId}/status`] = 'rejected';
+                    u[`returnRequestIndex/${r.phoneHash}/${requestId}/rejectionReason`] = reason;
+                    u[`returnRequestIndex/${r.phoneHash}/${requestId}/rejectedAt`] = rejectedAt;
+                }
                 await update(ref(database), u);
                 await refreshReturns();
-                showToast('تم الرفض');
+                showToast('❌ تم الرفض - الطلب محفوظ 24 ساعة');
             } catch (e) { showToast('❌ فشل', 'error'); }
         };
+        
+        // ============================================================
+        // ===== Record Return Manually =====
+        // ============================================================
         window.openReturnModal = async function(orderId) {
             const o = allOrders.find(x => x.id === orderId);
             if (!o) { showToast('❌ غير موجود', 'error'); return; }
             if (o.status !== 'delivered') { showToast('⚠️ يمكن إرجاع المسلّمة فقط', 'error'); return; }
             const deliveredAt = Number(o.deliveredAt || 0);
-            if (!deliveredAt || Date.now() - deliveredAt > RETURN_WINDOW_HOURS * 60 * 60 * 1000) { showToast(`⏰ انتهت المهلة (${RETURN_WINDOW_HOURS} ساعة)`, 'error'); return; }
+            if (!deliveredAt || Date.now() - deliveredAt > RETURN_WINDOW_HOURS * 60 * 60 * 1000) { 
+                showToast(`⏰ انتهت المهلة (${RETURN_WINDOW_HOURS} ساعة)`, 'error'); 
+                return; 
+            }
             await loadReturns();
             const prev = returnedQtyMap(orderId);
             document.getElementById('returnOrderId').value = orderId;
@@ -5139,6 +5593,13 @@
                     return Number(oi.quantity || 0) <= (pq + rn);
                 });
                 const now = Date.now();
+                // سجل دائم للكميات المسترجعة داخل الطلب نفسه.
+                for (const item of vi) {
+                    const pid = String(item.productId || '');
+                    if (!pid) continue;
+                    const prevQty = Number(o.returnedQuantities?.[pid] || prev[pid] || 0);
+                    su[`orders/${o.id}/returnedQuantities/${pid}`] = prevQty + Number(item.quantity || 0);
+                }
                 const returnId = push(ref(database, 'returns')).key;
                 su[`returns/${returnId}`] = { orderId: o.id, invoiceCode: String(o.invoiceCode || o.invoiceNumber || o.id || '').slice(-8), customerName: o.recipientName || '', phone: o.phone || '', items: vi, total, returnedProductsTotal: total, deliveryRefund: 0, refundTotal: total, customerRefund: total, cashboxImpact: -total, financialType: 'customer_refund', reason: reason + (details ? ` - ${details}` : ''), originalStatus: o.status || '', returnedAt: now, isFullReturn: full, status: 'completed' };
                 if (full) { su[`orders/${o.id}/status`] = 'returned'; su[`orders/${o.id}/returnedAt`] = now; }
@@ -5160,21 +5621,6 @@
                 await loadReturns();
                 window.renderReturnsContent();
             } catch (e) { showToast('❌ فشل الحذف', 'error'); }
-        };
-        window.deleteAllCompletedReturns = async function() {
-            const completed = returnsCache.filter(r => r.status === 'completed');
-            if (!completed.length) { showToast('⚠️ لا توجد مرتجعات مكتملة', 'error'); return; }
-            if (!confirm(`حذف كل المرتجعات المكتملة (${completed.length})؟\n⚠️ سيتم حذف السجل فقط. المخزون والمبيعات تبقى محفوظة.`)) return;
-            showPageLoading('جاري حذف المرتجعات...');
-            try {
-                const updates = {};
-                completed.forEach(r => { updates[`returns/${r.id}`] = null; });
-                await update(ref(database), updates);
-                showToast(`🗑️ تم حذف ${completed.length} مرتجع`);
-                await loadReturns();
-                window.renderReturnsContent();
-            } catch (e) { showToast('❌ فشل الحذف', 'error'); }
-            finally { hidePageLoading(); }
         };
         window.recordReturn = window.openReturnModal;
 
@@ -5404,7 +5850,28 @@
                 loadLogo(), loadStoredAnalytics(), loadMessageLog(), loadWalletSettings(),
                 loadCoupons(), loadFlashSaleSettings(), loadAboutSettings(), loadContactSettings(),
                 loadClientMessages(), loadPromoSlides(), loadReturns(), loadReturnRequests()
-            ]).then(() => { updateReturnsBadge(); });
+            ]).then(() => { 
+                updateReturnsBadge();
+                
+                // ✅ استئناف المؤقتات للطلبات المكتملة
+                const now = Date.now();
+                returnRequestsCache.forEach(r => {
+                    if (r.status === 'completed' && r.completedAt) {
+                        const elapsed = now - r.completedAt;
+                        if (elapsed > DELETE_FROM_PAGE_MINUTES * 60 * 1000) {
+                            hiddenReturnRequestIds.add(r.id);
+                        } else if (!hideReturnFromPageTimers[r.id]) {
+                            scheduleHideReturnFromPage(r.id, r.completedAt);
+                        }
+                        if (elapsed > DELETE_FROM_DB_HOURS * 60 * 60 * 1000) {
+                            deleteReturnRequestFromDB(r.id);
+                        } else if (!deleteReturnFromDBTimers[r.id]) {
+                            scheduleDeleteReturnFromDB(r.id, r.completedAt);
+                        }
+                    }
+                });
+                window.renderReturnsContent();
+            });
             renderOrders(); renderProducts(); updateStats();
             updateMonthlySales().then(() => setTimeout(() => updateAnalyticsCache(), 800));
             if (!window._couponInterval) window._couponInterval = setInterval(() => checkCouponStatus(), 60000);
@@ -5465,10 +5932,20 @@
             }
         };
 
+        // تنظيف المؤقتات عند الخروج
+        window.addEventListener('beforeunload', () => {
+            cleanupTimers();
+            Object.values(hideReturnFromPageTimers).forEach(t => clearTimeout(t));
+            Object.values(hideReturnFromPageCountdowns).forEach(i => clearInterval(i));
+            Object.values(deleteReturnFromDBTimers).forEach(t => clearTimeout(t));
+        });
+
         console.log('✅ لوحة التحكم بروفيشنال جاهزة');
-        console.log('✅ إمكانية حذف طلبات الاسترجاع الفردية (مكتملة/مرفوضة)');
-        console.log('✅ إمكانية حذف جميع الطلبات المنتهية بضغطة واحدة');
-        console.log('✅ الحذف يشمل الموقع + قاعدة البيانات');
+        console.log('✅ نظام 3 مؤقتات:');
+        console.log(`   ⏱️ إخفاء من الصفحة بعد ${DELETE_FROM_PAGE_MINUTES} دقائق`);
+        console.log(`   💾 حذف من قاعدة البيانات بعد ${DELETE_FROM_DB_HOURS} ساعة`);
+        console.log(`   ↩️ نافذة الاسترجاع للعميل: ${RETURN_WINDOW_HOURS} ساعة`);
+        console.log('✅ نظام استرجاع 3 مراحل: pending → approved → completed');
     </script>
 </body>
 </html>
