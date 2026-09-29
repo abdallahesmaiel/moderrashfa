@@ -2454,7 +2454,7 @@
                 
                 <div class="search-filter-wrapper">
                     <div class="search-box">
-                        <input id="returnsSearch" type="search" placeholder="ابحث بكود الفاتورة أو اسم العميل..." oninput="window.renderReturnsContent()">
+                        <input id="returnsSearch" type="search" placeholder="ابحث برقم الطلب أو باركود EAN-13 أو اسم العميل..." oninput="window.renderReturnsContent()">
                         <i class="fa-solid fa-search"></i>
                     </div>
                 </div>
@@ -3034,6 +3034,18 @@
         // ===== Upload Progress =====
         // ============================================================
         function getUploadProgressElements(prefix = '') {
+            if (!prefix) {
+                return {
+                    container: document.getElementById('uploadProgressContainer'),
+                    label: document.getElementById('progressLabel'),
+                    percent: document.getElementById('progressPercent'),
+                    fill: document.getElementById('progressFill'),
+                    statusText: document.getElementById('uploadStatusText'),
+                    statusMessage: document.getElementById('uploadStatusMessage'),
+                    preview: document.getElementById('imgPreview'),
+                    uploadArea: document.getElementById('imgUploadArea')
+                };
+            }
             return {
                 container: document.getElementById(prefix + 'UploadProgressContainer'),
                 label: document.getElementById(prefix + 'ProgressLabel'),
@@ -3106,9 +3118,12 @@
                     xhr.timeout = 120000;
                     xhr.upload.addEventListener('loadstart', () => updateUploadProgress(prefix, 1, 'بدء الرفع...', 'loading'));
                     xhr.upload.addEventListener('progress', (event) => {
-                        if (event.lengthComputable) {
+                        if (event.lengthComputable && event.total > 0) {
                             const p = Math.min(99, Math.round((event.loaded / event.total) * 100));
                             updateUploadProgress(prefix, p, `جاري رفع الصورة... ${p}%`, 'loading');
+                        } else {
+                            // بعض المتصفحات/الهواتف لا ترسل total؛ أبقِ المؤشر ظاهرًا بدل اختفائه.
+                            updateUploadProgress(prefix, 50, 'جاري رفع الصورة... 50%', 'loading');
                         }
                     });
                     xhr.addEventListener('load', () => {
@@ -3139,23 +3154,79 @@
         }
 
         // ============================================================
+        // ===== Invoice EAN-13 + WhatsApp details =====
+        // ============================================================
+        const EAN13_PARITY = [
+            'LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG',
+            'LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'
+        ];
+        const EAN13_L = {0:'0001101',1:'0011001',2:'0010011',3:'0111101',4:'0100011',5:'0110001',6:'0101111',7:'0111011',8:'0110111',9:'0001011'};
+        const EAN13_G = {0:'0100111',1:'0110011',2:'0011011',3:'0100001',4:'0011101',5:'0111001',6:'0000101',7:'0010001',8:'0001001',9:'0010111'};
+        const EAN13_R = {0:'1110010',1:'1100110',2:'1101100',3:'1000010',4:'1011100',5:'1001110',6:'1010000',7:'1000100',8:'1001000',9:'1110100'};
+
+        function calculateEAN13CheckDigit(first12) {
+            const digits = String(first12).replace(/\D/g, '').slice(0, 12).padStart(12, '0');
+            let sum = 0;
+            for (let i = 0; i < 12; i++) sum += Number(digits[i]) * (i % 2 ? 3 : 1);
+            return String((10 - (sum % 10)) % 10);
+        }
+
+        function getInvoiceBarcode(orderOrId) {
+            const obj = orderOrId && typeof orderOrId === 'object' ? orderOrId : null;
+            const existing = obj?.invoiceBarcode || obj?.ean13;
+            if (/^\d{13}$/.test(String(existing || ''))) return String(existing);
+            const source = String(obj?.orderId || obj?.invoiceCode || obj?.id || orderOrId || '0');
+            let hash = 0;
+            for (let i = 0; i < source.length; i++) hash = (hash * 31 + source.charCodeAt(i)) >>> 0;
+            const body = ('20' + String(hash).padStart(10, '0')).slice(-12);
+            return body + calculateEAN13CheckDigit(body);
+        }
+
+        function buildEAN13Svg(value) {
+            const code = String(value || '');
+            const digits = /^\d{13}$/.test(code) ? code : getInvoiceBarcode(code);
+            const first = Number(digits[0]);
+            const parity = EAN13_PARITY[first];
+            let bits = '101';
+            for (let i = 1; i <= 6; i++) bits += (parity[i - 1] === 'L' ? EAN13_L : EAN13_G)[digits[i]];
+            bits += '01010';
+            for (let i = 7; i <= 12; i++) bits += EAN13_R[digits[i]];
+            bits += '101';
+            const module = 3, height = 100, quiet = 10, width = bits.length * module + quiet * 2;
+            let bars = '';
+            for (let i = 0; i < bits.length; i++) if (bits[i] === '1') bars += `<rect x="${quiet + i * module}" y="0" width="${module}" height="${height}" fill="#000"/>`;
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} 128" width="100%" height="128" role="img" aria-label="EAN-13 ${digits}">${bars}<text x="${width/2}" y="122" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#111">${digits}</text></svg>`;
+        }
+
+        function getOrderCouponText(o) {
+            const c = o?.coupon;
+            if (!c) return 'لا يوجد كوبون';
+            if (c.free_shipping || c.type === 'free_shipping' || c.discountType === 'free_shipping') return `كوبون ${c.code || ''} — شحن مجاني`;
+            const discount = Number(c.discount || c.value || 0);
+            if (discount > 0) return `كوبون ${c.code || ''} — خصم ${discount.toFixed(2)} ج`;
+            return `كوبون ${c.code || ''}`;
+        }
+
+        function getOrderShippingText(o) {
+            const fee = Number(o?.deliveryFee || 0);
+            return fee <= 0 ? 'مجاني 🎉' : `${fee.toFixed(2)} ج`;
+        }
+
+        function buildDetailedOrderMessage(o, statusTitle) {
+            const items = (o?.items || []).map((i, n) => `${n + 1}. ${i.name || 'منتج'} × ${Number(i.quantity || 0)} = ${(Number(i.price || 0) * Number(i.quantity || 0)).toFixed(2)} ج`).join('\n') || 'لا توجد منتجات';
+            const subtotal = (o?.items || []).reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 0), 0);
+            const codFee = Number(o?.codFee || 0);
+            const discount = Number(o?.coupon?.discount || 0);
+            return `مرحباً ${o?.recipientName || 'عميلنا'}،\n\n${statusTitle}\n📋 رقم الطلب: #${String(o?.id || '').slice(-8)}\n🔢 باركود الفاتورة EAN-13: ${getInvoiceBarcode(o)}\n\n🛒 المنتجات:\n${items}\n\n💰 إجمالي المنتجات: ${subtotal.toFixed(2)} ج\n🚚 الشحن: ${getOrderShippingText(o)}\n${codFee > 0 ? `💳 رسوم الدفع: ${codFee.toFixed(2)} ج\n` : ''}${o?.coupon ? `🎫 ${getOrderCouponText(o)}\n` : ''}${discount > 0 ? `🏷️ قيمة الخصم: ${discount.toFixed(2)} ج\n` : ''}💵 الإجمالي النهائي: ${Number(o?.total || 0).toFixed(2)} ج\n💳 طريقة الدفع: ${getPaymentMethodName(o?.paymentMethod || 'cod')}\n\n📍 العنوان: ${o?.address || '---'}\n📞 الهاتف: ${o?.phone || '---'}${o?.notes ? `\n📝 ملاحظات: ${o.notes}` : ''}\n\n🏪 بروفيشنال`;
+        }
+
+        // ============================================================
         // ===== WhatsApp =====
         // ============================================================
-        function msgAccept(o) {
-            const itemsList = (o.items || []).map(i => `- ${i.name} ×${i.quantity} = ${(i.price * i.quantity).toFixed(2)} ج`).join('\n');
-            const total = o.total || 0;
-            const pmName = getPaymentMethodName(o.paymentMethod || 'cod');
-            return `مرحباً ${o.recipientName || 'عميلنا'},\n\n✅ تم قبول طلبك #${(o.id || '').slice(-8)}\n\n📋 المنتجات:\n${itemsList}\n\n💰 الإجمالي: ${total.toFixed(2)} ج\n💳 الدفع: ${pmName}\n📍 ${o.address || '---'}\n📞 ${o.phone || '---'}\n\n🚚 سيتم التجهيز خلال 24 ساعة\n🏪 بروفيشنال`;
-        }
-        function msgDelivering(o) {
-            return `مرحباً ${o.recipientName || 'عميلنا'},\n\n🚚 طلبك #${(o.id || '').slice(-8)} في الطريق!\n\n💰 المبلغ: ${(o.total || 0).toFixed(2)} ج\n\n📦 التوصيل خلال 30-60 دقيقة\n🏪 بروفيشنال`;
-        }
-        function msgDelivered(o) {
-            return `مرحباً ${o.recipientName || 'عميلنا'},\n\n📦 تم تسليم طلبك #${(o.id || '').slice(-8)} ✅\n\n💰 الإجمالي: ${(o.total || 0).toFixed(2)} ج\n\n🏪 شكراً لاختيارك بروفيشنال`;
-        }
-        function msgRejected(o) {
-            return `مرحباً ${o.recipientName || 'عميلنا'},\n\n❌ تم رفض طلبك #${(o.id || '').slice(-8)}\n\nالسبب: ${o.rejectionReason || 'أسباب تقنية'}\n\n📞 01103127696\n🏪 بروفيشنال`;
-        }
+        function msgAccept(o) { return buildDetailedOrderMessage(o, '✅ تم قبول طلبك'); }
+        function msgDelivering(o) { return buildDetailedOrderMessage(o, '🚚 طلبك في الطريق'); }
+        function msgDelivered(o) { return buildDetailedOrderMessage(o, '📦 تم تسليم طلبك بنجاح'); }
+        function msgRejected(o) { return `${buildDetailedOrderMessage(o, '❌ تم رفض طلبك')}\n\nسبب الرفض: ${o?.rejectionReason || 'أسباب تقنية'}\n📞 01103127696`; }
 
         async function sendWhatsApp(phone, message, type = 'واتساب') {
             if (!phone || !message) { addToMessageLog(phone || 'غير معروف', type, false, 'بيانات ناقصة'); return false; }
@@ -4238,9 +4309,10 @@
                     }
                     if (o.status === 'pending') btns += `<button class="status-btn btn-reject" onclick="window.openRejectModal('${o.id}')">❌ رفض</button>`;
                 }
-                if (o.status === 'accepted' || o.status === 'delivering') {
-                    btns += `<button class="btn btn-info btn-sm" onclick="window.printReceiptForOrder('${o.id}')">🖨️</button>`;
-                    btns += `<button class="btn btn-whatsapp btn-sm" onclick="window.sendWAtoClient('${o.id}')"><i class="fa-brands fa-whatsapp"></i></button>`;
+                if (o.status !== 'rejected') {
+                    btns += `<button class="btn btn-info btn-sm" onclick="window.printReceiptForOrder('${o.id}')">🖨️ فاتورة</button>`;
+                    btns += `<button class="btn btn-warning btn-sm" onclick="window.shareInvoiceImage('${o.id}')">🖼️ صورة</button>`;
+                    btns += `<button class="btn btn-whatsapp btn-sm" onclick="window.sendWAtoClient('${o.id}')"><i class="fa-brands fa-whatsapp"></i> واتساب</button>`;
                 }
                 if (o.status === 'pending') btns += `<button class="btn btn-success btn-sm" onclick="window.manualAcceptOrder('${o.id}')">✅ قبول</button>`;
                 
@@ -4263,6 +4335,7 @@
                         <span class="order-status-badge ${badgeCls[o.status] || ''}">${labels[o.status] || o.status}</span>
                         <span class="order-date">${date}</span>
                     </div>
+                    <div style="font-size:11px;font-weight:800;color:var(--text-secondary);margin:-2px 0 8px;">🔢 EAN-13: <span style="letter-spacing:1px;color:var(--text-primary);">${getInvoiceBarcode(o)}</span></div>
                     <div class="order-info-grid">
                         <div class="order-info-item"><i class="fa-solid fa-user"></i><strong>${o.recipientName || '---'}</strong></div>
                         <div class="order-info-item"><i class="fa-solid fa-phone"></i>${o.phone || '---'}</div>
@@ -4368,48 +4441,209 @@
         // ============================================================
         // ===== Print Receipt =====
         // ============================================================
+        function buildInvoiceBody(o) {
+            const date = new Date(o.createdAt || Date.now()).toLocaleString('ar-EG');
+            const subtotal = (o.items || []).reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 0), 0);
+            const deliveryFee = Number(o.deliveryFee || 0), codFee = Number(o.codFee || 0), total = Number(o.total || 0);
+            const pmName = getPaymentMethodName(o.paymentMethod || 'cod');
+            const coupon = o.coupon || null, discount = Number(coupon?.discount || 0);
+            const barcode = getInvoiceBarcode(o);
+            const itemsHtml = (o.items || []).map(i => `<tr><td class="item-name">${escapeHtml(i.name || '---')}</td><td class="item-qty">${Number(i.quantity || 0)}</td><td class="item-price">${Number(i.price || 0).toFixed(2)} ج</td><td class="item-total">${(Number(i.price || 0) * Number(i.quantity || 0)).toFixed(2)} ج</td></tr>`).join('');
+            return `<div class="invoice-sheet" dir="rtl">
+                <div class="invoice-head"><div class="store-name">🏪 بروفيشنال</div><div class="invoice-title">فاتورة طلب إلكترونية</div></div>
+                <div class="invoice-meta">
+                    <div><b>رقم الطلب:</b> #${escapeHtml(String(o.id || '').slice(-8))}</div>
+                    <div><b>التاريخ:</b> ${escapeHtml(date)}</div>
+                    <div><b>المستلم:</b> ${escapeHtml(o.recipientName || '---')}</div>
+                    <div><b>الهاتف:</b> ${escapeHtml(o.phone || '---')}</div>
+                    <div><b>العنوان:</b> ${escapeHtml(o.address || '---')}</div>
+                    <div><b>الدفع:</b> ${escapeHtml(pmName)}</div>
+                    ${coupon ? `<div><b>الكوبون:</b> ${escapeHtml(coupon.code || '')} — ${escapeHtml(getOrderCouponText(o))}</div>` : ''}
+                </div>
+                <div class="invoice-section-title">🛒 المنتجات</div>
+                <table class="invoice-items"><thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead><tbody>${itemsHtml || '<tr><td colspan="4">لا توجد منتجات</td></tr>'}</tbody></table>
+                <div class="invoice-totals">
+                    <div><span>إجمالي المنتجات</span><strong>${subtotal.toFixed(2)} ج</strong></div>
+                    <div><span>الشحن</span><strong>${deliveryFee <= 0 ? 'مجاني 🎉' : deliveryFee.toFixed(2) + ' ج'}</strong></div>
+                    ${codFee > 0 ? `<div><span>رسوم الدفع</span><strong>${codFee.toFixed(2)} ج</strong></div>` : ''}
+                    ${discount > 0 ? `<div class="discount"><span>الخصم</span><strong>-${discount.toFixed(2)} ج</strong></div>` : ''}
+                    <div class="grand-total"><span>الإجمالي النهائي</span><strong>${total.toFixed(2)} ج</strong></div>
+                </div>
+                <div class="barcode-title">باركود الفاتورة EAN-13</div>
+                <div class="barcode-wrap">${buildEAN13Svg(barcode)}</div>
+                <div class="barcode-number">${barcode}</div>
+                <div class="invoice-footer">شكراً لاختياركم بروفيشنال 🏪<br><small>احتفظ بالفاتورة لاستخدامها عند الحاجة إلى المرتجعات</small></div>
+            </div>`;
+        }
+
+        function buildInvoiceHtml(o) {
+            return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>فاتورة #${escapeHtml(String(o.id || '').slice(-8))}</title><style>
+                *{box-sizing:border-box}html,body{margin:0!important;padding:0!important;background:#f3f4f6!important;color:#111!important;font-family:Tahoma,Arial,sans-serif!important;opacity:1!important;filter:none!important;-webkit-text-fill-color:#111!important}.invoice-sheet,.invoice-sheet *{opacity:1!important;filter:none!important}body{padding:16px}.invoice-sheet{width:420px;max-width:100%;margin:0 auto;background:#fff;padding:22px;border-radius:12px;box-shadow:0 3px 18px rgba(0,0,0,.08);color:#111}.invoice-head{text-align:center;border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:14px}.store-name{font-size:27px;font-weight:900;color:#111}.invoice-title{font-size:16px;font-weight:800;margin-top:6px;color:#333}.invoice-meta{font-size:13px;line-height:1.9;border-bottom:1px solid #bbb;padding-bottom:12px}.invoice-meta b{color:#111}.invoice-section-title{font-size:16px;font-weight:900;margin:14px 0 8px;color:#111}.invoice-items{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;color:#111}.invoice-items th{background:#e9ecef;color:#111;font-weight:900;padding:9px 5px;border:1px solid #555}.invoice-items td{padding:9px 5px;border:1px solid #777;font-weight:700;color:#111;vertical-align:middle}.invoice-items .item-name{width:42%;word-break:break-word}.invoice-items .item-qty{width:15%;text-align:center}.invoice-items .item-price{width:21%;text-align:center}.invoice-items .item-total{width:22%;text-align:center;font-weight:900}.invoice-totals{margin-top:12px;border:1px solid #777;border-radius:8px;padding:9px 11px;font-size:13px;color:#111}.invoice-totals>div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-weight:700}.invoice-totals strong{font-weight:900;color:#111}.invoice-totals .discount{color:#b91c1c}.invoice-totals .grand-total{border-top:2px solid #111;margin-top:5px;padding-top:9px;font-size:17px;font-weight:900}.barcode-title{text-align:center;font-weight:900;font-size:13px;margin-top:15px;color:#111}.barcode-wrap{margin:8px auto 0;width:100%;max-width:360px}.barcode-number{text-align:center;font-family:Arial,sans-serif;font-size:17px;font-weight:900;letter-spacing:2px;margin-top:-5px;color:#111}.invoice-footer{text-align:center;border-top:1px dashed #777;margin-top:15px;padding-top:12px;font-size:13px;font-weight:800;line-height:1.8;color:#222}.invoice-footer small{font-weight:600;color:#333}.print-btn{display:block;margin:15px auto 0;padding:11px 25px;border:0;border-radius:8px;background:#111;color:#fff;font-size:15px;font-weight:800}@media print{html,body{background:#fff}body{padding:0}.invoice-sheet{width:80mm;box-shadow:none;border-radius:0;padding:10px}.print-btn{display:none}}
+            </style></head><body>${buildInvoiceBody(o)}<button class="print-btn" onclick="window.print()">🖨️ طباعة</button><script>window.onload=function(){setTimeout(function(){try{window.print()}catch(e){}},400)};<\/script></body></html>`;
+        }
+
         window.printReceiptForOrder = (oid) => {
             const o = allOrders.find(x => x.id === oid);
             if (!o) { showToast('❌ الطلب غير موجود', 'error'); return; }
             try {
-                showToast('⏳ جاري التحضير...', 'info');
-                const date = new Date(o.createdAt || Date.now()).toLocaleString('ar-EG');
-                const subtotal = (o.items || []).reduce((s, i) => s + (i.price * i.quantity), 0);
-                const deliveryFee = o.deliveryFee || 0, codFee = o.codFee || 0, total = o.total || 0;
-                const pmName = getPaymentMethodName(o.paymentMethod || 'cod');
-                const coupon = o.coupon || null, discount = coupon ? (coupon.discount || 0) : 0;
-                const itemsHtml = (o.items || []).map(i => `<tr><td style="padding:6px 4px;">${i.name} ×${i.quantity}</td><td style="padding:6px 4px;text-align:left;font-weight:600;">${(i.price * i.quantity).toFixed(2)} ج</td></tr>`).join('');
-                const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>فاتورة #${o.id.slice(-8)}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo','Tahoma',sans-serif;padding:20px;max-width:80mm;margin:0 auto;background:#fff;color:#222;direction:rtl}.header{text-align:center;margin-bottom:16px}.header h2{font-size:20px;color:#333}.header p{font-size:12px;color:#666}hr{border:none;border-top:2px dashed #ccc;margin:12px 0}.info{font-size:13px;line-height:1.8}.info strong{color:#333}table{width:100%;font-size:13px;border-collapse:collapse;margin:12px 0}td{padding:6px 4px;border-bottom:1px dashed #e0e0e0}td:last-child{text-align:left;font-weight:600}.breakdown{background:#f8f8f8;padding:12px;border-radius:8px;margin:12px 0;font-size:13px}.breakdown-row{display:flex;justify-content:space-between;padding:4px 0}.breakdown-row.total{font-weight:800;border-top:2px solid #999;margin-top:6px;padding-top:8px;font-size:16px}.footer{text-align:center;font-size:12px;color:#888;margin-top:16px;border-top:1px dashed #ddd;padding-top:12px}.print-btn{display:block;margin:20px auto;padding:12px 30px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer;font-family:'Cairo',sans-serif}@media print{.print-btn{display:none}}</style></head><body>
-                <div class="header"><h2>🏪 بروفيشنال</h2><p>📞 01103127696</p></div><hr>
-                <div class="info"><p><strong>رقم الطلب:</strong> #${o.id.slice(-8)}</p><p><strong>📅 التاريخ:</strong> ${date}</p><p><strong>👤 المستلم:</strong> ${o.recipientName || '---'}</p><p><strong>📞 الهاتف:</strong> ${o.phone || '---'}</p><p><strong>📍 العنوان:</strong> ${o.address || '---'}</p><p><strong>💳 الدفع:</strong> ${pmName}</p>${coupon ? `<p><strong>🎫 كوبون:</strong> ${coupon.code}</p>` : ''}</div><hr>
-                <table><thead><tr style="font-weight:700;border-bottom:2px solid #333;"><td>المنتج</td><td style="text-align:left;">السعر</td></tr></thead><tbody>${itemsHtml}</tbody></table><hr>
-                <div class="breakdown">
-                    <div class="breakdown-row"><span>🛒 إجمالي المنتجات:</span><span>${subtotal.toFixed(2)} ج</span></div>
-                    <div class="breakdown-row"><span>🚚 التوصيل:</span><span>${deliveryFee === 0 ? 'مجاناً 🎉' : deliveryFee.toFixed(2) + ' ج'}</span></div>
-                    ${codFee > 0 ? `<div class="breakdown-row"><span>💳 رسوم الدفع:</span><span>${codFee.toFixed(2)} ج</span></div>` : ''}
-                    ${discount > 0 ? `<div class="breakdown-row" style="color:#e11d48;"><span>🎫 خصم:</span><span>-${discount.toFixed(2)} ج</span></div>` : ''}
-                    <div class="breakdown-row total"><span>💰 الإجمالي:</span><span>${total.toFixed(2)} ج</span></div>
-                </div>
-                <div class="footer">🏪 شكراً لاختياركم بروفيشنال<br><small>هذه فاتورة إلكترونية</small></div>
-                <button class="print-btn" onclick="window.print()">🖨️ طباعة</button>
-                <script>window.onload=function(){setTimeout(function(){try{window.print()}catch(e){}},500)};<\/script>
-                </body></html>`;
+                showToast('⏳ جاري تجهيز الفاتورة...', 'info');
+                const html = buildInvoiceHtml(o);
                 const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
-                const pw = window.open(url, '_blank', 'width=420,height=700,scrollbars=yes');
+                const pw = window.open(url, '_blank', 'width=480,height=800,scrollbars=yes');
                 if (!pw || pw.closed || typeof pw.closed === 'undefined') {
                     showToast('⚠️ اسمح بالنوافذ المنبثقة', 'warning');
+                    URL.revokeObjectURL(url);
                     const iframe = document.createElement('iframe');
-                    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0';
+                    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0;opacity:0';
                     document.body.appendChild(iframe);
                     const doc = iframe.contentDocument || iframe.contentWindow.document;
                     doc.open(); doc.write(html); doc.close();
-                    setTimeout(() => { iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 3000); }, 300);
+                    setTimeout(() => { try { iframe.contentWindow.print(); } finally { setTimeout(() => iframe.remove(), 3000); } }, 500);
                 } else {
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                    showToast('🖨️ تم فتح الفاتورة');
+                    setTimeout(() => URL.revokeObjectURL(url), 5000);
+                    showToast('🖨️ تم فتح الفاتورة', 'success');
                 }
-            } catch (error) { showToast('❌ فشل الطباعة', 'error'); }
+            } catch (error) { showToast('❌ فشل تجهيز الفاتورة', 'error'); }
+        };
+
+        let html2CanvasPromise = null;
+        function ensureHtml2Canvas() {
+            if (window.html2canvas) return Promise.resolve(window.html2canvas);
+            if (html2CanvasPromise) return html2CanvasPromise;
+            html2CanvasPromise = new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                script.onload = () => window.html2canvas ? resolve(window.html2canvas) : reject(new Error('تعذر تحميل أداة الصورة'));
+                script.onerror = () => reject(new Error('تعذر تحميل أداة مشاركة الفاتورة كصورة'));
+                document.head.appendChild(script);
+            });
+            return html2CanvasPromise;
+        }
+
+        window.shareInvoiceImage = async (oid) => {
+            const o = allOrders.find(x => x.id === oid);
+            if (!o) { showToast('❌ الطلب غير موجود', 'error'); return; }
+
+            let frame;
+            try {
+                showToast('⏳ جاري تجهيز صورة الفاتورة...', 'info');
+                const html2canvas = await ensureHtml2Canvas();
+
+                /*
+                 * المشاركة يجب أن تُرسم داخل مستند معزول تماماً عن CSS الموقع.
+                 * السبب: html2canvas عندما يرسم العنصر داخل صفحة لوحة التحكم
+                 * قد يرث بعض قواعد الـ CSS العامة، فتظهر نصوص الفاتورة باهتة.
+                 */
+                frame = document.createElement('iframe');
+                frame.setAttribute('aria-hidden', 'true');
+                frame.style.cssText = [
+                    'position:fixed',
+                    'left:-10000px',
+                    'top:0',
+                    'width:460px',
+                    'height:1400px',
+                    'border:0',
+                    'margin:0',
+                    'padding:0',
+                    'opacity:1',
+                    'visibility:visible',
+                    'z-index:2147483647',
+                    'background:#fff'
+                ].join(';');
+
+                document.body.appendChild(frame);
+
+                const isolatedHtml = buildInvoiceHtml(o)
+                    .replace(/<button class="print-btn"[\s\S]*?<\/button>/i, '')
+                    .replace(/<script[\s\S]*?<\/script>/gi, '');
+
+                frame.srcdoc = isolatedHtml;
+
+                await new Promise((resolve, reject) => {
+                    let settled = false;
+                    const finish = (fn) => {
+                        if (settled) return;
+                        settled = true;
+                        fn();
+                    };
+                    frame.addEventListener('load', () => finish(resolve), { once: true });
+                    setTimeout(() => finish(() => reject(new Error('انتهى وقت تجهيز الفاتورة'))), 5000);
+                });
+
+                const frameDoc = frame.contentDocument || frame.contentWindow?.document;
+                if (!frameDoc) throw new Error('تعذر تجهيز مستند الفاتورة');
+
+                if (frameDoc.fonts?.ready) {
+                    try { await frameDoc.fonts.ready; } catch (_) {}
+                }
+
+                const sheet = frameDoc.querySelector('.invoice-sheet');
+                if (!sheet) throw new Error('تعذر العثور على الفاتورة');
+
+                // تأكيد أن كل عناصر الفاتورة مرئية بالكامل أثناء الالتقاط.
+                sheet.style.setProperty('opacity', '1', 'important');
+                sheet.style.setProperty('color', '#111', 'important');
+                sheet.style.setProperty('-webkit-text-fill-color', '#111', 'important');
+                sheet.style.setProperty('filter', 'none', 'important');
+
+                frameDoc.querySelectorAll('.invoice-sheet *').forEach(el => {
+                    el.style.setProperty('opacity', '1', 'important');
+                    el.style.setProperty('filter', 'none', 'important');
+                    if (!el.matches('svg, rect, path, line, polyline, polygon, circle, text')) {
+                        el.style.setProperty('-webkit-text-fill-color', 'currentColor', 'important');
+                    }
+                });
+
+                // ننتظر دورة رسم إضافية حتى تكون الخطوط والنصوص جاهزة قبل التصوير.
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+                const canvas = await html2canvas(sheet, {
+                    backgroundColor: '#ffffff',
+                    scale: Math.min(3, Math.max(2, window.devicePixelRatio || 2)),
+                    useCORS: true,
+                    allowTaint: false,
+                    logging: false,
+                    imageTimeout: 15000,
+                    removeContainer: true
+                });
+
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1));
+                if (!blob) throw new Error('تعذر إنشاء صورة الفاتورة');
+
+                const file = new File(
+                    [blob],
+                    `invoice-${String(o.id || '').slice(-8)}.png`,
+                    { type: 'image/png' }
+                );
+
+                const shareData = {
+                    title: 'فاتورة بروفيشنال',
+                    text: `فاتورة الطلب #${String(o.id || '').slice(-8)}\nباركود EAN-13: ${getInvoiceBarcode(o)}`,
+                    files: [file]
+                };
+
+                if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+                    await navigator.share(shareData);
+                    showToast('✅ تم فتح المشاركة', 'success');
+                } else {
+                    const objectUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = objectUrl;
+                    a.download = file.name;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    setTimeout(() => URL.revokeObjectURL(objectUrl), 3000);
+                    showToast('✅ تم تجهيز صورة الفاتورة، ويمكن إرسالها عبر واتساب أو أي تطبيق', 'success');
+                }
+            } catch (e) {
+                if (e?.name !== 'AbortError') {
+                    showToast(`❌ تعذر مشاركة الفاتورة: ${e.message || 'خطأ غير معروف'}`, 'error');
+                }
+            } finally {
+                try { frame?.remove(); } catch (_) {}
+            }
         };
 
         // ============================================================
@@ -4979,7 +5213,7 @@
                 return true;
             });
             
-            if (searchQuery) list = list.filter(r => [r.invoiceCode, r.orderId, r.customerName, r.phone, r.reason].join(' ').toLowerCase().includes(searchQuery));
+            if (searchQuery) list = list.filter(r => [r.invoiceCode, r.orderId, r.customerName, r.phone, r.reason, r.invoiceBarcode, getInvoiceBarcode(r)].join(' ').toLowerCase().includes(searchQuery));
             
             if (!list.length) { 
                 c.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>لا توجد طلبات استرجاع</h3><p>ستظهر هنا طلبات العملاء</p></div>`; 
@@ -5071,6 +5305,7 @@
                         <span class="order-status-badge ${sc[status] || 'badge-pending'}">${sl[status] || status}</span>
                         <span class="order-date">${rd}</span>
                     </div>
+                    <div style="font-size:11px;font-weight:800;color:var(--text-secondary);margin:-2px 0 8px;">🔢 EAN-13: <span style="letter-spacing:1px;color:var(--text-primary);">${getInvoiceBarcode(r)}</span></div>
                     <div class="order-info-grid">
                         <div class="order-info-item"><i class="fa-solid fa-user"></i>${escapeHtml(r.customerName || '---')}</div>
                         <div class="order-info-item"><i class="fa-solid fa-phone"></i>${escapeHtml(r.phone || '---')}</div>
@@ -5133,7 +5368,7 @@
             const c = document.getElementById('returnsList');
             if (!c) return;
             let list = returnsCache.filter(r => r.status === 'completed');
-            if (searchQuery) list = list.filter(r => [r.invoiceCode, r.orderId, r.customerName, r.phone, r.reason].join(' ').toLowerCase().includes(searchQuery));
+            if (searchQuery) list = list.filter(r => [r.invoiceCode, r.orderId, r.customerName, r.phone, r.reason, r.invoiceBarcode, getInvoiceBarcode(r)].join(' ').toLowerCase().includes(searchQuery));
             if (!list.length) { c.innerHTML = `<div class="empty-state"><i class="fa-solid fa-rotate-left"></i><h3>لا توجد مرتجعات مكتملة</h3><p>سيظهر هنا سجل المرتجعات</p></div>`; return; }
             c.innerHTML = list.map(r => {
                 const items = Array.isArray(r.items) ? r.items : [];
@@ -5144,6 +5379,7 @@
                         <span class="order-status-badge badge-returned">✅ مكتمل</span>
                         <span class="order-date">${rd}</span>
                     </div>
+                    <div style="font-size:11px;font-weight:800;color:var(--text-secondary);margin:-2px 0 8px;">🔢 EAN-13: <span style="letter-spacing:1px;color:var(--text-primary);">${getInvoiceBarcode(r)}</span></div>
                     <div class="order-info-grid">
                         <div class="order-info-item"><i class="fa-solid fa-user"></i>${escapeHtml(r.customerName || '---')}</div>
                         <div class="order-info-item"><i class="fa-solid fa-phone"></i>${escapeHtml(r.phone || '---')}</div>
