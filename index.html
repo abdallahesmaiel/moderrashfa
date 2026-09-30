@@ -1785,7 +1785,42 @@
             border: 1px solid var(--border-color);
         }
         
-        .promo-slide-card .promo-actions {
+        .promo-slide-card 
+        /* Exclusive offer: multi-product picker */
+        .promo-products-picker {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--bg-primary);
+            overflow: hidden;
+        }
+        .promo-products-search {
+            display:flex; align-items:center; gap:8px; padding:8px;
+            border-bottom:1px solid var(--border-color);
+        }
+        .promo-products-search input {
+            flex:1; min-width:0; background:var(--bg-secondary);
+            border:1px solid var(--border-color); border-radius:10px;
+            color:var(--text-primary); padding:10px 12px; outline:none;
+        }
+        .promo-products-list {
+            max-height:230px; overflow:auto; padding:6px;
+            display:flex; flex-direction:column; gap:5px;
+        }
+        .promo-product-option {
+            display:flex; align-items:center; gap:9px; padding:9px 10px;
+            border:1px solid transparent; border-radius:10px; cursor:pointer;
+            background:var(--bg-secondary);
+        }
+        .promo-product-option:hover { border-color:var(--gold-500); }
+        .promo-product-option input { width:18px; height:18px; accent-color:var(--gold-500); flex:0 0 auto; }
+        .promo-product-option-main { flex:1; min-width:0; }
+        .promo-product-option-name { display:block; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .promo-product-option-meta { display:flex; gap:8px; flex-wrap:wrap; color:var(--text-muted); font-size:10px; margin-top:2px; }
+        .promo-products-selected { padding:7px 10px; color:var(--gold-300); font-size:11px; font-weight:800; border-top:1px solid var(--border-color); }
+        .promo-linked-summary { margin-top:7px; display:flex; gap:5px; flex-wrap:wrap; }
+        .promo-linked-chip { background:var(--discount-bg); color:var(--discount-color); padding:3px 8px; border-radius:50px; font-size:10px; font-weight:800; }
+
+        .promo-actions {
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
@@ -2009,7 +2044,7 @@
                     </div>
                     <div class="filter-tags" id="categoryFilterTags">
                         <button class="filter-tag active" data-category="all" onclick="window.filterProductsByCategory('all')">🏷️ الكل</button>
-                        <button class="filter-tag" data-category="مستلزمات شخصية" onclick="window.filterProductsByCategory('مستلزمات شخصية')">🧴</button>
+                        <button class="filter-tag" data-category="مستلزمات شخصية" onclick="window.filterProductsByCategory('مستلزمات شخصية')">🛒</button>
                         <button class="filter-tag" data-category="أجهزة كهربائية" onclick="window.filterProductsByCategory('أجهزة كهربائية')">🔌</button>
                         <button class="filter-tag" data-category="أجهزة شخصية" onclick="window.filterProductsByCategory('أجهزة شخصية')">📱</button>
                         <button class="filter-tag" data-category="عناية طبيعية" onclick="window.filterProductsByCategory('عناية طبيعية')">🌿</button>
@@ -2036,7 +2071,7 @@
                             <div class="category-select-wrapper">
                                 <span class="category-emoji" id="categoryEmoji">📱</span>
                                 <select id="prodCategory" class="form-select" onchange="window.updateCategoryEmoji()">
-                                    <option value="مستلزمات شخصية">🧴 مستلزمات شخصية</option>
+                                    <option value="مستلزمات شخصية">🛒 مستلزمات شخصية</option>
                                     <option value="أجهزة كهربائية">🔌 أجهزة كهربائية</option>
                                     <option value="أجهزة شخصية" selected>📱 أجهزة شخصية</option>
                                     <option value="عناية طبيعية">🌿 عناية طبيعية</option>
@@ -2062,7 +2097,7 @@
                                     <i class="fa-solid fa-image"></i>
                                 </button>
                             </div>
-                            <input type="file" id="prodBarcodeImageInput" accept="image/*" capture="environment" style="display:none;">
+                            <input type="file" id="prodBarcodeImageInput" accept="image/*" style="display:none;">
                             <div class="barcode-status" id="prodBarcodeStatus"></div>
                         </div>
                     </div>
@@ -2461,10 +2496,19 @@
                 </div>
                 
                 <div class="search-filter-wrapper">
-                    <div class="search-box">
-                        <input id="returnsSearch" type="search" placeholder="ابحث برقم الطلب أو باركود EAN-13 أو اسم العميل..." oninput="window.renderReturnsContent()">
+                    <div class="search-box" style="flex:1;min-width:220px;">
+                        <input id="returnsSearch" type="search" placeholder="ابحث برقم الطلب أو باركود الفاتورة أو باركود المنتج أو اسم العميل..." oninput="window.renderReturnsContent()">
                         <i class="fa-solid fa-search"></i>
                     </div>
+                    <div class="barcode-tools" style="margin-top:0;">
+                        <button type="button" class="btn btn-info btn-sm" title="تصوير الباركود" onclick="window.openBarcodeCamera('returns')">
+                            <i class="fa-solid fa-camera"></i> تصوير
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm" title="اختيار صورة باركود من الهاتف" onclick="document.getElementById('returnsBarcodeImageInput').click()">
+                            <i class="fa-solid fa-image"></i> من صورة
+                        </button>
+                    </div>
+                    <input type="file" id="returnsBarcodeImageInput" accept="image/*" style="display:none;">
                 </div>
 
                 <!-- Bulk Delete Bar -->
@@ -2507,7 +2551,7 @@
             <div class="form-group"><label class="form-label">اسم المنتج</label><input type="text" id="editProdName" class="form-input"></div>
             <div class="form-group"><label class="form-label">التصنيف</label>
                 <select id="editProdCategory" class="form-select">
-                    <option value="مستلزمات شخصية">🧴 مستلزمات شخصية</option>
+                    <option value="مستلزمات شخصية">🛒 مستلزمات شخصية</option>
                     <option value="أجهزة كهربائية">🔌 أجهزة كهربائية</option>
                     <option value="أجهزة شخصية">📱 أجهزة شخصية</option>
                     <option value="عناية طبيعية">🌿 عناية طبيعية</option>
@@ -2528,7 +2572,7 @@
                     <button type="button" class="btn btn-info btn-sm" onclick="window.openBarcodeCamera('edit')"><i class="fa-solid fa-camera"></i></button>
                     <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('editProdBarcodeImageInput').click()"><i class="fa-solid fa-image"></i></button>
                 </div>
-                <input type="file" id="editProdBarcodeImageInput" accept="image/*" capture="environment" style="display:none;">
+                <input type="file" id="editProdBarcodeImageInput" accept="image/*" style="display:none;">
                 <div class="barcode-status" id="editProdBarcodeStatus"></div>
             </div>
             <div class="form-group"><label class="form-label">الوصف</label><textarea id="editProdDesc" class="form-input form-textarea"></textarea></div>
@@ -2696,7 +2740,7 @@
                 <label class="form-label">القسم المستهدف *</label>
                 <select id="promoCategory" class="form-select" onchange="window.updatePromoProductsList()">
                     <option value="all">🏷️ الكل</option>
-                    <option value="مستلزمات شخصية">🧴 مستلزمات شخصية</option>
+                    <option value="مستلزمات شخصية">🛒 مستلزمات شخصية</option>
                     <option value="أجهزة كهربائية">🔌 أجهزة كهربائية</option>
                     <option value="أجهزة شخصية">📱 أجهزة شخصية</option>
                     <option value="عناية طبيعية">🌿 عناية طبيعية</option>
@@ -2705,10 +2749,16 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">ربط المنتج (اختياري)</label>
-                <select id="promoLinkedProduct" class="form-select">
-                    <option value="">🚫 لا يوجد منتج محدد</option>
-                </select>
+                <label class="form-label">ربط المنتجات بالعرض (اختياري)</label>
+                <div class="promo-products-picker">
+                    <div class="promo-products-search">
+                        <i class="fa-solid fa-search" style="color:var(--text-muted);"></i>
+                        <input type="text" id="promoProductSearch" placeholder="ابحث باسم المنتج أو الباركود..." autocomplete="off" oninput="window.filterPromoProducts()">
+                    </div>
+                    <div id="promoLinkedProductsList" class="promo-products-list"></div>
+                    <div id="promoSelectedProductsCount" class="promo-products-selected">لم يتم اختيار منتجات</div>
+                </div>
+                <div id="promoLinkedProductsSummary" class="promo-linked-summary"></div>
             </div>
             
             <div class="form-group"><label class="form-label">عدد الثواني بين العروض</label><input type="number" id="promoInterval" class="form-input" min="1" max="60" value="5"></div>
@@ -2875,7 +2925,7 @@
         };
 
         const CATEGORIES = [
-            { id: 'مستلزمات شخصية', icon: 'fa-user', emoji: '🧴' },
+            { id: 'مستلزمات شخصية', icon: 'fa-basket-shopping', emoji: '🛒' },
             { id: 'أجهزة كهربائية', icon: 'fa-plug', emoji: '🔌' },
             { id: 'أجهزة شخصية', icon: 'fa-mobile-screen', emoji: '📱' },
             { id: 'عناية طبيعية', icon: 'fa-leaf', emoji: '🌿' },
@@ -3578,6 +3628,16 @@
         }
         function putBarcodeInTarget(v) {
             const c = normalizeBarcode(v); if (!c) return;
+            // في المرتجعات: استخدم الباركود مباشرة كقيمة بحث، بدون تعديل بيانات المنتجات.
+            if (barcodeScannerTarget === 'returns') {
+                const input = document.getElementById('returnsSearch');
+                if (input) {
+                    input.value = c;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                showToast(`🔎 تم البحث بالباركود: ${c}`, 'success');
+                return;
+            }
             const input = document.getElementById(barcodeScannerTarget === 'edit' ? 'editProdBarcode' : 'prodBarcode');
             if (input) { input.value = c; input.dispatchEvent(new Event('input', { bubbles: true })); }
             setBarcodeStatus(barcodeScannerTarget, `✅ ${c}`, 'success');
@@ -3592,7 +3652,7 @@
                 document.getElementById('barcodeScanResultValue').textContent = c;
                 const ub = document.getElementById('useBarcodeResultBtn'); if (ub) ub.disabled = false;
                 window.stopBarcodeCamera();
-                document.getElementById('barcodeScannerStatus').textContent = '✅ تم التثبيت. اضغط استخدام.';
+                document.getElementById('barcodeScannerStatus').textContent = barcodeScannerTarget === 'returns' ? '✅ تم العثور على الباركود. اضغط استخدام للبحث.' : '✅ تم التثبيت. اضغط استخدام.';
                 return true;
             }
             return false;
@@ -3621,7 +3681,7 @@
                         }
                         if (!result) throw new Error('لم يتم العثور على باركود');
                         const clean = normalizeBarcode(result);
-                        if (hasDuplicateBarcode(clean, target === 'edit' ? document.getElementById('editProductId')?.value : '')) {
+                        if (target !== 'returns' && hasDuplicateBarcode(clean, target === 'edit' ? document.getElementById('editProductId')?.value : '')) {
                             setBarcodeStatus(target, '⚠️ مستخدم لمنتج آخر', 'error'); return;
                         }
                         putBarcodeInTarget(clean);
@@ -3638,7 +3698,7 @@
             document.getElementById('barcodeScanResult')?.classList.remove('show');
             const ub = document.getElementById('useBarcodeResultBtn'); if (ub) ub.disabled = true;
             const m = document.getElementById('barcodeCameraMessage'); if (m) m.style.display = 'block';
-            document.getElementById('barcodeScannerStatus').textContent = 'اضغط تشغيل الكاميرا.';
+            document.getElementById('barcodeScannerStatus').textContent = t === 'returns' ? 'اضغط تشغيل الكاميرا للبحث عن المرتجع.' : 'اضغط تشغيل الكاميرا.';
             document.getElementById('barcodeScannerModal').classList.add('active');
         };
 
@@ -3698,8 +3758,10 @@
 
         window.useScannedBarcode = function() {
             const v = normalizeBarcode(barcodeScannedValue); if (!v) return;
-            const exceptId = barcodeScannerTarget === 'edit' ? document.getElementById('editProductId')?.value : '';
-            if (hasDuplicateBarcode(v, exceptId)) { showToast('⚠️ مستخدم لمنتج آخر', 'error'); return; }
+            if (barcodeScannerTarget !== 'returns') {
+                const exceptId = barcodeScannerTarget === 'edit' ? document.getElementById('editProductId')?.value : '';
+                if (hasDuplicateBarcode(v, exceptId)) { showToast('⚠️ مستخدم لمنتج آخر', 'error'); return; }
+            }
             putBarcodeInTarget(v);
             window.closeBarcodeCamera();
         };
@@ -4281,7 +4343,7 @@
             if (!c || !document.getElementById('panel-orders')?.classList.contains('active')) return;
             
             // ✅ فلترة الطلبات - استثناء المخفية من الصفحة
-            let f = allOrders.filter(o => !hiddenOrderIds.has(o.id));
+            let f = allOrders.filter(o => !hiddenOrderIds.has(o.id) && o.status !== 'returned');
             
             if (currentFilter === 'pending') f = f.filter(o => o.status === 'pending');
             else if (currentFilter === 'active') f = f.filter(o => o.status === 'accepted' || o.status === 'delivering');
@@ -4987,7 +5049,8 @@
             }
             c.innerHTML = allPromoSlides.map((s, i) => {
                 const ia = s.active !== false;
-                const lp = s.linkedProductId ? allProducts.find(p => p.id === s.linkedProductId) : null;
+                const linkedIds = Array.isArray(s.linkedProductIds) ? s.linkedProductIds : (s.linkedProductId ? [s.linkedProductId] : []);
+                const linkedProducts = linkedIds.map(id => allProducts.find(p => p.id === id)).filter(Boolean);
                 return `<div class="promo-slide-card ${!ia ? 'inactive' : ''}">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
                         <span style="font-weight:800;color:var(--gold-300);font-size:13px;">#${i + 1} - ${s.title || 'عرض'}</span>
@@ -4998,7 +5061,7 @@
                     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:11px;color:var(--text-secondary);">
                         <span><i class="fa-solid fa-tag"></i> ${s.category || 'الكل'}</span>
                         <span><i class="fa-solid fa-clock"></i> ${s.interval || 5}ث</span>
-                        ${lp ? `<span style="background:var(--discount-bg);color:var(--discount-color);padding:2px 8px;border-radius:50px;font-weight:700;"><i class="fa-solid fa-link"></i> ${lp.name}</span>` : ''}
+                        ${linkedProducts.length ? `<span style="background:var(--discount-bg);color:var(--discount-color);padding:2px 8px;border-radius:50px;font-weight:700;"><i class="fa-solid fa-link"></i> ${linkedProducts.length} منتج${linkedProducts.length === 1 ? '' : 'ات'}</span>` : ''}
                     </div>
                     <div class="promo-actions">
                         <button class="btn btn-gold btn-sm" onclick="window.editPromoSlide('${s.id}')"><i class="fa-solid fa-pen"></i></button>
@@ -5008,17 +5071,54 @@
                 </div>`;
             }).join('');
         }
-        window.updatePromoProductsList = function() {
+        // ===== Exclusive offer product linking (multiple products + name/barcode search) =====
+        let promoSelectedProductIds = [];
+        window.updatePromoProductsList = function(preserveSelection = true) {
             const cat = document.getElementById('promoCategory')?.value || 'all';
-            const sel = document.getElementById('promoLinkedProduct');
-            if (!sel) return;
-            const cv = sel.value;
-            let fp = allProducts;
-            if (cat !== 'all') fp = allProducts.filter(p => p.category === cat);
-            let opts = '<option value="">🚫 لا يوجد منتج محدد</option>';
-            fp.forEach(p => { opts += `<option value="${p.id}" ${cv === p.id ? 'selected' : ''}>${p.name} (${p.price} ج)</option>`; });
-            sel.innerHTML = opts;
-            if (cv) sel.value = cv;
+            const list = document.getElementById('promoLinkedProductsList');
+            if (!list) return;
+            const selected = preserveSelection ? new Set(promoSelectedProductIds) : new Set();
+            let products = [...allProducts];
+            if (cat !== 'all') products = products.filter(p => p.category === cat);
+            const q = (document.getElementById('promoProductSearch')?.value || '').toLowerCase().trim();
+            if (q) {
+                products = products.filter(p =>
+                    String(p.name || '').toLowerCase().includes(q) ||
+                    String(p.barcode || '').toLowerCase().includes(q)
+                );
+            }
+            if (!products.length) {
+                list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;">🔎 لا توجد منتجات مطابقة</div>';
+            } else {
+                list.innerHTML = products.map(p => {
+                    const checked = selected.has(p.id) ? 'checked' : '';
+                    const barcode = p.barcode ? `باركود: ${p.barcode}` : 'بدون باركود';
+                    return `<label class="promo-product-option">
+                        <input type="checkbox" value="${p.id}" ${checked} onchange="window.togglePromoProduct('${p.id}', this.checked)">
+                        <span class="promo-product-option-main">
+                            <span class="promo-product-option-name">${p.name || 'منتج بدون اسم'}</span>
+                            <span class="promo-product-option-meta"><span>💰 ${Number(p.price || 0).toFixed(2)} ج</span><span>${barcode}</span></span>
+                        </span>
+                    </label>`;
+                }).join('');
+            }
+            window.updatePromoSelectedProductsUI();
+        };
+        window.filterPromoProducts = function() { window.updatePromoProductsList(true); };
+        window.togglePromoProduct = function(id, checked) {
+            const set = new Set(promoSelectedProductIds);
+            if (checked) set.add(id); else set.delete(id);
+            promoSelectedProductIds = Array.from(set);
+            window.updatePromoSelectedProductsUI();
+        };
+        window.updatePromoSelectedProductsUI = function() {
+            const count = document.getElementById('promoSelectedProductsCount');
+            if (count) count.textContent = promoSelectedProductIds.length ? `تم اختيار ${promoSelectedProductIds.length} منتج` : 'لم يتم اختيار منتجات';
+            const summary = document.getElementById('promoLinkedProductsSummary');
+            if (summary) {
+                const selectedProducts = promoSelectedProductIds.map(id => allProducts.find(p => p.id === id)).filter(Boolean);
+                summary.innerHTML = selectedProducts.map(p => `<span class="promo-linked-chip">${p.name}</span>`).join('');
+            }
         };
         window.openAddPromoModal = async function() {
             isEditPromo = false;
@@ -5039,8 +5139,11 @@
             selectedPromoImage = null;
             document.getElementById('promoImageInput').value = '';
             hideUploadProgress('promo'); resetUploadProgress('promo');
-            window.updatePromoProductsList();
-            document.getElementById('promoLinkedProduct').value = '';
+            promoSelectedProductIds = [];
+            const promoSearch = document.getElementById('promoProductSearch');
+            if (promoSearch) promoSearch.value = '';
+            window.updatePromoProductsList(false);
+            window.updatePromoSelectedProductsUI();
             document.getElementById('promoModal').classList.add('active');
         };
         window.editPromoSlide = function(id) {
@@ -5055,8 +5158,11 @@
             document.getElementById('promoInterval').value = parseInt(s.interval) || 5;
             document.getElementById('promoOrder').value = s.order || 0;
             document.getElementById('promoStatus').value = s.active !== false ? 'true' : 'false';
-            window.updatePromoProductsList();
-            document.getElementById('promoLinkedProduct').value = s.linkedProductId || '';
+            promoSelectedProductIds = Array.isArray(s.linkedProductIds) ? [...s.linkedProductIds] : (s.linkedProductId ? [s.linkedProductId] : []);
+            const promoSearch = document.getElementById('promoProductSearch');
+            if (promoSearch) promoSearch.value = '';
+            window.updatePromoProductsList(false);
+            window.updatePromoSelectedProductsUI();
             if (s.image) {
                 document.getElementById('promoImageUrl').value = s.image;
                 document.getElementById('promoImagePreview').src = s.image;
@@ -5097,7 +5203,9 @@
             const title = document.getElementById('promoTitle').value?.trim() || 'عرض مميز';
             const description = document.getElementById('promoDescription').value?.trim() || '';
             const category = document.getElementById('promoCategory').value || 'all';
-            const linkedProductId = document.getElementById('promoLinkedProduct').value || null;
+            const linkedProductIds = Array.from(new Set(promoSelectedProductIds || []));
+            const linkedProducts = linkedProductIds.map(pid => allProducts.find(p => p.id === pid)).filter(Boolean);
+            const linkedProductId = linkedProductIds[0] || null;
             let interval = parseInt(document.getElementById('promoInterval').value);
             if (isNaN(interval) || interval < 1) interval = 5;
             const order = parseInt(document.getElementById('promoOrder').value) || 0;
@@ -5105,9 +5213,9 @@
             const image = document.getElementById('promoImageUrl').value || selectedPromoImage;
             if (!image) { showToast('⚠️ ارفع صورة', 'error'); return; }
             if (interval < 1 || interval > 60) { showToast('⚠️ 1-60 ثانية', 'error'); return; }
-            let linkedProductName = null;
-            if (linkedProductId) { const p = allProducts.find(x => x.id === linkedProductId); linkedProductName = p ? p.name : null; }
-            const data = { title, description, category, interval, order, active, image, linkedProductId, linkedProductName, updatedAt: Date.now() };
+            const linkedProductNames = linkedProducts.map(p => p.name);
+            const linkedProductName = linkedProductNames[0] || null;
+            const data = { title, description, category, interval, order, active, image, linkedProductId, linkedProductName, linkedProductIds, linkedProductNames, updatedAt: Date.now() };
             const btn = document.getElementById('savePromoBtn');
             const restore = setButtonLoading(btn, 'جاري الحفظ...');
             showPageLoading('جاري حفظ العرض...');
@@ -5206,6 +5314,19 @@
             else renderCompletedReturns(q);
         };
         
+        // 🔎 نص البحث الموحد للمرتجعات: يدعم رقم الطلب، باركود الفاتورة،
+        // وباركود المنتج المرتبط بالمرتجع، بالإضافة إلى اسم العميل والهاتف والسبب.
+        function getReturnSearchText(r) {
+            const productBarcodes = (Array.isArray(r?.items) ? r.items : []).flatMap(item => {
+                const p = Array.isArray(allProducts) ? allProducts.find(x => String(x.id) === String(item?.productId || '')) : null;
+                return [item?.barcode, p?.barcode].filter(Boolean);
+            });
+            return [
+                r?.invoiceCode, r?.orderId, r?.customerName, r?.phone, r?.reason,
+                r?.invoiceBarcode, getInvoiceBarcode(r), ...productBarcodes
+            ].map(v => normalizeBarcode(v || '').toLowerCase()).join(' ');
+        }
+
         // ✅ عرض طلبات الاسترجاع (3 مراحل)
         function renderReturnRequests(searchQuery = '') {
             const c = document.getElementById('returnRequestsList');
@@ -5221,7 +5342,7 @@
                 return true;
             });
             
-            if (searchQuery) list = list.filter(r => [r.invoiceCode, r.orderId, r.customerName, r.phone, r.reason, r.invoiceBarcode, getInvoiceBarcode(r)].join(' ').toLowerCase().includes(searchQuery));
+            if (searchQuery) list = list.filter(r => getReturnSearchText(r).includes(searchQuery));
             
             if (!list.length) { 
                 c.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>لا توجد طلبات استرجاع</h3><p>ستظهر هنا طلبات العملاء</p></div>`; 
@@ -5376,7 +5497,7 @@
             const c = document.getElementById('returnsList');
             if (!c) return;
             let list = returnsCache.filter(r => r.status === 'completed');
-            if (searchQuery) list = list.filter(r => [r.invoiceCode, r.orderId, r.customerName, r.phone, r.reason, r.invoiceBarcode, getInvoiceBarcode(r)].join(' ').toLowerCase().includes(searchQuery));
+            if (searchQuery) list = list.filter(r => getReturnSearchText(r).includes(searchQuery));
             if (!list.length) { c.innerHTML = `<div class="empty-state"><i class="fa-solid fa-rotate-left"></i><h3>لا توجد مرتجعات مكتملة</h3><p>سيظهر هنا سجل المرتجعات</p></div>`; return; }
             c.innerHTML = list.map(r => {
                 const items = Array.isArray(r.items) ? r.items : [];
@@ -5962,6 +6083,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
 
         document.getElementById('prodBarcodeImageInput')?.addEventListener('change', async function(e) { await decodeBarcodeFromImageFile(e.target.files?.[0], 'add'); this.value = ''; });
         document.getElementById('editProdBarcodeImageInput')?.addEventListener('change', async function(e) { await decodeBarcodeFromImageFile(e.target.files?.[0], 'edit'); this.value = ''; });
+        document.getElementById('returnsBarcodeImageInput')?.addEventListener('change', async function(e) { await decodeBarcodeFromImageFile(e.target.files?.[0], 'returns'); this.value = ''; });
         document.getElementById('prodBarcode')?.addEventListener('input', function() {
             const v = normalizeBarcode(this.value);
             if (v && hasDuplicateBarcode(v)) setBarcodeStatus('add', '⚠️ مكرر', 'error');
