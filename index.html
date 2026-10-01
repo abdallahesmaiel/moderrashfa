@@ -2949,6 +2949,7 @@
         
         // ✅ timers for deleting from DB (24 hours)
         let deleteFromDBTimers = {};
+        let deletingOrderIds = new Set();
         let rejectedReturnHideTimers = {};
         let rejectedReturnHideCountdowns = {};
         
@@ -4241,6 +4242,9 @@
         }
         
         async function deleteOrderFromDB(oid) {
+            // منع تشغيل أكثر من عملية حذف لنفس الطلب في نفس الوقت
+            if (deletingOrderIds.has(oid)) return;
+            deletingOrderIds.add(oid);
             try {
                 await remove(ref(database, `orders/${oid}`));
                 console.log(`🗑️ تم حذف الطلب ${oid} من قاعدة البيانات بعد 24 ساعة`);
@@ -4248,11 +4252,16 @@
                 allOrders = allOrders.filter(o => o.id !== oid);
                 hiddenOrderIds.delete(oid);
                 deductedOrders.delete(oid);
+                if (deleteFromDBTimers[oid]) { clearTimeout(deleteFromDBTimers[oid]); delete deleteFromDBTimers[oid]; }
+                if (hideFromPageTimers[oid]) { clearTimeout(hideFromPageTimers[oid]); delete hideFromPageTimers[oid]; }
+                if (hideFromPageCountdowns[oid]) { clearInterval(hideFromPageCountdowns[oid]); delete hideFromPageCountdowns[oid]; }
                 updateStats();
                 updateAnalyticsCache();
                 renderOrders();
             } catch (e) {
                 console.error(`فشل حذف الطلب ${oid}:`, e);
+            } finally {
+                deletingOrderIds.delete(oid);
             }
         }
         
@@ -4270,6 +4279,102 @@
             hideFromPageTimers = {};
             hideFromPageCountdowns = {};
             deleteFromDBTimers = {};
+        }
+
+        // تحديد وقت اكتمال/رفض الطلب بشكل موثوق.
+        // مهم: وقت الحذف يُحسب من وقت إكمال الطلب نفسه، وليس من وقت فتح لوحة التحكم.
+        // يدعم الوقت المخزن كـ milliseconds أو seconds أو كتاريخ نصي.
+        function normalizeOrderTimestamp(value) {
+            if (value === null || value === undefined || value === '') return 0;
+
+            if (typeof value === 'number') {
+                if (!Number.isFinite(value) || value <= 0) return 0;
+                // Firebase/JS timestamps قد تكون milliseconds أو seconds.
+                return value < 100000000000 ? value * 1000 : value;
+            }
+
+            if (typeof value === 'string') {
+                const raw = value.trim();
+                if (!raw) return 0;
+                const numeric = Number(raw);
+                if (Number.isFinite(numeric) && numeric > 0) {
+                    return numeric < 100000000000 ? numeric * 1000 : numeric;
+                }
+
+                const parsed = Date.parse(raw);
+                if (Number.isFinite(parsed) && parsed > 0) return parsed;
+
+                // دعم التاريخ الظاهر بصيغة مصرية مثل: 30/9/2026 2:28 ص
+                const m = raw.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(ص|م|AM|PM)?)?$/i);
+                if (m) {
+                    let hour = Number(m[4] || 0);
+                    const minute = Number(m[5] || 0);
+                    const second = Number(m[6] || 0);
+                    const period = (m[7] || '').toLowerCase();
+                    if ((period === 'م' || period === 'pm') && hour < 12) hour += 12;
+                    if ((period === 'ص' || period === 'am') && hour === 12) hour = 0;
+                    const parsedEgypt = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]), hour, minute, second).getTime();
+                    if (Number.isFinite(parsedEgypt) && parsedEgypt > 0) return parsedEgypt;
+                }
+            }
+            return 0;
+        }
+
+        function getOrderRetentionTime(o) {
+            // للطلب المكتمل: deliveredAt هو وقت الإكمال الفعلي.
+            // للمرتجع الكامل: returnedAt هو وقت تحويل الطلب إلى مرتجع فعلياً.
+            // للطلبات المرفوضة: rejectedAt هو وقت الرفض الفعلي.
+            // completedAt/createdAt بدائل للبيانات القديمة فقط.
+            let values;
+            if (o.status === 'delivered') {
+                values = [o.deliveredAt, o.completedAt, o.createdAt];
+            } else if (o.status === 'returned') {
+                values = [o.returnedAt, o.completedAt, o.createdAt];
+            } else {
+                values = [o.rejectedAt, o.completedAt, o.createdAt];
+            }
+            for (const value of values) {
+                const n = normalizeOrderTimestamp(value);
+                if (n > 0) return n;
+            }
+            return 0;
+        }
+
+        function processOrderRetention(orders) {
+            const now = Date.now();
+            const hideThresholdMs = DELETE_FROM_PAGE_MINUTES * 60 * 1000;
+            const dbDeleteThresholdMs = DELETE_FROM_DB_HOURS * 60 * 60 * 1000;
+
+            for (const o of orders) {
+                // الطلبات المكتملة والمرفوضة والمرتجعة بالكامل تخضع لنفس سياسة الاحتفاظ.
+                if (o.status === 'delivered' || o.status === 'rejected' || o.status === 'returned') {
+                    const relevantTime = getOrderRetentionTime(o);
+
+                    // لا تستخدم Date.now() كوقت اكتمال؛ فهذا كان يعيد بدء عداد 24 ساعة
+                    // للطلبات القديمة التي لا تحتوي على deliveredAt/rejectedAt.
+                    if (!relevantTime) continue;
+
+                    const elapsed = Math.max(0, now - relevantTime);
+
+                    // إخفاء من صفحة الطلبات بعد 5 دقائق.
+                    if (elapsed >= hideThresholdMs) {
+                        hiddenOrderIds.add(o.id);
+                        cancelTimers(o.id);
+                    } else if (!hideFromPageTimers[o.id]) {
+                        scheduleHideFromPage(o.id, relevantTime);
+                    }
+
+                    // حذف فعلي من Firebase بعد 24 ساعة، حتى لو أُعيد فتح الصفحة بعد مرور المدة.
+                    if (elapsed >= dbDeleteThresholdMs) {
+                        deleteOrderFromDB(o.id);
+                    } else if (!deleteFromDBTimers[o.id]) {
+                        scheduleDeleteFromDB(o.id, relevantTime);
+                    }
+                } else {
+                    if (hiddenOrderIds.has(o.id)) hiddenOrderIds.delete(o.id);
+                    cancelTimers(o.id);
+                }
+            }
         }
 
         function setupOrders() {
@@ -4302,41 +4407,43 @@
                 
                 allOrders = orders;
                 
-                // إعداد المؤقتات لكل طلب
-                for (const o of orders) {
-                    // إذا كان الطلب delivered أو rejected
-                    if (o.status === 'delivered' || o.status === 'rejected') {
-                        // ✅ التحقق من الوقت المنقضي
-                        const relevantTime = o.status === 'delivered' ? (o.deliveredAt || Date.now()) : (o.rejectedAt || Date.now());
-                        const elapsed = Date.now() - relevantTime;
-                        const hideThresholdMs = DELETE_FROM_PAGE_MINUTES * 60 * 1000;
-                        const dbDeleteThresholdMs = DELETE_FROM_DB_HOURS * 60 * 60 * 1000;
-                        
-                        // إذا مرت أكثر من 5 دقائق - أخفِ من الصفحة
-                        if (elapsed > hideThresholdMs) {
-                            hiddenOrderIds.add(o.id);
-                        } else if (!hideFromPageTimers[o.id]) {
-                            scheduleHideFromPage(o.id, relevantTime);
-                        }
-                        
-                        // ✅ جدولة الحذف من DB بعد 24 ساعة
-                        if (elapsed > dbDeleteThresholdMs) {
-                            // حذف فوري من DB
-                            deleteOrderFromDB(o.id);
-                        } else if (!deleteFromDBTimers[o.id]) {
-                            scheduleDeleteFromDB(o.id, relevantTime);
-                        }
-                    } else {
-                        // إذا تغيرت الحالة - إلغاء المؤقتات
-                        if (hiddenOrderIds.has(o.id)) hiddenOrderIds.delete(o.id);
-                        cancelTimers(o.id);
-                    }
-                }
+                // تطبيق سياسة الإخفاء والحذف في كل قراءة من Firebase، وليس فقط عند تغيير الحالة.
+                // هذا يضمن تنظيف الطلبات القديمة فور فتح/تحديث لوحة التحكم.
+                processOrderRetention(orders);
                 
                 updateStats();
                 updateAnalyticsCache();
                 if (document.getElementById('panel-orders')?.classList.contains('active')) renderOrders();
             });
+        }
+
+        // فحص دوري مستقل: حتى لو لم يحدث أي تغيير في Firebase، يتم حذف الطلب فور اكتمال 24 ساعة.
+        let orderRetentionWatcher = null;
+        async function runOrderRetentionSweep() {
+            if (!database || !firebaseReady) return;
+            try {
+                const snap = await get(ref(database, 'orders'));
+                const orders = [];
+                if (snap.exists()) {
+                    const d = snap.val();
+                    for (const k in d) if (Object.prototype.hasOwnProperty.call(d, k)) orders.push({ id: k, ...d[k] });
+                }
+                orders.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+                allOrders = orders;
+                processOrderRetention(orders);
+                updateStats();
+                updateAnalyticsCache();
+                if (document.getElementById('panel-orders')?.classList.contains('active')) renderOrders();
+            } catch (e) {
+                console.error('فشل فحص مدة الاحتفاظ بالطلبات:', e);
+            }
+        }
+
+        function startOrderRetentionWatcher() {
+            if (orderRetentionWatcher) return;
+            // 30 ثانية تكفي لضمان الحذف مباشرة بعد تجاوز الـ24 ساعة بدون انتظار تغيير آخر في الطلب.
+            orderRetentionWatcher = setInterval(runOrderRetentionSweep, 30000);
+            runOrderRetentionSweep();
         }
 
         window.forceRefreshOrders = async () => {
@@ -4345,6 +4452,8 @@
             if (snap.exists()) { const d = snap.val(); for (const k in d) if (d.hasOwnProperty(k)) orders.push({ id: k, ...d[k] }); }
             orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
             allOrders = orders;
+            // التحديث اليدوي ينفذ نفس تنظيف الـ5 دقائق والـ24 ساعة.
+            processOrderRetention(orders);
             updateStats(); updateAnalyticsCache(); renderOrders();
             showToast(`✅ تم تحديث ${orders.length} طلب`);
         };
@@ -4400,7 +4509,7 @@
                 // عداد تنازلي للإخفاء من الصفحة
                 let cd = '';
                 if ((isDone || isRej) && hideFromPageTimers[o.id]) {
-                    const relevantTime = isDone ? (o.deliveredAt || Date.now()) : (o.rejectedAt || Date.now());
+                    const relevantTime = getOrderRetentionTime(o);
                     const hideAt = relevantTime + (DELETE_FROM_PAGE_MINUTES * 60 * 1000);
                     const rem = Math.max(0, Math.ceil((hideAt - Date.now()) / 1000));
                     cd = `<div style="margin-top:8px;text-align:center;background:rgba(245,158,11,0.1);border:1px dashed rgba(245,158,11,0.3);padding:6px 12px;border-radius:var(--radius-sm);font-size:11px;color:var(--status-pending);font-weight:700;">
@@ -6232,6 +6341,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             if (!firebaseReady) { showLogin(); return; }
             if (!productsListener) setupProducts();
             if (!window._ordersSetup) { setupOrders(); window._ordersSetup = true; }
+            startOrderRetentionWatcher();
             Promise.allSettled([
                 loadLogo(), loadStoredAnalytics(), loadMessageLog(), loadWalletSettings(),
                 loadCoupons(), loadFlashSaleSettings(), loadAboutSettings(), loadContactSettings(),
