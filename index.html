@@ -1785,42 +1785,7 @@
             border: 1px solid var(--border-color);
         }
         
-        .promo-slide-card 
-        /* Exclusive offer: multi-product picker */
-        .promo-products-picker {
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            background: var(--bg-primary);
-            overflow: hidden;
-        }
-        .promo-products-search {
-            display:flex; align-items:center; gap:8px; padding:8px;
-            border-bottom:1px solid var(--border-color);
-        }
-        .promo-products-search input {
-            flex:1; min-width:0; background:var(--bg-secondary);
-            border:1px solid var(--border-color); border-radius:10px;
-            color:var(--text-primary); padding:10px 12px; outline:none;
-        }
-        .promo-products-list {
-            max-height:230px; overflow:auto; padding:6px;
-            display:flex; flex-direction:column; gap:5px;
-        }
-        .promo-product-option {
-            display:flex; align-items:center; gap:9px; padding:9px 10px;
-            border:1px solid transparent; border-radius:10px; cursor:pointer;
-            background:var(--bg-secondary);
-        }
-        .promo-product-option:hover { border-color:var(--gold-500); }
-        .promo-product-option input { width:18px; height:18px; accent-color:var(--gold-500); flex:0 0 auto; }
-        .promo-product-option-main { flex:1; min-width:0; }
-        .promo-product-option-name { display:block; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .promo-product-option-meta { display:flex; gap:8px; flex-wrap:wrap; color:var(--text-muted); font-size:10px; margin-top:2px; }
-        .promo-products-selected { padding:7px 10px; color:var(--gold-300); font-size:11px; font-weight:800; border-top:1px solid var(--border-color); }
-        .promo-linked-summary { margin-top:7px; display:flex; gap:5px; flex-wrap:wrap; }
-        .promo-linked-chip { background:var(--discount-bg); color:var(--discount-color); padding:3px 8px; border-radius:50px; font-size:10px; font-weight:800; }
-
-        .promo-actions {
+        .promo-slide-card .promo-actions {
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
@@ -1911,7 +1876,23 @@
             .page-header-compact { flex-direction: column; text-align: center; }
             .page-header-compact .title-area { flex-direction: column; }
         }
-    </style>
+    
+/* ===== تحسين اختيار منتجات العروض الحصرية ===== */
+.promo-products-picker{border:1px solid var(--border-color);border-radius:14px;background:var(--bg-tertiary);padding:10px}
+.promo-products-search{position:relative;margin-bottom:10px}
+.promo-products-search i{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none}
+.promo-products-search .form-input{padding-right:38px!important;margin:0}
+.promo-products-checklist{max-height:270px;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:2px}
+.promo-product-option{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border-color);border-radius:11px;background:var(--bg-primary);cursor:pointer;transition:.2s}
+.promo-product-option:hover{border-color:var(--gold-500);background:rgba(212,168,71,.07)}
+.promo-product-option.is-selected{border-color:var(--gold-500);background:rgba(212,168,71,.12);box-shadow:0 0 0 1px rgba(212,168,71,.18)}
+.promo-product-option input[type="checkbox"]{width:20px;height:20px;min-width:20px;accent-color:var(--gold-500);cursor:pointer}
+.promo-product-option .promo-product-name{font-weight:800;color:var(--text-primary);flex:1;min-width:0}
+.promo-product-option .promo-product-meta{font-size:11px;color:var(--text-muted);white-space:nowrap}
+.promo-selected-summary{margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(212,168,71,.10);color:var(--text-primary);font-size:12px;font-weight:800}
+.promo-empty-search{text-align:center;padding:18px;color:var(--text-muted);font-size:12px}
+@media(max-width:600px){.promo-product-option{padding:9px}.promo-product-option .promo-product-meta{font-size:10px}}
+</style>
 </head>
 <body>
     <div id="toastContainer" class="toast-container"></div>
@@ -1936,7 +1917,7 @@
             <div class="admin-title">Professional <small>ADMIN PANEL</small></div>
         </div>
         <div class="admin-actions">
-            <button class="btn btn-outline btn-sm" onclick="window.open('https://professional-rose.vercel.app/index.html','_blank')"><i class="fa-solid fa-store"></i> المتجر</button>
+            <button class="btn btn-outline btn-sm" onclick="window.open('https://professional-murex-nu.vercel.app/','_blank')"><i class="fa-solid fa-store"></i> المتجر</button>
             <button class="btn btn-outline btn-sm" onclick="window.forceRefreshOrders()"><i class="fa-solid fa-rotate"></i> تحديث</button>
             <button class="btn btn-info btn-sm" onclick="window.exportOrders()"><i class="fa-solid fa-download"></i> تصدير</button>
             <button class="btn btn-danger btn-sm" onclick="window.logoutAdmin()"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
@@ -2044,7 +2025,7 @@
                     </div>
                     <div class="filter-tags" id="categoryFilterTags">
                         <button class="filter-tag active" data-category="all" onclick="window.filterProductsByCategory('all')">🏷️ الكل</button>
-                        <button class="filter-tag" data-category="مستلزمات شخصية" onclick="window.filterProductsByCategory('مستلزمات شخصية')">🛒</button>
+                        <button class="filter-tag" data-category="مستلزمات شخصية" onclick="window.filterProductsByCategory('مستلزمات شخصية')">🧴</button>
                         <button class="filter-tag" data-category="أجهزة كهربائية" onclick="window.filterProductsByCategory('أجهزة كهربائية')">🔌</button>
                         <button class="filter-tag" data-category="أجهزة شخصية" onclick="window.filterProductsByCategory('أجهزة شخصية')">📱</button>
                         <button class="filter-tag" data-category="عناية طبيعية" onclick="window.filterProductsByCategory('عناية طبيعية')">🌿</button>
@@ -2071,7 +2052,7 @@
                             <div class="category-select-wrapper">
                                 <span class="category-emoji" id="categoryEmoji">📱</span>
                                 <select id="prodCategory" class="form-select" onchange="window.updateCategoryEmoji()">
-                                    <option value="مستلزمات شخصية">🛒 مستلزمات شخصية</option>
+                                    <option value="مستلزمات شخصية">🧴 مستلزمات شخصية</option>
                                     <option value="أجهزة كهربائية">🔌 أجهزة كهربائية</option>
                                     <option value="أجهزة شخصية" selected>📱 أجهزة شخصية</option>
                                     <option value="عناية طبيعية">🌿 عناية طبيعية</option>
@@ -2097,7 +2078,7 @@
                                     <i class="fa-solid fa-image"></i>
                                 </button>
                             </div>
-                            <input type="file" id="prodBarcodeImageInput" accept="image/*" style="display:none;">
+                            <input type="file" id="prodBarcodeImageInput" accept="image/*" capture="environment" style="display:none;">
                             <div class="barcode-status" id="prodBarcodeStatus"></div>
                         </div>
                     </div>
@@ -2469,7 +2450,8 @@
                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
                         <button class="btn btn-gold btn-sm" onclick="window.refreshAnalytics()"><i class="fa-solid fa-rotate"></i> تحديث</button>
                         <button class="btn btn-info btn-sm" onclick="window.exportAnalyticsCSV()"><i class="fa-solid fa-file-csv"></i> CSV</button>
-                        <button class="btn btn-danger btn-sm" onclick="window.deleteAnalytics()"><i class="fa-solid fa-trash"></i> حذف</button>
+                        <button class="btn btn-warning btn-sm" onclick="window.deleteMonthlySales()"><i class="fa-solid fa-eraser"></i> تصفير المبيعات الشهرية</button>
+                        <button class="btn btn-danger btn-sm" onclick="window.deleteAnalytics()"><i class="fa-solid fa-trash"></i> حذف التحليلات</button>
                     </div>
                 </div>
                 <div id="analyticsContent"><div class="empty-state"><i class="fa-solid fa-chart-bar"></i><h3>جاري التحميل...</h3></div></div>
@@ -2551,7 +2533,7 @@
             <div class="form-group"><label class="form-label">اسم المنتج</label><input type="text" id="editProdName" class="form-input"></div>
             <div class="form-group"><label class="form-label">التصنيف</label>
                 <select id="editProdCategory" class="form-select">
-                    <option value="مستلزمات شخصية">🛒 مستلزمات شخصية</option>
+                    <option value="مستلزمات شخصية">🧴 مستلزمات شخصية</option>
                     <option value="أجهزة كهربائية">🔌 أجهزة كهربائية</option>
                     <option value="أجهزة شخصية">📱 أجهزة شخصية</option>
                     <option value="عناية طبيعية">🌿 عناية طبيعية</option>
@@ -2572,7 +2554,7 @@
                     <button type="button" class="btn btn-info btn-sm" onclick="window.openBarcodeCamera('edit')"><i class="fa-solid fa-camera"></i></button>
                     <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('editProdBarcodeImageInput').click()"><i class="fa-solid fa-image"></i></button>
                 </div>
-                <input type="file" id="editProdBarcodeImageInput" accept="image/*" style="display:none;">
+                <input type="file" id="editProdBarcodeImageInput" accept="image/*" capture="environment" style="display:none;">
                 <div class="barcode-status" id="editProdBarcodeStatus"></div>
             </div>
             <div class="form-group"><label class="form-label">الوصف</label><textarea id="editProdDesc" class="form-input form-textarea"></textarea></div>
@@ -2740,7 +2722,7 @@
                 <label class="form-label">القسم المستهدف *</label>
                 <select id="promoCategory" class="form-select" onchange="window.updatePromoProductsList()">
                     <option value="all">🏷️ الكل</option>
-                    <option value="مستلزمات شخصية">🛒 مستلزمات شخصية</option>
+                    <option value="مستلزمات شخصية">🧴 مستلزمات شخصية</option>
                     <option value="أجهزة كهربائية">🔌 أجهزة كهربائية</option>
                     <option value="أجهزة شخصية">📱 أجهزة شخصية</option>
                     <option value="عناية طبيعية">🌿 عناية طبيعية</option>
@@ -2749,16 +2731,16 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">ربط المنتجات بالعرض (اختياري)</label>
+                <label class="form-label">ربط المنتجات (اختياري — يمكن اختيار أكثر من منتج)</label>
                 <div class="promo-products-picker">
                     <div class="promo-products-search">
-                        <i class="fa-solid fa-search" style="color:var(--text-muted);"></i>
-                        <input type="text" id="promoProductSearch" placeholder="ابحث باسم المنتج أو الباركود..." autocomplete="off" oninput="window.filterPromoProducts()">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="search" id="promoProductsSearch" class="form-input" placeholder="ابحث باسم المنتج أو الباركود..." autocomplete="off">
                     </div>
-                    <div id="promoLinkedProductsList" class="promo-products-list"></div>
-                    <div id="promoSelectedProductsCount" class="promo-products-selected">لم يتم اختيار منتجات</div>
+                    <div id="promoLinkedProducts" class="promo-products-checklist" aria-label="المنتجات المرتبطة بالعرض"></div>
+                    <div id="promoSelectedProductsSummary" class="promo-selected-summary">لم يتم اختيار منتجات</div>
                 </div>
-                <div id="promoLinkedProductsSummary" class="promo-linked-summary"></div>
+                <small style="display:block;margin-top:6px;color:var(--text-muted);">ضع علامة ✓ أمام كل منتج تريد ربطه بالعرض الحصري. يمكنك اختيار أكثر من منتج.</small>
             </div>
             
             <div class="form-group"><label class="form-label">عدد الثواني بين العروض</label><input type="number" id="promoInterval" class="form-input" min="1" max="60" value="5"></div>
@@ -2925,7 +2907,7 @@
         };
 
         const CATEGORIES = [
-            { id: 'مستلزمات شخصية', icon: 'fa-basket-shopping', emoji: '🛒' },
+            { id: 'مستلزمات شخصية', icon: 'fa-user', emoji: '🧴' },
             { id: 'أجهزة كهربائية', icon: 'fa-plug', emoji: '🔌' },
             { id: 'أجهزة شخصية', icon: 'fa-mobile-screen', emoji: '📱' },
             { id: 'عناية طبيعية', icon: 'fa-leaf', emoji: '🌿' },
@@ -2974,6 +2956,7 @@
         let currentFilter = 'all';
         let productsListener = null;
         let selectedProductImage = null;
+        window.selectedProductImageMeta = null;
         let selectedLogoImage = null;
         let selectedPromoImage = null;
         let currentUser = null;
@@ -3189,7 +3172,7 @@
                         try { data = JSON.parse(xhr.responseText || '{}'); } catch (_) {}
                         if (xhr.status >= 200 && xhr.status < 300 && data?.secure_url) {
                             updateUploadProgress(prefix, 100, '✅ تم الرفع بنجاح!', 'success');
-                            resolve({ url: data.secure_url, public_id: data.public_id });
+                            resolve({ url: data.secure_url, public_id: data.public_id, delete_token: data.delete_token || '' });
                         } else reject(new Error(data?.error?.message || `فشل الرفع: ${xhr.status}`));
                     });
                     xhr.addEventListener('error', () => reject(new Error('تعذر الاتصال بخدمة الرفع.')));
@@ -3628,16 +3611,6 @@
         }
         function putBarcodeInTarget(v) {
             const c = normalizeBarcode(v); if (!c) return;
-            // في المرتجعات: استخدم الباركود مباشرة كقيمة بحث، بدون تعديل بيانات المنتجات.
-            if (barcodeScannerTarget === 'returns') {
-                const input = document.getElementById('returnsSearch');
-                if (input) {
-                    input.value = c;
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-                showToast(`🔎 تم البحث بالباركود: ${c}`, 'success');
-                return;
-            }
             const input = document.getElementById(barcodeScannerTarget === 'edit' ? 'editProdBarcode' : 'prodBarcode');
             if (input) { input.value = c; input.dispatchEvent(new Event('input', { bubbles: true })); }
             setBarcodeStatus(barcodeScannerTarget, `✅ ${c}`, 'success');
@@ -3652,7 +3625,7 @@
                 document.getElementById('barcodeScanResultValue').textContent = c;
                 const ub = document.getElementById('useBarcodeResultBtn'); if (ub) ub.disabled = false;
                 window.stopBarcodeCamera();
-                document.getElementById('barcodeScannerStatus').textContent = barcodeScannerTarget === 'returns' ? '✅ تم العثور على الباركود. اضغط استخدام للبحث.' : '✅ تم التثبيت. اضغط استخدام.';
+                document.getElementById('barcodeScannerStatus').textContent = '✅ تم التثبيت. اضغط استخدام.';
                 return true;
             }
             return false;
@@ -3681,7 +3654,7 @@
                         }
                         if (!result) throw new Error('لم يتم العثور على باركود');
                         const clean = normalizeBarcode(result);
-                        if (target !== 'returns' && hasDuplicateBarcode(clean, target === 'edit' ? document.getElementById('editProductId')?.value : '')) {
+                        if (hasDuplicateBarcode(clean, target === 'edit' ? document.getElementById('editProductId')?.value : '')) {
                             setBarcodeStatus(target, '⚠️ مستخدم لمنتج آخر', 'error'); return;
                         }
                         putBarcodeInTarget(clean);
@@ -3698,7 +3671,7 @@
             document.getElementById('barcodeScanResult')?.classList.remove('show');
             const ub = document.getElementById('useBarcodeResultBtn'); if (ub) ub.disabled = true;
             const m = document.getElementById('barcodeCameraMessage'); if (m) m.style.display = 'block';
-            document.getElementById('barcodeScannerStatus').textContent = t === 'returns' ? 'اضغط تشغيل الكاميرا للبحث عن المرتجع.' : 'اضغط تشغيل الكاميرا.';
+            document.getElementById('barcodeScannerStatus').textContent = 'اضغط تشغيل الكاميرا.';
             document.getElementById('barcodeScannerModal').classList.add('active');
         };
 
@@ -3758,10 +3731,8 @@
 
         window.useScannedBarcode = function() {
             const v = normalizeBarcode(barcodeScannedValue); if (!v) return;
-            if (barcodeScannerTarget !== 'returns') {
-                const exceptId = barcodeScannerTarget === 'edit' ? document.getElementById('editProductId')?.value : '';
-                if (hasDuplicateBarcode(v, exceptId)) { showToast('⚠️ مستخدم لمنتج آخر', 'error'); return; }
-            }
+            const exceptId = barcodeScannerTarget === 'edit' ? document.getElementById('editProductId')?.value : '';
+            if (hasDuplicateBarcode(v, exceptId)) { showToast('⚠️ مستخدم لمنتج آخر', 'error'); return; }
             putBarcodeInTarget(v);
             window.closeBarcodeCamera();
         };
@@ -3809,6 +3780,7 @@
             ['prodName','prodPrice','prodQty','prodDesc','prodDiscountValue','prodBarcode'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
             document.getElementById('prodImageInput').value = '';
             selectedProductImage = null;
+            window.selectedProductImageMeta = null;
             document.getElementById('imgPreview').classList.remove('show');
             document.getElementById('imgUploadArea').classList.remove('has-file');
             resetUploadProgress(''); hideUploadProgress('');
@@ -3886,8 +3858,27 @@
         window.deleteProduct = async function(pid) {
             const p = allProducts.find(x => x.id === pid);
             if (!confirm(`حذف "${p?.name || ''}"؟`)) return;
-            try { await remove(ref(database, `products/${pid}`)); showToast('🗑️ تم الحذف'); }
-            catch (e) { showToast('❌ فشل', 'error'); }
+            showPageLoading('جاري حذف المنتج والصورة...');
+            try {
+                await remove(ref(database, `products/${pid}`));
+                let imageDeleted = false;
+                const publicId = p?.cloudinary_public_id || '';
+                const deleteToken = p?.cloudinary_delete_token || '';
+                if (publicId) {
+                    try {
+                        const resp = await fetch('/api/cloudinary-delete', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ public_id:publicId, resource_type:'image' }) });
+                        imageDeleted = resp.ok;
+                    } catch (_) {}
+                }
+                if (!imageDeleted && deleteToken) {
+                    try {
+                        const resp = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/delete_by_token`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:deleteToken }) });
+                        imageDeleted = resp.ok;
+                    } catch (_) {}
+                }
+                showToast(imageDeleted || !p?.image ? '🗑️ تم حذف المنتج والصورة المرتبطة به' : '🗑️ تم حذف المنتج من Firebase؛ تعذر حذف صورة Cloudinary تلقائياً');
+            } catch (e) { showToast('❌ فشل الحذف: ' + (e.message || ''), 'error'); }
+            finally { hidePageLoading(); }
         };
 
         // ============================================================
@@ -3970,7 +3961,9 @@
             const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             const ms = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
             const me = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
-            const deliveredOrders = allOrders.filter(o => o.status === 'delivered' && o.deliveredAt >= ms && o.deliveredAt <= me);
+            let clearedAt = 0;
+            try { const cs = await get(ref(database, 'settings/monthlySalesControl')); const c = cs.exists() ? (cs.val() || {}) : null; if (c?.cleared && String(c.monthKey) === monthKey) clearedAt = Number(c.clearedAt || 0); } catch (_) {}
+            const deliveredOrders = allOrders.filter(o => o.status === 'delivered' && o.deliveredAt >= ms && o.deliveredAt <= me && (!clearedAt || Number(o.deliveredAt || 0) > clearedAt));
             const grossSales = deliveredOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
             const orderIds = deliveredOrders.map(o => o.id);
             const completedReturns = Array.isArray(returnsCache) ? returnsCache : [];
@@ -4081,6 +4074,24 @@
             a.download = `analytics-${d.monthKey || new Date().toISOString().slice(0, 7)}.csv`;
             a.click(); URL.revokeObjectURL(a.href);
             showToast('📥 تم التصدير');
+        };
+
+        window.deleteMonthlySales = async function() {
+            const now = new Date();
+            const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            if (!confirm(`تصفير المبيعات الشهرية لشهر ${monthKey}؟\n\nسيتم جعل المبيعات الشهرية الحالية = 0، ولن يتم حذف الطلبات أو المنتجات.\nالمبيعات الجديدة بعد التصفير ستُحسب من الصفر.`)) return;
+            showPageLoading('جاري تصفير المبيعات الشهرية...');
+            try {
+                const clearedAt = Date.now();
+                await set(ref(database, `sales/${monthKey}`), { total: 0, orders: [], orderTotals: {}, refundTotals: {}, updatedAt: clearedAt });
+                await set(ref(database, 'settings/monthlySalesControl'), { monthKey, cleared: true, clearedAt });
+                saveLocalSalesData(monthKey, 0, []);
+                analyticsCache = null;
+                if (el('statTotalSales')) el('statTotalSales').textContent = '0 ج';
+                if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(null);
+                showToast('🧹 تم تصفير المبيعات الشهرية — الطلبات لم تُحذف');
+            } catch (e) { showToast('❌ فشل تصفير المبيعات: ' + (e.message || ''), 'error'); }
+            finally { hidePageLoading(); }
         };
 
         window.deleteAnalytics = async function() {
@@ -4343,7 +4354,7 @@
             if (!c || !document.getElementById('panel-orders')?.classList.contains('active')) return;
             
             // ✅ فلترة الطلبات - استثناء المخفية من الصفحة
-            let f = allOrders.filter(o => !hiddenOrderIds.has(o.id) && o.status !== 'returned');
+            let f = allOrders.filter(o => !hiddenOrderIds.has(o.id));
             
             if (currentFilter === 'pending') f = f.filter(o => o.status === 'pending');
             else if (currentFilter === 'active') f = f.filter(o => o.status === 'accepted' || o.status === 'delivering');
@@ -4549,7 +4560,8 @@
         function buildInvoiceHtml(o) {
             return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>فاتورة #${escapeHtml(String(o.id || '').slice(-8))}</title><style>
                 *{box-sizing:border-box}html,body{margin:0!important;padding:0!important;background:#f3f4f6!important;color:#111!important;font-family:Tahoma,Arial,sans-serif!important;opacity:1!important;filter:none!important;-webkit-text-fill-color:#111!important}.invoice-sheet,.invoice-sheet *{opacity:1!important;filter:none!important}body{padding:16px}.invoice-sheet{width:420px;max-width:100%;margin:0 auto;background:#fff;padding:22px;border-radius:12px;box-shadow:0 3px 18px rgba(0,0,0,.08);color:#111}.invoice-head{text-align:center;border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:14px}.store-name{font-size:27px;font-weight:900;color:#111}.invoice-title{font-size:16px;font-weight:800;margin-top:6px;color:#333}.invoice-meta{font-size:13px;line-height:1.9;border-bottom:1px solid #bbb;padding-bottom:12px}.invoice-meta b{color:#111}.invoice-section-title{font-size:16px;font-weight:900;margin:14px 0 8px;color:#111}.invoice-items{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;color:#111}.invoice-items th{background:#e9ecef;color:#111;font-weight:900;padding:9px 5px;border:1px solid #555}.invoice-items td{padding:9px 5px;border:1px solid #777;font-weight:700;color:#111;vertical-align:middle}.invoice-items .item-name{width:42%;word-break:break-word}.invoice-items .item-qty{width:15%;text-align:center}.invoice-items .item-price{width:21%;text-align:center}.invoice-items .item-total{width:22%;text-align:center;font-weight:900}.invoice-totals{margin-top:12px;border:1px solid #777;border-radius:8px;padding:9px 11px;font-size:13px;color:#111}.invoice-totals>div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-weight:700}.invoice-totals strong{font-weight:900;color:#111}.invoice-totals .discount{color:#b91c1c}.invoice-totals .grand-total{border-top:2px solid #111;margin-top:5px;padding-top:9px;font-size:17px;font-weight:900}.barcode-title{text-align:center;font-weight:900;font-size:13px;margin-top:15px;color:#111}.barcode-wrap{margin:8px auto 0;width:100%;max-width:360px}.barcode-number{text-align:center;font-family:Arial,sans-serif;font-size:17px;font-weight:900;letter-spacing:2px;margin-top:-5px;color:#111}.invoice-footer{text-align:center;border-top:1px dashed #777;margin-top:15px;padding-top:12px;font-size:13px;font-weight:800;line-height:1.8;color:#222}.invoice-footer small{font-weight:600;color:#333}.print-btn{display:block;margin:15px auto 0;padding:11px 25px;border:0;border-radius:8px;background:#111;color:#fff;font-size:15px;font-weight:800}@media print{html,body{background:#fff}body{padding:0}.invoice-sheet{width:80mm;box-shadow:none;border-radius:0;padding:10px}.print-btn{display:none}}
-            </style></head><body>${buildInvoiceBody(o)}<button class="print-btn" onclick="window.print()">🖨️ طباعة</button><script>window.onload=function(){setTimeout(function(){try{window.print()}catch(e){}},400)};<\/script></body></html>`;
+            </style></head><body>${buildInvoiceBody(o)}<button class="print-btn" onclick="window.print()">🖨️ طباعة</button><script>window.onload=function(){setTimeout(function(){try{window.print()}catch(e){}},400)};<\/script><!-- Professional unified latest: preserves exclusive offers, analytics, Cloudinary cleanup, and barcode camera/image search. -->
+</body></html>`;
         }
 
         window.printReceiptForOrder = (oid) => {
@@ -5049,8 +5061,10 @@
             }
             c.innerHTML = allPromoSlides.map((s, i) => {
                 const ia = s.active !== false;
-                const linkedIds = Array.isArray(s.linkedProductIds) ? s.linkedProductIds : (s.linkedProductId ? [s.linkedProductId] : []);
-                const linkedProducts = linkedIds.map(id => allProducts.find(p => p.id === id)).filter(Boolean);
+                const linkedIds = Array.isArray(s.linkedProductIds)
+                    ? s.linkedProductIds.map(String)
+                    : (s.linkedProductId ? [String(s.linkedProductId)] : []);
+                const linkedNames = linkedIds.map(pid => allProducts.find(p => String(p.id) === pid)?.name).filter(Boolean);
                 return `<div class="promo-slide-card ${!ia ? 'inactive' : ''}">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
                         <span style="font-weight:800;color:var(--gold-300);font-size:13px;">#${i + 1} - ${s.title || 'عرض'}</span>
@@ -5061,7 +5075,7 @@
                     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:11px;color:var(--text-secondary);">
                         <span><i class="fa-solid fa-tag"></i> ${s.category || 'الكل'}</span>
                         <span><i class="fa-solid fa-clock"></i> ${s.interval || 5}ث</span>
-                        ${linkedProducts.length ? `<span style="background:var(--discount-bg);color:var(--discount-color);padding:2px 8px;border-radius:50px;font-weight:700;"><i class="fa-solid fa-link"></i> ${linkedProducts.length} منتج${linkedProducts.length === 1 ? '' : 'ات'}</span>` : ''}
+                        ${linkedNames.length ? `<span style="background:var(--discount-bg);color:var(--discount-color);padding:2px 8px;border-radius:50px;font-weight:700;"><i class="fa-solid fa-link"></i> ${linkedNames.length} منتج مرتبط</span>` : ''}
                     </div>
                     <div class="promo-actions">
                         <button class="btn btn-gold btn-sm" onclick="window.editPromoSlide('${s.id}')"><i class="fa-solid fa-pen"></i></button>
@@ -5071,55 +5085,52 @@
                 </div>`;
             }).join('');
         }
-        // ===== Exclusive offer product linking (multiple products + name/barcode search) =====
-        let promoSelectedProductIds = [];
-        window.updatePromoProductsList = function(preserveSelection = true) {
+        window.updatePromoProductsList = function(selectedIds = null) {
             const cat = document.getElementById('promoCategory')?.value || 'all';
-            const list = document.getElementById('promoLinkedProductsList');
-            if (!list) return;
-            const selected = preserveSelection ? new Set(promoSelectedProductIds) : new Set();
-            let products = [...allProducts];
-            if (cat !== 'all') products = products.filter(p => p.category === cat);
-            const q = (document.getElementById('promoProductSearch')?.value || '').toLowerCase().trim();
-            if (q) {
-                products = products.filter(p =>
-                    String(p.name || '').toLowerCase().includes(q) ||
-                    String(p.barcode || '').toLowerCase().includes(q)
-                );
-            }
+            const box = document.getElementById('promoLinkedProducts');
+            const searchEl = document.getElementById('promoProductsSearch');
+            if (!box) return;
+            const current = selectedIds !== null
+                ? new Set((Array.isArray(selectedIds) ? selectedIds : [selectedIds]).filter(Boolean).map(String))
+                : new Set(Array.from(box.querySelectorAll('input[type="checkbox"]:checked')).map(x => x.value).filter(Boolean).map(String));
+            const q = String(searchEl?.value || '').trim().toLowerCase();
+            let products = allProducts.slice();
+            const matchesCategory = p => cat === 'all' || String(p.category || '') === cat;
+            const matchesSearch = p => !q || String(p.name || '').toLowerCase().includes(q) || String(p.barcode || '').toLowerCase().includes(q);
+            const filtered = products.filter(p => matchesCategory(p) && matchesSearch(p));
+            const selectedHidden = products.filter(p => current.has(String(p.id)) && !filtered.some(x => String(x.id) === String(p.id)));
+            products = [...selectedHidden, ...filtered.filter(p => !selectedHidden.some(x => String(x.id) === String(p.id)))];
+            products.sort((a,b) => (current.has(String(a.id)) ? 0 : 1) - (current.has(String(b.id)) ? 0 : 1) || String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
             if (!products.length) {
-                list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;">🔎 لا توجد منتجات مطابقة</div>';
+                box.innerHTML = '<div class="promo-empty-search">لا توجد منتجات مطابقة للبحث</div>';
             } else {
-                list.innerHTML = products.map(p => {
-                    const checked = selected.has(p.id) ? 'checked' : '';
-                    const barcode = p.barcode ? `باركود: ${p.barcode}` : 'بدون باركود';
-                    return `<label class="promo-product-option">
-                        <input type="checkbox" value="${p.id}" ${checked} onchange="window.togglePromoProduct('${p.id}', this.checked)">
-                        <span class="promo-product-option-main">
-                            <span class="promo-product-option-name">${p.name || 'منتج بدون اسم'}</span>
-                            <span class="promo-product-option-meta"><span>💰 ${Number(p.price || 0).toFixed(2)} ج</span><span>${barcode}</span></span>
-                        </span>
+                box.innerHTML = products.map(p => {
+                    const id = String(p.id), checked = current.has(id);
+                    const safeName = String(p.name || 'منتج').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                    const barcode = String(p.barcode || '');
+                    return `<label class="promo-product-option ${checked ? 'is-selected' : ''}">
+                        <input type="checkbox" value="${id}" ${checked ? 'checked' : ''}>
+                        <span class="promo-product-name">${safeName}</span>
+                        <span class="promo-product-meta">${barcode ? `باركود: ${barcode} · ` : ''}${moneyText(Number(p.price || 0))} ج</span>
                     </label>`;
                 }).join('');
             }
-            window.updatePromoSelectedProductsUI();
+            box.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', function() {
+                this.closest('.promo-product-option')?.classList.toggle('is-selected', this.checked);
+                window.updatePromoProductsSummary();
+            }));
+            window.updatePromoProductsSummary();
         };
-        window.filterPromoProducts = function() { window.updatePromoProductsList(true); };
-        window.togglePromoProduct = function(id, checked) {
-            const set = new Set(promoSelectedProductIds);
-            if (checked) set.add(id); else set.delete(id);
-            promoSelectedProductIds = Array.from(set);
-            window.updatePromoSelectedProductsUI();
+        window.updatePromoProductsSummary = function() {
+            const box = document.getElementById('promoLinkedProducts');
+            const summary = document.getElementById('promoSelectedProductsSummary');
+            if (!box || !summary) return;
+            const checked = Array.from(box.querySelectorAll('input[type="checkbox"]:checked'));
+            if (!checked.length) { summary.textContent = 'لم يتم اختيار منتجات'; return; }
+            const names = checked.map(cb => cb.closest('.promo-product-option')?.querySelector('.promo-product-name')?.textContent?.trim()).filter(Boolean);
+            summary.textContent = `✓ تم اختيار ${checked.length} منتج${checked.length > 1 ? 'ات' : ''}${names.length ? `: ${names.join('، ')}` : ''}`;
         };
-        window.updatePromoSelectedProductsUI = function() {
-            const count = document.getElementById('promoSelectedProductsCount');
-            if (count) count.textContent = promoSelectedProductIds.length ? `تم اختيار ${promoSelectedProductIds.length} منتج` : 'لم يتم اختيار منتجات';
-            const summary = document.getElementById('promoLinkedProductsSummary');
-            if (summary) {
-                const selectedProducts = promoSelectedProductIds.map(id => allProducts.find(p => p.id === id)).filter(Boolean);
-                summary.innerHTML = selectedProducts.map(p => `<span class="promo-linked-chip">${p.name}</span>`).join('');
-            }
-        };
+
         window.openAddPromoModal = async function() {
             isEditPromo = false;
             document.getElementById('editPromoId').value = '';
@@ -5139,11 +5150,9 @@
             selectedPromoImage = null;
             document.getElementById('promoImageInput').value = '';
             hideUploadProgress('promo'); resetUploadProgress('promo');
-            promoSelectedProductIds = [];
-            const promoSearch = document.getElementById('promoProductSearch');
+            const promoSearch = document.getElementById('promoProductsSearch');
             if (promoSearch) promoSearch.value = '';
-            window.updatePromoProductsList(false);
-            window.updatePromoSelectedProductsUI();
+            window.updatePromoProductsList([]);
             document.getElementById('promoModal').classList.add('active');
         };
         window.editPromoSlide = function(id) {
@@ -5158,11 +5167,10 @@
             document.getElementById('promoInterval').value = parseInt(s.interval) || 5;
             document.getElementById('promoOrder').value = s.order || 0;
             document.getElementById('promoStatus').value = s.active !== false ? 'true' : 'false';
-            promoSelectedProductIds = Array.isArray(s.linkedProductIds) ? [...s.linkedProductIds] : (s.linkedProductId ? [s.linkedProductId] : []);
-            const promoSearch = document.getElementById('promoProductSearch');
-            if (promoSearch) promoSearch.value = '';
-            window.updatePromoProductsList(false);
-            window.updatePromoSelectedProductsUI();
+            const editLinkedIds = Array.isArray(s.linkedProductIds)
+                ? s.linkedProductIds
+                : (s.linkedProductId ? [s.linkedProductId] : []);
+            window.updatePromoProductsList(editLinkedIds);
             if (s.image) {
                 document.getElementById('promoImageUrl').value = s.image;
                 document.getElementById('promoImagePreview').src = s.image;
@@ -5203,8 +5211,8 @@
             const title = document.getElementById('promoTitle').value?.trim() || 'عرض مميز';
             const description = document.getElementById('promoDescription').value?.trim() || '';
             const category = document.getElementById('promoCategory').value || 'all';
-            const linkedProductIds = Array.from(new Set(promoSelectedProductIds || []));
-            const linkedProducts = linkedProductIds.map(pid => allProducts.find(p => p.id === pid)).filter(Boolean);
+            const linkedProductIds = Array.from(document.querySelectorAll('#promoLinkedProducts input[type="checkbox"]:checked'))
+                .map(o => o.value).filter(Boolean);
             const linkedProductId = linkedProductIds[0] || null;
             let interval = parseInt(document.getElementById('promoInterval').value);
             if (isNaN(interval) || interval < 1) interval = 5;
@@ -5213,7 +5221,10 @@
             const image = document.getElementById('promoImageUrl').value || selectedPromoImage;
             if (!image) { showToast('⚠️ ارفع صورة', 'error'); return; }
             if (interval < 1 || interval > 60) { showToast('⚠️ 1-60 ثانية', 'error'); return; }
-            const linkedProductNames = linkedProducts.map(p => p.name);
+            const linkedProductNames = linkedProductIds
+                .map(pid => allProducts.find(x => String(x.id) === String(pid))?.name)
+                .filter(Boolean);
+            // Keep the old single-product fields for backward compatibility while adding the multi-product list.
             const linkedProductName = linkedProductNames[0] || null;
             const data = { title, description, category, interval, order, active, image, linkedProductId, linkedProductName, linkedProductIds, linkedProductNames, updatedAt: Date.now() };
             const btn = document.getElementById('savePromoBtn');
@@ -5241,6 +5252,7 @@
         };
         document.getElementById('promoModal')?.addEventListener('click', function(e) { if (e.target === this) window.closePromoModal(); });
         document.getElementById('promoCategory')?.addEventListener('change', function() { window.updatePromoProductsList(); });
+        document.getElementById('promoProductsSearch')?.addEventListener('input', function() { window.updatePromoProductsList(); });
         document.addEventListener('visibilitychange', function() { if (document.hidden) window.stopBarcodeCamera?.(); });
 
         // ============================================================
@@ -6067,6 +6079,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             try {
                 const r = await uploadToCloudinaryWithProgress(f, 'rashfa-products', '');
                 selectedProductImage = r.url;
+                window.selectedProductImageMeta = { url: r.url, public_id: r.public_id || '', delete_token: r.delete_token || '' };
                 document.getElementById('imgPreview').src = r.url;
                 document.getElementById('imgPreview').classList.add('show');
                 document.getElementById('imgUploadArea')?.classList.add('has-file');
@@ -6145,11 +6158,18 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             showPageLoading('جاري إضافة المنتج...');
             try {
                 const r = push(ref(database, 'products'));
-                await set(r, { name, price, finalPrice: calculateFinalPrice(price, currentDiscountType, dv), category, quantity: qty, initialStock: qty, barcode: barcode || '', description: desc, image: img, discountType: currentDiscountType, discountValue: dv, createdAt: Date.now() });
+                const imageMeta = window.selectedProductImageMeta || {};
+                await set(r, { name, price, finalPrice: calculateFinalPrice(price, currentDiscountType, dv), category, quantity: qty, initialStock: qty, barcode: barcode || '', description: desc, image: img, cloudinary_public_id: imageMeta.public_id || '', cloudinary_delete_token: imageMeta.delete_token || '', discountType: currentDiscountType, discountValue: dv, createdAt: Date.now() });
                 window.resetAddProductForm();
                 window.switchTab('products');
                 showToast(`🎉 تم إضافة "${name}"`);
-            } catch (e) { showToast(`❌ ${e.message}`, 'error'); }
+            } catch (e) {
+                try {
+                    const token = window.selectedProductImageMeta?.delete_token;
+                    if (token) await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/delete_by_token`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token }) });
+                } catch (_) {}
+                showToast(`❌ ${e.message}`, 'error');
+            }
             finally { restore?.(); hidePageLoading(); }
         });
 
