@@ -18,10 +18,22 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
-        (function() {
-            emailjs.init("WwsyznCAitoTGWICk");
-            console.log('✅ EmailJS initialized');
-        })();
+        // EmailJS اختياري: فشل تحميله لا يجب أن يوقف لوحة التحكم أو Firebase.
+        window.emailjsReady = false;
+        window.addEventListener('load', function () {
+            try {
+                if (window.emailjs && typeof window.emailjs.init === 'function') {
+                    window.emailjs.init("WwsyznCAitoTGWICk");
+                    window.emailjsReady = true;
+                    console.log('✅ EmailJS initialized');
+                } else {
+                    console.warn('⚠️ EmailJS library was not loaded; email replies are disabled.');
+                }
+            } catch (e) {
+                window.emailjsReady = false;
+                console.warn('⚠️ EmailJS initialization failed:', e);
+            }
+        });
     </script>
     
     <style>
@@ -1920,6 +1932,7 @@
             <button class="btn btn-outline btn-sm" onclick="window.open('https://professional-murex-nu.vercel.app/','_blank')"><i class="fa-solid fa-store"></i> المتجر</button>
             <button class="btn btn-outline btn-sm" onclick="window.forceRefreshOrders()"><i class="fa-solid fa-rotate"></i> تحديث</button>
             <button class="btn btn-info btn-sm" onclick="window.exportOrders()"><i class="fa-solid fa-download"></i> تصدير</button>
+            <button class="btn btn-warning btn-sm" id="enableNotificationsBtn" type="button" onclick="window.enablePushNotifications()"><i class="fa-solid fa-bell"></i> تفعيل الإشعارات</button>
             <button class="btn btn-danger btn-sm" onclick="window.logoutAdmin()"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
         </div>
     </div>
@@ -2806,6 +2819,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, get, set, push, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getMessaging, getToken, onMessage, isSupported as isMessagingSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
         // ============================================================
         // ===== Firebase Configuration =====
@@ -2822,6 +2836,302 @@
 
         let app = null, database = null, auth = null;
         let firebaseReady = false, firebaseInitError = null;
+
+        // ============================================================
+        // ===== Admin Notifications / Firebase Cloud Messaging =====
+        // ============================================================
+        let messaging = null;
+        let pushRegistration = null;
+        let pushInitialized = false;
+        let pushListenersInitialized = false;
+        let pushToken = '';
+        const FCM_VAPID_KEY = ''; // اتركه فارغاً لاستخدام مفتاح Firebase الافتراضي.
+        const PUSH_TOKEN_ROOT = 'adminNotificationTokens';
+        const knownOrderIds = new Set();
+        const knownReturnRequestIds = new Set();
+        const previousLowStockState = new Map();
+        let pushDatabaseInitialized = false;
+
+        function notificationText(value, fallback = '') {
+            const s = String(value ?? '').trim();
+            return s || fallback;
+        }
+
+        function showLocalNotification(title, body, data = {}) {
+            try {
+                if (!('Notification' in window) || Notification.permission !== 'granted') return false;
+                const options = {
+                    body: notificationText(body, 'لديك تحديث جديد.'),
+                    icon: './icon-192.png',
+                    badge: './icon-72.png',
+                    tag: notificationText(data.tag, 'admin-pro-notification'),
+                    dir: 'rtl',
+                    lang: 'ar',
+                    data
+                };
+                const n = new Notification(notificationText(title, 'تنبيه لوحة التحكم'), options);
+                n.onclick = function () {
+                    try { window.focus(); } catch (_) {}
+                    try { n.close(); } catch (_) {}
+                };
+                return true;
+            } catch (e) {
+                console.warn('Notification display failed:', e);
+                return false;
+            }
+        }
+
+        async function getPushServiceWorkerRegistration() {
+            if (!('serviceWorker' in navigator)) return null;
+            if (pushRegistration) return pushRegistration;
+            try {
+                pushRegistration = await navigator.serviceWorker.ready;
+                return pushRegistration;
+            } catch (e) {
+                console.warn('Service Worker is not ready for notifications:', e);
+                return null;
+            }
+        }
+
+        function safeTokenKey(token) {
+            return String(token || '').replace(/[.#$\[\]/]/g, '_').slice(0, 500);
+        }
+
+        async function savePushToken(token) {
+            if (!token || !database || !currentUser?.uid) return false;
+            const key = safeTokenKey(token);
+            if (!key) return false;
+            try {
+                await set(ref(database, `${PUSH_TOKEN_ROOT}/${currentUser.uid}/${key}`), {
+                    token,
+                    uid: currentUser.uid,
+                    userAgent: navigator.userAgent || '',
+                    platform: navigator.platform || '',
+                    updatedAt: Date.now()
+                });
+                pushToken = token;
+                return true;
+            } catch (e) {
+                console.warn('Could not save FCM token:', e);
+                return false;
+            }
+        }
+
+        async function initFirebaseMessaging() {
+            if (pushInitialized || !firebaseReady || !app || !currentUser) return false;
+            try {
+                const supported = await isMessagingSupported();
+                if (!supported) {
+                    console.warn('Firebase Messaging is not supported in this browser.');
+                    return false;
+                }
+                messaging = getMessaging(app);
+                pushInitialized = true;
+
+                if (!pushListenersInitialized) {
+                    onMessage(messaging, (payload) => {
+                        const n = payload?.notification || {};
+                        const d = payload?.data || {};
+                        showLocalNotification(
+                            n.title || d.title || 'تنبيه من لوحة التحكم',
+                            n.body || d.body || 'لديك تحديث جديد.',
+                            d
+                        );
+                    });
+                    pushListenersInitialized = true;
+                }
+
+                return true;
+            } catch (e) {
+                pushInitialized = false;
+                console.warn('Firebase Messaging initialization failed:', e);
+                return false;
+            }
+        }
+
+        async function enablePushNotifications() {
+            const btn = document.getElementById('enableNotificationsBtn');
+            try {
+                if (!firebaseReady || !currentUser) {
+                    showToast('⚠️ سجّل الدخول أولاً', 'warning');
+                    return;
+                }
+                if (!('Notification' in window)) {
+                    showToast('⚠️ هذا المتصفح لا يدعم إشعارات الويب', 'warning');
+                    return;
+                }
+                if (Notification.permission === 'denied') {
+                    showToast('⚠️ الإشعارات محظورة من إعدادات المتصفح', 'warning');
+                    updateNotificationButton();
+                    return;
+                }
+
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التفعيل...';
+                }
+
+                const permission = Notification.permission === 'granted'
+                    ? 'granted'
+                    : await Notification.requestPermission();
+
+                if (permission !== 'granted') {
+                    showToast('⚠️ لم يتم السماح بالإشعارات', 'warning');
+                    return;
+                }
+
+                const sw = await getPushServiceWorkerRegistration();
+                if (!sw) {
+                    showToast('⚠️ خدمة PWA غير جاهزة؛ أعد فتح الصفحة بعد التأكد من وجود sw.js', 'warning');
+                    return;
+                }
+
+                const ready = await initFirebaseMessaging();
+                if (!ready) {
+                    showToast('⚠️ Firebase Messaging غير متاح على هذا المتصفح', 'warning');
+                    return;
+                }
+
+                const options = { serviceWorkerRegistration: sw };
+                if (FCM_VAPID_KEY) options.vapidKey = FCM_VAPID_KEY;
+
+                const token = await getToken(messaging, options);
+                if (!token) {
+                    showToast('⚠️ تعذر الحصول على رمز الإشعارات', 'warning');
+                    return;
+                }
+
+                await savePushToken(token);
+                showToast('🔔 تم تفعيل إشعارات الطلبات والمرتجعات والمخزون');
+                updateNotificationButton();
+            } catch (e) {
+                console.error('Enable notifications failed:', e);
+                showToast('❌ تعذر تفعيل الإشعارات: ' + (e?.message || 'خطأ غير معروف'), 'error');
+            } finally {
+                updateNotificationButton();
+            }
+        }
+        window.enablePushNotifications = enablePushNotifications;
+
+        function updateNotificationButton() {
+            const btn = document.getElementById('enableNotificationsBtn');
+            if (!btn) return;
+            // مهم: لا نخفي الزر على الهاتف حتى لو كان المتصفح لا يدعم Notification.
+            // كان إخفاؤه هو سبب عدم ظهور زر الإشعارات في بعض الأجهزة.
+            btn.style.display = 'inline-flex';
+            btn.disabled = false;
+            if (!('Notification' in window)) {
+                btn.className = 'btn btn-warning btn-sm';
+                btn.innerHTML = '<i class="fa-solid fa-bell"></i> الإشعارات غير مدعومة';
+                btn.title = 'هذا المتصفح لا يدعم إشعارات الويب؛ استخدم Chrome أو Edge';
+                btn.disabled = true;
+                return;
+            }
+            btn.title = '';
+            if (Notification.permission === 'granted' && pushToken) {
+                btn.className = 'btn btn-success btn-sm';
+                btn.innerHTML = '<i class="fa-solid fa-bell"></i> الإشعارات مفعلة';
+            } else if (Notification.permission === 'denied') {
+                btn.className = 'btn btn-danger btn-sm';
+                btn.innerHTML = '<i class="fa-solid fa-bell-slash"></i> الإشعارات محظورة';
+            } else {
+                btn.className = 'btn btn-warning btn-sm';
+                btn.innerHTML = '<i class="fa-solid fa-bell"></i> تفعيل الإشعارات';
+            }
+        }
+
+        function setupPushDatabaseNotifications() {
+            if (pushDatabaseInitialized || !database) return;
+            pushDatabaseInitialized = true;
+
+            // الطلبات الجديدة فقط — لا نرسل إشعاراً لكل الطلبات القديمة عند فتح اللوحة.
+            onValue(ref(database, 'orders'), (snap) => {
+                const d = snap.exists() ? (snap.val() || {}) : {};
+                const ids = Object.keys(d);
+
+                if (!window._pushOrdersPrimed) {
+                    ids.forEach(id => knownOrderIds.add(id));
+                    window._pushOrdersPrimed = true;
+                    return;
+                }
+
+                ids.forEach(id => {
+                    if (knownOrderIds.has(id)) return;
+                    knownOrderIds.add(id);
+                    const o = d[id] || {};
+                    showLocalNotification(
+                        '🛒 طلب جديد',
+                        `${notificationText(o.recipientName, 'عميل جديد')} — ${notificationText(o.invoiceCode || o.invoiceNumber || id, 'طلب جديد')}${o.total != null ? ` — ${Number(o.total || 0).toFixed(2)} ج` : ''}`,
+                        { type: 'order', id, tag: `order-${id}` }
+                    );
+                });
+            }, (e) => console.warn('Orders notification listener failed:', e));
+
+            // طلبات المرتجع الجديدة التي تكون حالتها pending فقط.
+            onValue(ref(database, 'returnRequests'), (snap) => {
+                const d = snap.exists() ? (snap.val() || {}) : {};
+                const ids = Object.keys(d);
+
+                if (!window._pushReturnsPrimed) {
+                    ids.forEach(id => knownReturnRequestIds.add(id));
+                    window._pushReturnsPrimed = true;
+                    return;
+                }
+
+                ids.forEach(id => {
+                    if (knownReturnRequestIds.has(id)) return;
+                    knownReturnRequestIds.add(id);
+                    const r = d[id] || {};
+                    if (r.status !== 'pending') return;
+                    showLocalNotification(
+                        '↩️ طلب إرجاع جديد',
+                        `${notificationText(r.customerName || r.recipientName, 'عميل')} — ${notificationText(r.invoiceCode || r.orderId || id, 'طلب إرجاع')}`,
+                        { type: 'return', id, tag: `return-${id}` }
+                    );
+                });
+            }, (e) => console.warn('Return notification listener failed:', e));
+
+            // تنبيه المخزون فقط عند انتقال المنتج من حالة سليمة إلى منخفض/نافد.
+            onValue(ref(database, 'products'), (snap) => {
+                const d = snap.exists() ? (snap.val() || {}) : {};
+                const ids = Object.keys(d);
+
+                if (!window._pushProductsPrimed) {
+                    ids.forEach(id => {
+                        const p = d[id] || {};
+                        const qty = Number(p.quantity || 0);
+                        const initial = Number(p.initialStock || p.quantity || 0);
+                        const low = qty <= Math.max(1, Math.ceil(initial * 0.05));
+                        previousLowStockState.set(id, low);
+                    });
+                    window._pushProductsPrimed = true;
+                    return;
+                }
+
+                ids.forEach(id => {
+                    const p = d[id] || {};
+                    const qty = Number(p.quantity || 0);
+                    const initial = Number(p.initialStock || p.quantity || 0);
+                    const low = qty <= Math.max(1, Math.ceil(initial * 0.05));
+                    const wasLow = previousLowStockState.get(id) === true;
+                    previousLowStockState.set(id, low);
+
+                    if (low && !wasLow) {
+                        const title = qty <= 0 ? '⛔ المنتج نفد' : '⚠️ المخزون منخفض';
+                        showLocalNotification(
+                            title,
+                            `${notificationText(p.name, 'منتج')} — المتبقي: ${Math.max(0, qty)}`,
+                            { type: 'stock', id, tag: `stock-${id}` }
+                        );
+                    }
+                });
+
+                // المنتجات المحذوفة.
+                for (const id of Array.from(previousLowStockState.keys())) {
+                    if (!Object.prototype.hasOwnProperty.call(d, id)) previousLowStockState.delete(id);
+                }
+            }, (e) => console.warn('Products notification listener failed:', e));
+        }
 
         try {
             app = initializeApp(firebaseConfig);
@@ -3311,6 +3621,9 @@
         // ============================================================
         async function sendReplyEmail(message, replyText) {
             try {
+                if (!window.emailjsReady || !window.emailjs || typeof window.emailjs.send !== 'function') {
+                    return { success: false, error: 'خدمة البريد الإلكتروني غير متاحة حالياً' };
+                }
                 if (!message.email || !message.email.includes('@')) return { success: false, error: 'بريد غير صحيح' };
                 const params = {
                     to_email: message.email,
@@ -6341,6 +6654,24 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             if (!firebaseReady) { showLogin(); return; }
             if (!productsListener) setupProducts();
             if (!window._ordersSetup) { setupOrders(); window._ordersSetup = true; }
+            setupPushDatabaseNotifications();
+            updateNotificationButton();
+            if ('Notification' in window && Notification.permission === 'granted') {
+                initFirebaseMessaging().then(async (ok) => {
+                    if (!ok) return;
+                    const sw = await getPushServiceWorkerRegistration();
+                    if (!sw) return;
+                    try {
+                        const options = { serviceWorkerRegistration: sw };
+                        if (FCM_VAPID_KEY) options.vapidKey = FCM_VAPID_KEY;
+                        const token = await getToken(messaging, options);
+                        if (token) await savePushToken(token);
+                        updateNotificationButton();
+                    } catch (e) {
+                        console.warn('Silent FCM token refresh failed:', e);
+                    }
+                });
+            }
             startOrderRetentionWatcher();
             Promise.allSettled([
                 loadLogo(), loadStoredAnalytics(), loadMessageLog(), loadWalletSettings(),
@@ -6443,25 +6774,41 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         console.log(`   ↩️ نافذة الاسترجاع للعميل: ${RETURN_WINDOW_HOURS} ساعة`);
         console.log('✅ نظام استرجاع 3 مراحل: pending → approved → completed');
     </script>
-    <!-- Professional Admin Pro — PWA فقط، بدون تغيير في وظائف لوحة التحكم -->
+    <!-- Professional Admin Pro — PWA + Notifications -->
     <script>
         (function () {
-            // لا نحاول تشغيل Service Worker عند فتح الملف محلياً من الهاتف/الكمبيوتر.
-            // هذا يمنع أي خطأ محلي من التأثير على لوحة التحكم.
-            if (!('serviceWorker' in navigator)) return;
-            if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+            if (!('serviceWorker' in navigator)) {
+                console.warn('⚠️ Service Worker is not supported in this browser.');
+                return;
+            }
+            if (location.protocol !== 'http:' && location.protocol !== 'https:') {
+                console.info('ℹ️ PWA/notifications require HTTP(S); file:// is not supported.');
+                return;
+            }
 
             window.addEventListener('load', function () {
                 navigator.serviceWorker.register('./sw.js', {
                     scope: './',
                     updateViaCache: 'none'
                 }).then(function (registration) {
+                    // Store the exact registration for Firebase Messaging.
+                    window.pushServiceWorkerRegistration = registration;
                     registration.update().catch(function () {});
+                    console.log('✅ PWA Service Worker registered');
+                    try {
+                        if (typeof pushRegistration !== 'undefined') pushRegistration = registration;
+                    } catch (_) {}
+                    try { updateNotificationButton(); } catch (_) {}
                 }).catch(function (error) {
-                    console.warn('PWA Service Worker registration failed:', error);
+                    // Registration failure must never stop the admin panel.
+                    console.warn('⚠️ PWA Service Worker registration failed:', error);
+                    try {
+                        const btn = document.getElementById('enableNotificationsBtn');
+                        if (btn) btn.title = 'تأكد أن sw.js موجود على نفس مسار index.html وأن الموقع يعمل عبر HTTPS أو localhost';
+                    } catch (_) {}
                 });
             });
         })();
     </script>
 </body>
-</html>
+    </html>
