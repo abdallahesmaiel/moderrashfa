@@ -2845,6 +2845,7 @@
         let pushInitialized = false;
         let pushListenersInitialized = false;
         let pushToken = '';
+        try { pushToken = localStorage.getItem('admin_fcm_token') || ''; } catch (_) {}
         const FCM_VAPID_KEY = 'BBewszrMAow4Jtcb1B8TxTQRKsWgaTTHJYT1z-73DqlUkpnsMeMuoEE7qHLaoELdM68RgSjAu7aZcwqCvjuRHqs'; // Firebase Web Push VAPID public key.
         const PUSH_TOKEN_ROOT = 'adminNotificationTokens';
         const knownOrderIds = new Set();
@@ -2857,23 +2858,21 @@
             return s || fallback;
         }
 
-        function showLocalNotification(title, body, data = {}) {
+        async function showLocalNotification(title, body, data = {}) {
             try {
                 if (!('Notification' in window) || Notification.permission !== 'granted') return false;
-                const options = {
+                const registration = window.pushServiceWorkerRegistration || await getPushServiceWorkerRegistration();
+                if (!registration) return false;
+                await registration.showNotification(notificationText(title, 'تنبيه لوحة التحكم'), {
                     body: notificationText(body, 'لديك تحديث جديد.'),
                     icon: './icon-192.png',
                     badge: './icon-72.png',
                     tag: notificationText(data.tag, 'admin-pro-notification'),
+                    renotify: true,
                     dir: 'rtl',
                     lang: 'ar',
-                    data
-                };
-                const n = new Notification(notificationText(title, 'تنبيه لوحة التحكم'), options);
-                n.onclick = function () {
-                    try { window.focus(); } catch (_) {}
-                    try { n.close(); } catch (_) {}
-                };
+                    data: { ...data, url: data.url || './index.html' }
+                });
                 return true;
             } catch (e) {
                 console.warn('Notification display failed:', e);
@@ -2899,6 +2898,8 @@
 
         async function savePushToken(token) {
             if (!token || !database || !currentUser?.uid) return false;
+            pushToken = token;
+            try { localStorage.setItem('admin_fcm_token', token); } catch (_) {}
             const key = safeTokenKey(token);
             if (!key) return false;
             try {
@@ -3002,7 +3003,10 @@
                     return;
                 }
 
+                pushToken = token;
+                try { localStorage.setItem('admin_fcm_token', token); } catch (_) {}
                 await savePushToken(token);
+                updateNotificationButton();
                 showToast('🔔 تم تفعيل إشعارات الطلبات والمرتجعات والمخزون');
                 updateNotificationButton();
             } catch (e) {
