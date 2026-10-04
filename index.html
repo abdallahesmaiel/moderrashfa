@@ -2918,7 +2918,8 @@
         }
 
         async function initFirebaseMessaging() {
-            if (pushInitialized || !firebaseReady || !app || !currentUser) return false;
+            if (pushInitialized && messaging) return true;
+            if (!firebaseReady || !app || !currentUser) return false;
             try {
                 const supported = await isMessagingSupported();
                 if (!supported) {
@@ -6811,4 +6812,4 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         })();
     </script>
 </body>
-                                                                                        </html>
+    </html>
