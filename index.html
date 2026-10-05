@@ -2817,7 +2817,7 @@
         // ===== Firebase Imports =====
         // ============================================================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, get, set, push, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, get, set, push, update, remove, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getMessaging, getToken, onMessage, isSupported as isMessagingSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
@@ -3292,6 +3292,7 @@
         let barcodeCandidateHits = 0;
 
         const deductedOrders = new Set();
+        const deductingOrders = new Set();
 
         let flashSaleSettings = {
             status: 'active', duration: 24, count: 4, autoReset: true,
@@ -4216,8 +4217,12 @@
             const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             getSalesData(monthKey).then(sd => {
                 let ms = 0;
-                if (sd) ms = sd.total || 0;
-                else { const ld = getLocalSalesData(monthKey); ms = ld ? ld.total : 0; }
+                if (sd) ms = money(sd.total);
+                else { const ld = getLocalSalesData(monthKey); ms = ld ? money(ld.total) : 0; }
+                if (ms <= 0) {
+                    const liveDelivered = allOrders.filter(o => o.status === 'delivered' && Number(o.deliveredAt || 0) >= new Date(now.getFullYear(), now.getMonth(), 1).getTime());
+                    ms = money(liveDelivered.reduce((sum, o) => sum + getOrderSalesTotal(o), 0));
+                }
                 if (el('statTotalSales')) el('statTotalSales').textContent = moneyText(ms) + ' ج';
             }).catch(() => {
                 const ld = getLocalSalesData(monthKey);
@@ -4241,14 +4246,58 @@
         function getLocalSalesData(monthKey) {
             try { const d = localStorage.getItem(`sales_${monthKey}`); if (d) return JSON.parse(d); return null; } catch (e) { return null; }
         }
-        async function recordDeliveredSale(order) {
-            if (!order || !order.id) return false;
-            const date = new Date(Number(order.deliveredAt || Date.now()));
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            const total = money(order.total);
-            try { await update(ref(database, `sales/${monthKey}/orderTotals`), { [order.id]: total }); return true; }
-            catch (e) { try { const k = `sales_${monthKey}_orderTotals`; const l = JSON.parse(localStorage.getItem(k) || '{}'); l[order.id] = total; localStorage.setItem(k, JSON.stringify(l)); } catch (_) {} return false; }
+        function getOrderSalesTotal(order) {
+            const items = Array.isArray(order?.items) ? order.items : [];
+            // عند وجود المنتجات، نحسب إجمالي الطلب من كل المنتجات وليس من order.total
+            // لأن بعض الطلبات القديمة قد تحتوي total يساوي سعر أول/منتج واحد فقط.
+            if (items.length) {
+                const itemsTotal = items.reduce((sum, item) => {
+                    const price = money(item?.price);
+                    const qty = Math.max(0, Number(item?.quantity || 0));
+                    return sum + (price * qty);
+                }, 0);
+                const delivery = money(order?.deliveryFee);
+                const cod = money(order?.codFee);
+                const discount = money(order?.coupon?.discount);
+                return money(Math.max(0, itemsTotal + delivery + cod - discount));
+            }
+            return money(order?.total);
         }
+
+        async function recordDeliveredSale(order) {
+            if (!order || !order.id || !database) return false;
+            const deliveredAt = Number(order.deliveredAt || Date.now());
+            const date = new Date(deliveredAt);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const total = getOrderSalesTotal(order);
+            try {
+                const sRef = ref(database, `sales/${monthKey}`);
+                const snap = await get(sRef);
+                const existing = snap.exists() ? (snap.val() || {}) : {};
+                const orderTotals = existing.orderTotals && typeof existing.orderTotals === 'object' ? { ...existing.orderTotals } : {};
+                const refundTotals = existing.refundTotals && typeof existing.refundTotals === 'object' ? { ...existing.refundTotals } : {};
+                orderTotals[order.id] = total;
+                const netTotal = getLedgerTotal({ orderTotals, refundTotals }) ?? total;
+                const orderIds = Object.keys(orderTotals);
+                await update(sRef, { total: money(netTotal), orders: orderIds, orderTotals, refundTotals, updatedAt: Date.now() });
+                await set(ref(database, 'settings/analyticsControl'), { cleared: false, restoredAt: Date.now() });
+                saveLocalSalesData(monthKey, money(netTotal), orderIds);
+                const stat = document.getElementById('statTotalSales');
+                if (stat) stat.textContent = moneyText(netTotal) + ' ج';
+                return true;
+            } catch (e) {
+                console.error('recordDeliveredSale failed:', e);
+                try {
+                    const k = `sales_${monthKey}_orderTotals`;
+                    const l = JSON.parse(localStorage.getItem(k) || '{}');
+                    l[order.id] = total;
+                    localStorage.setItem(k, JSON.stringify(l));
+                    saveLocalSalesData(monthKey, total, [order.id]);
+                } catch (_) {}
+                return false;
+            }
+        }
+
         function getLedgerTotal(data) {
             const ledger = data?.orderTotals;
             if (!ledger || typeof ledger !== 'object') return null;
@@ -4282,8 +4331,12 @@
             const me = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
             let clearedAt = 0;
             try { const cs = await get(ref(database, 'settings/monthlySalesControl')); const c = cs.exists() ? (cs.val() || {}) : null; if (c?.cleared && String(c.monthKey) === monthKey) clearedAt = Number(c.clearedAt || 0); } catch (_) {}
-            const deliveredOrders = allOrders.filter(o => o.status === 'delivered' && o.deliveredAt >= ms && o.deliveredAt <= me && (!clearedAt || Number(o.deliveredAt || 0) > clearedAt));
-            const grossSales = deliveredOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+            const deliveredOrders = allOrders.filter(o => {
+                if (o.status !== 'delivered') return false;
+                const deliveredAt = Number(o.deliveredAt || 0);
+                return deliveredAt >= ms && deliveredAt <= me && (!clearedAt || deliveredAt > clearedAt);
+            });
+            const grossSales = deliveredOrders.reduce((s, o) => s + getOrderSalesTotal(o), 0);
             const orderIds = deliveredOrders.map(o => o.id);
             const completedReturns = Array.isArray(returnsCache) ? returnsCache : [];
             const refundTotal = completedReturns.filter(r => r && r.status === 'completed' && Number(r.returnedAt || 0) >= ms && Number(r.returnedAt || 0) <= me)
@@ -4292,7 +4345,7 @@
             try {
                 const existing = await getSalesData(monthKey);
                 const ledger = existing?.orderTotals && typeof existing.orderTotals === 'object' ? { ...existing.orderTotals } : {};
-                deliveredOrders.forEach(o => { ledger[o.id] = money(o.total); });
+                deliveredOrders.forEach(o => { ledger[o.id] = getOrderSalesTotal(o); });
                 const rt = existing?.refundTotals && typeof existing.refundTotals === 'object' ? { ...existing.refundTotals } : {};
                 completedReturns.filter(r => r && r.status === 'completed' && Number(r.returnedAt || 0) >= ms && Number(r.returnedAt || 0) <= me)
                     .forEach(r => { rt[r.id] = money(r.refundTotal ?? r.total ?? r.returnedProductsTotal ?? 0); });
@@ -4328,9 +4381,13 @@
                 sales[i.name].r = money(sales[i.name].r + money(i.price) * Number(i.quantity || 0));
             }));
             const top = Object.entries(sales).sort((a, b) => b[1].q - a[1].q).slice(0, 5);
+            const monthlyGross = delivered.reduce((s, o) => {
+                const deliveredAt = Number(o.deliveredAt || 0);
+                return deliveredAt >= ms ? s + getOrderSalesTotal(o) : s;
+            }, 0);
             return {
-                monthlySales: 0,
-                totalSalesAll: money(delivered.reduce((s, o) => s + money(o.total), 0)),
+                monthlySales: money(monthlyGross),
+                totalSalesAll: money(delivered.reduce((s, o) => s + getOrderSalesTotal(o), 0)),
                 conversionRate: allOrders.length > 0 ? ((delivered.length / allOrders.length) * 100).toFixed(1) : 0,
                 totalOrders: allOrders.length,
                 rejectedOrders: allOrders.filter(o => o.status === 'rejected').length,
@@ -4399,33 +4456,52 @@
             const now = new Date();
             const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             if (!confirm(`تصفير المبيعات الشهرية لشهر ${monthKey}؟\n\nسيتم جعل المبيعات الشهرية الحالية = 0، ولن يتم حذف الطلبات أو المنتجات.\nالمبيعات الجديدة بعد التصفير ستُحسب من الصفر.`)) return;
+            if (!firebaseReady || !database) { showToast('❌ قاعدة البيانات غير متصلة', 'error'); return; }
             showPageLoading('جاري تصفير المبيعات الشهرية...');
             try {
                 const clearedAt = Date.now();
-                await set(ref(database, `sales/${monthKey}`), { total: 0, orders: [], orderTotals: {}, refundTotals: {}, updatedAt: clearedAt });
-                await set(ref(database, 'settings/monthlySalesControl'), { monthKey, cleared: true, clearedAt });
+                const updates = {};
+                updates[`sales/${monthKey}`] = { total: 0, orders: [], orderTotals: {}, refundTotals: {}, updatedAt: clearedAt };
+                updates['settings/monthlySalesControl'] = { monthKey, cleared: true, clearedAt };
+                await set(ref(database, `sales/${monthKey}`), updates[`sales/${monthKey}`]);
+                await set(ref(database, 'settings/monthlySalesControl'), updates['settings/monthlySalesControl']);
+                // تحقق فعلي من Firebase قبل إظهار رسالة النجاح.
+                const verify = await get(ref(database, `sales/${monthKey}`));
+                const v = verify.exists() ? (verify.val() || {}) : {};
+                if (money(v.total) !== 0) throw new Error('لم يتم حفظ قيمة المبيعات = 0 في Firebase');
                 saveLocalSalesData(monthKey, 0, []);
                 analyticsCache = null;
-                if (el('statTotalSales')) el('statTotalSales').textContent = '0 ج';
+                const salesStatEl = document.getElementById('statTotalSales');
+                if (salesStatEl) salesStatEl.textContent = '0 ج';
                 if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(null);
-                showToast('🧹 تم تصفير المبيعات الشهرية — الطلبات لم تُحذف');
-            } catch (e) { showToast('❌ فشل تصفير المبيعات: ' + (e.message || ''), 'error'); }
-            finally { hidePageLoading(); }
+                showToast('🧹 تم تصفير المبيعات الشهرية في Firebase — الطلبات لم تُحذف');
+            } catch (e) {
+                console.error('deleteMonthlySales failed:', e);
+                showToast('❌ فشل تصفير المبيعات الشهرية: ' + (e?.message || 'تحقق من صلاحيات Firebase'), 'error');
+            } finally { hidePageLoading(); }
         };
 
         window.deleteAnalytics = async function() {
             if (!confirm('حذف التحليلات المحفوظة؟\nلن يتم حذف الطلبات أو المنتجات.')) return;
-            showPageLoading('جاري الحذف...');
+            if (!firebaseReady || !database) { showToast('❌ قاعدة البيانات غير متصلة', 'error'); return; }
+            showPageLoading('جاري حذف التحليلات...');
             try {
+                const clearedAt = Date.now();
+                // حذف analytics وتفعيل حالة الحذف في عملية Firebase واحدة.
                 await remove(ref(database, 'analytics'));
-                await set(ref(database, 'settings/analyticsControl'), { cleared: true, clearedAt: Date.now() });
+                await set(ref(database, 'settings/analyticsControl'), { cleared: true, clearedAt });
+                // تحقق فعلي من Firebase أن بيانات التحليلات اختفت.
+                const verify = await get(ref(database, 'analytics'));
+                if (verify.exists()) throw new Error('تعذر حذف بيانات analytics من Firebase');
                 localStorage.removeItem('pro_analytics');
                 analyticsCache = null;
                 analyticsSuppressed = true;
                 renderAnalyticsHTML(null);
-                showToast('🗑️ تم الحذف');
-            } catch (e) { showToast('❌ فشل: ' + e.message, 'error'); }
-            finally { hidePageLoading(); }
+                showToast('🗑️ تم حذف التحليلات من Firebase');
+            } catch (e) {
+                console.error('deleteAnalytics failed:', e);
+                showToast('❌ فشل حذف التحليلات: ' + (e?.message || 'تحقق من صلاحيات Firebase'), 'error');
+            } finally { hidePageLoading(); }
         };
 
         function renderAnalyticsHTML(d) {
@@ -4703,6 +4779,9 @@
                     for (const k in d) if (d.hasOwnProperty(k)) orders.push({ id: k, ...d[k] }); 
                 }
                 orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                allOrders = orders;
+                
+
                 
                 // إرسال رسائل WhatsApp عند تغير الحالة
                 for (const o of orders) {
@@ -4722,8 +4801,6 @@
                     }
                     previousStatuses[o.id] = o.status;
                 }
-                
-                allOrders = orders;
                 
                 // تطبيق سياسة الإخفاء والحذف في كل قراءة من Firebase، وليس فقط عند تغيير الحالة.
                 // هذا يضمن تنظيف الطلبات القديمة فور فتح/تحديث لوحة التحكم.
@@ -4868,19 +4945,69 @@
         }
 
         async function deductStock(o) {
-            if (deductedOrders.has(o.id)) return;
-            if (!o.items || !o.items.length) return;
-            const updates = {};
-            for (const i of o.items) {
-                if (i.productId) {
-                    const p = allProducts.find(x => x.id === i.productId);
-                    if (p) {
-                        updates[`products/${i.productId}/quantity`] = Math.max(0, (p.quantity || 0) - (i.quantity || 0));
-                        updates[`products/${i.productId}/lastUpdated`] = Date.now();
-                    }
+            if (!o || !o.id || !database || o.status !== 'delivered') return false;
+            if (deductedOrders.has(o.id)) return true;
+            if (deductingOrders.has(o.id)) return false;
+            deductingOrders.add(o.id);
+            try {
+                const markerRef = ref(database, `orders/${o.id}/inventoryDeductedAt`);
+                const marker = await get(markerRef);
+                if (marker.exists() && Number(marker.val()) > 0) {
+                    deductedOrders.add(o.id);
+                    return true;
                 }
+
+                const items = Array.isArray(o.items) ? o.items : [];
+                if (!items.length) return true;
+
+                // نقرأ المنتجات من Firebase مباشرة حتى لا نعتمد على نسخة allProducts القديمة.
+                const productsSnap = await get(ref(database, 'products'));
+                const productsData = productsSnap.exists() ? (productsSnap.val() || {}) : {};
+                const products = Object.entries(productsData).map(([id, value]) => ({ id, ...(value || {}) }));
+
+                // نحدد المنتج لكل سطر أولاً قبل خصم أي كمية، حتى لا يحدث خصم جزئي.
+                const resolved = [];
+                for (const item of items) {
+                    const qty = Math.max(0, Number(item?.quantity || 0));
+                    if (qty <= 0) continue;
+                    const pid = String(item?.productId || '');
+                    let product = pid ? products.find(p => String(p.id) === pid) : null;
+                    if (!product && item?.barcode) {
+                        const b = normalizeBarcode(item.barcode);
+                        product = products.find(p => normalizeBarcode(p.barcode) === b);
+                    }
+                    if (!product && item?.sku) {
+                        const sku = String(item.sku).trim().toLowerCase();
+                        product = products.find(p => String(p.sku || '').trim().toLowerCase() === sku);
+                    }
+                    if (!product && item?.name) {
+                        const name = String(item.name).trim().toLowerCase();
+                        product = products.find(p => String(p.name || '').trim().toLowerCase() === name);
+                    }
+                    if (!product) throw new Error(`المنتج غير موجود في المخزون: ${item?.name || item?.productId || 'غير معروف'}`);
+                    resolved.push({ product, qty });
+                }
+
+                // خصم كل الكميات المطلوبة من القيم الحالية في Firebase.
+                for (const { product, qty } of resolved) {
+                    const quantityRef = ref(database, `products/${product.id}/quantity`);
+                    await runTransaction(quantityRef, current => {
+                        const currentQty = Math.max(0, Number(current || 0));
+                        return Math.max(0, currentQty - qty);
+                    });
+                    await update(ref(database, `products/${product.id}`), { lastUpdated: Date.now() });
+                }
+
+                await set(markerRef, Date.now());
+                deductedOrders.add(o.id);
+                return true;
+            } catch (e) {
+                console.error('deductStock failed:', e);
+                showToast(`⚠️ لم يتم خصم المخزون: ${e.message || 'تعذر تحديد المنتج'}`, 'error');
+                return false;
+            } finally {
+                deductingOrders.delete(o.id);
             }
-            if (Object.keys(updates).length) { try { await update(ref(database), updates); deductedOrders.add(o.id); } catch (e) {} }
         }
 
         window.manualAcceptOrder = async (oid) => {
@@ -4899,13 +5026,20 @@
             if (ns === 'accepted') d.acceptedAt = Date.now();
             try {
                 await update(ref(database, `orders/${oid}`), d);
-                if (ns === 'accepted') await sendWhatsApp(o.phone, msgAccept(o), 'قبول');
-                else if (ns === 'delivering') await sendWhatsApp(o.phone, msgDelivering(o), 'توصيل');
+                const updatedOrder = { ...o, ...d };
+                const existingIndex = allOrders.findIndex(x => x.id === oid);
+                if (existingIndex >= 0) allOrders[existingIndex] = updatedOrder;
+                else allOrders.push(updatedOrder);
+                if (ns === 'accepted') await sendWhatsApp(updatedOrder.phone, msgAccept(updatedOrder), 'قبول');
+                else if (ns === 'delivering') await sendWhatsApp(updatedOrder.phone, msgDelivering(updatedOrder), 'توصيل');
                 else if (ns === 'delivered') {
-                    const do_ = { ...o, ...d };
-                    await recordDeliveredSale(do_);
-                    await sendWhatsApp(do_.phone, msgDelivered(do_), 'تسليم');
+                    await deductStock(updatedOrder);
+                    await recordDeliveredSale(updatedOrder);
                     await updateMonthlySales();
+                    await updateAnalyticsCache(true);
+                    updateStats();
+                    if (document.getElementById('panel-orders')?.classList.contains('active')) renderOrders();
+                    await sendWhatsApp(updatedOrder.phone, msgDelivered(updatedOrder), 'تسليم');
                 }
                 showToast('✅ تم التحديث');
             } catch (e) { showToast('❌ فشل', 'error'); }
