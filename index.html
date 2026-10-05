@@ -2013,8 +2013,10 @@
                     <div class="card-title"><i class="fa-solid fa-list-check"></i> الطلبات الواردة</div>
                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
                         <button class="btn btn-outline btn-sm" onclick="window.filterOrders('all')">الكل</button>
-                        <button class="btn btn-outline btn-sm" onclick="window.filterOrders('pending')">المعلقة</button>
+                        <button class="btn btn-outline btn-sm" onclick="window.filterOrders('pending')">الجديدة</button>
                         <button class="btn btn-outline btn-sm" onclick="window.filterOrders('active')">النشطة</button>
+                        <button class="btn btn-outline btn-sm" onclick="window.filterOrders('completed')">المكتملة</button>
+                        <button class="btn btn-danger btn-sm" onclick="window.deleteAllOrders()" title="حذف جميع الطلبات من Firebase"><i class="fa-solid fa-trash"></i> حذف الكل</button>
                         <button class="btn btn-gold btn-sm" onclick="window.forceRefreshOrders()"><i class="fa-solid fa-rotate"></i> تحديث</button>
                     </div>
                 </div>
@@ -3277,6 +3279,9 @@
         let selectedPromoImage = null;
         let currentUser = null;
         let analyticsCache = null;
+        // وقت تصفير المبيعات الشهرية الحالي؛ يمنع إعادة احتساب الطلبات القديمة بعد التصفير.
+        let monthlySalesClearedAt = 0;
+        let monthlySalesClearedMonthKey = '';
         let messageLog = [];
         let currentCategoryFilter = 'all';
         let currentSearchQuery = '';
@@ -4219,10 +4224,6 @@
                 let ms = 0;
                 if (sd) ms = money(sd.total);
                 else { const ld = getLocalSalesData(monthKey); ms = ld ? money(ld.total) : 0; }
-                if (ms <= 0) {
-                    const liveDelivered = allOrders.filter(o => o.status === 'delivered' && Number(o.deliveredAt || 0) >= new Date(now.getFullYear(), now.getMonth(), 1).getTime());
-                    ms = money(liveDelivered.reduce((sum, o) => sum + getOrderSalesTotal(o), 0));
-                }
                 if (el('statTotalSales')) el('statTotalSales').textContent = moneyText(ms) + ' ج';
             }).catch(() => {
                 const ld = getLocalSalesData(monthKey);
@@ -4271,11 +4272,23 @@
             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             const total = getOrderSalesTotal(order);
             try {
+                await loadMonthlySalesControl(monthKey);
                 const sRef = ref(database, `sales/${monthKey}`);
                 const snap = await get(sRef);
                 const existing = snap.exists() ? (snap.val() || {}) : {};
                 const orderTotals = existing.orderTotals && typeof existing.orderTotals === 'object' ? { ...existing.orderTotals } : {};
                 const refundTotals = existing.refundTotals && typeof existing.refundTotals === 'object' ? { ...existing.refundTotals } : {};
+                // لو تم التصفير، لا نعيد أي طلبات أقدم من لحظة التصفير.
+                if (monthlySalesClearedMonthKey === monthKey && monthlySalesClearedAt > 0) {
+                    for (const id of Object.keys(orderTotals)) {
+                        const oldOrder = allOrders.find(x => x.id === id);
+                        if (!oldOrder || Number(oldOrder.deliveredAt || 0) <= monthlySalesClearedAt) delete orderTotals[id];
+                    }
+                    for (const id of Object.keys(refundTotals)) {
+                        const oldReturn = Array.isArray(returnsCache) ? returnsCache.find(x => x.id === id) : null;
+                        if (!oldReturn || Number(oldReturn.returnedAt || 0) <= monthlySalesClearedAt) delete refundTotals[id];
+                    }
+                }
                 orderTotals[order.id] = total;
                 const netTotal = getLedgerTotal({ orderTotals, refundTotals }) ?? total;
                 const orderIds = Object.keys(orderTotals);
@@ -4321,16 +4334,35 @@
             await update(sRef, { refundTotals: rt, total: net, updatedAt: Date.now() });
         }
         async function getSalesData(monthKey) {
-            try { const s = await get(ref(database, `sales/${monthKey}`)); if (s.exists()) return s.val(); } catch (e) {}
+            try {
+                const s = await get(ref(database, `sales/${monthKey}`));
+                if (s.exists()) return s.val();
+            } catch (e) {}
             return getLocalSalesData(monthKey);
+        }
+
+        async function loadMonthlySalesControl(monthKey) {
+            monthlySalesClearedAt = 0;
+            monthlySalesClearedMonthKey = '';
+            try {
+                const s = await get(ref(database, 'settings/monthlySalesControl'));
+                if (s.exists()) {
+                    const c = s.val() || {};
+                    if (c.cleared === true && String(c.monthKey || '') === String(monthKey)) {
+                        monthlySalesClearedAt = Number(c.clearedAt || 0);
+                        monthlySalesClearedMonthKey = String(c.monthKey);
+                    }
+                }
+            } catch (e) {}
+            return monthlySalesClearedAt;
         }
         async function updateMonthlySales() {
             const now = new Date();
             const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             const ms = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
             const me = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
-            let clearedAt = 0;
-            try { const cs = await get(ref(database, 'settings/monthlySalesControl')); const c = cs.exists() ? (cs.val() || {}) : null; if (c?.cleared && String(c.monthKey) === monthKey) clearedAt = Number(c.clearedAt || 0); } catch (_) {}
+            const clearedAt = await loadMonthlySalesControl(monthKey);
+
             const deliveredOrders = allOrders.filter(o => {
                 if (o.status !== 'delivered') return false;
                 const deliveredAt = Number(o.deliveredAt || 0);
@@ -4339,22 +4371,44 @@
             const grossSales = deliveredOrders.reduce((s, o) => s + getOrderSalesTotal(o), 0);
             const orderIds = deliveredOrders.map(o => o.id);
             const completedReturns = Array.isArray(returnsCache) ? returnsCache : [];
-            const refundTotal = completedReturns.filter(r => r && r.status === 'completed' && Number(r.returnedAt || 0) >= ms && Number(r.returnedAt || 0) <= me)
+            const refundTotal = completedReturns
+                .filter(r => {
+                    const returnedAt = Number(r?.returnedAt || 0);
+                    return r && r.status === 'completed' && returnedAt >= ms && returnedAt <= me && (!clearedAt || returnedAt > clearedAt);
+                })
                 .reduce((s, r) => s + money(r.refundTotal ?? r.total ?? r.returnedProductsTotal ?? 0), 0);
             let totalSales = money(Math.max(0, grossSales - refundTotal));
+
+            // بعد التصفير لا تعيد إنشاء sales/الشهر بقيمة قديمة أو بصفر كل مرة.
+            // يظل المسار محذوفاً فعلياً حتى تصل أول عملية بيع جديدة بعد التصفير.
+            if (clearedAt && deliveredOrders.length === 0) {
+                try { await remove(ref(database, `sales/${monthKey}`)); } catch (e) {}
+                saveLocalSalesData(monthKey, 0, []);
+                const stat = document.getElementById('statTotalSales');
+                if (stat) stat.textContent = '0 ج';
+                return { totalSales: 0, deliveredOrders: [], saved: true, cleared: true };
+            }
+
             try {
                 const existing = await getSalesData(monthKey);
                 const ledger = existing?.orderTotals && typeof existing.orderTotals === 'object' ? { ...existing.orderTotals } : {};
                 deliveredOrders.forEach(o => { ledger[o.id] = getOrderSalesTotal(o); });
                 const rt = existing?.refundTotals && typeof existing.refundTotals === 'object' ? { ...existing.refundTotals } : {};
-                completedReturns.filter(r => r && r.status === 'completed' && Number(r.returnedAt || 0) >= ms && Number(r.returnedAt || 0) <= me)
+                completedReturns
+                    .filter(r => {
+                        const returnedAt = Number(r?.returnedAt || 0);
+                        return r && r.status === 'completed' && returnedAt >= ms && returnedAt <= me && (!clearedAt || returnedAt > clearedAt);
+                    })
                     .forEach(r => { rt[r.id] = money(r.refundTotal ?? r.total ?? r.returnedProductsTotal ?? 0); });
                 const lt = getLedgerTotal({ orderTotals: ledger, refundTotals: rt });
                 if (lt !== null) totalSales = lt;
-                await update(ref(database, `sales/${monthKey}`), { total: totalSales, orders: orderIds, updatedAt: Date.now(), orderTotals: ledger, refundTotals: rt });
-            } catch (e) { saveLocalSalesData(monthKey, totalSales, orderIds); }
-            const el = document.getElementById('statTotalSales');
-            if (el) el.textContent = moneyText(totalSales) + ' ج';
+                await set(ref(database, `sales/${monthKey}`), { total: totalSales, orders: orderIds, updatedAt: Date.now(), orderTotals: ledger, refundTotals: rt });
+                saveLocalSalesData(monthKey, totalSales, orderIds);
+            } catch (e) {
+                saveLocalSalesData(monthKey, totalSales, orderIds);
+            }
+            const stat = document.getElementById('statTotalSales');
+            if (stat) stat.textContent = moneyText(totalSales) + ' ج';
             return { totalSales, deliveredOrders, saved: true };
         }
 
@@ -4411,6 +4465,9 @@
         }
         async function updateAnalyticsCache(force = false) {
             if (analyticsSuppressed && !force) { analyticsCache = null; if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(null); return; }
+            const now = new Date();
+            const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            await loadMonthlySalesControl(monthKey);
             const d = calcAnalytics();
             await updateMonthlySales();
             const sd = await getSalesData(d.monthKey);
@@ -4429,8 +4486,30 @@
             try { const c = await get(ref(database, 'settings/analyticsControl')); if (c.exists() && c.val()?.cleared === true) { analyticsSuppressed = true; localStorage.removeItem('pro_analytics'); return; } } catch (e) {}
             const now = new Date();
             const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            try { const s = await get(ref(database, `analytics/${monthKey}`)); if (s.exists()) { analyticsCache = s.val(); localStorage.setItem('pro_analytics', JSON.stringify(analyticsCache)); return; } } catch (e) {}
-            try { const l = localStorage.getItem('pro_analytics'); if (l) analyticsCache = JSON.parse(l); } catch (e) {}
+            let clearControl = null;
+            try { const cs = await get(ref(database, 'settings/monthlySalesControl')); clearControl = cs.exists() ? (cs.val() || null) : null; } catch (e) {}
+            try {
+                const s = await get(ref(database, `analytics/${monthKey}`));
+                if (s.exists()) {
+                    analyticsCache = s.val();
+                    if (clearControl?.cleared === true && String(clearControl.monthKey) === monthKey) {
+                        analyticsCache.monthlySales = 0;
+                        analyticsCache.dailySales = {};
+                    }
+                    localStorage.setItem('pro_analytics', JSON.stringify(analyticsCache));
+                    return;
+                }
+            } catch (e) {}
+            try {
+                const l = localStorage.getItem('pro_analytics');
+                if (l) {
+                    analyticsCache = JSON.parse(l);
+                    if (clearControl?.cleared === true && String(clearControl.monthKey) === monthKey) {
+                        analyticsCache.monthlySales = 0;
+                        analyticsCache.dailySales = {};
+                    }
+                }
+            } catch (e) {}
         }
 
         window.exportAnalyticsCSV = function() {
@@ -4455,29 +4534,35 @@
         window.deleteMonthlySales = async function() {
             const now = new Date();
             const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            if (!confirm(`تصفير المبيعات الشهرية لشهر ${monthKey}؟\n\nسيتم جعل المبيعات الشهرية الحالية = 0، ولن يتم حذف الطلبات أو المنتجات.\nالمبيعات الجديدة بعد التصفير ستُحسب من الصفر.`)) return;
+            if (!confirm(`حذف المبيعات الشهرية لشهر ${monthKey} نهائياً؟\n\nسيتم حذف بيانات sales/${monthKey} فعلياً من Firebase، ولن تعود الطلبات القديمة بعد التصفير.\nالطلبات والمنتجات نفسها لن تُحذف.`)) return;
             if (!firebaseReady || !database) { showToast('❌ قاعدة البيانات غير متصلة', 'error'); return; }
-            showPageLoading('جاري تصفير المبيعات الشهرية...');
+            showPageLoading('جاري حذف المبيعات الشهرية من Firebase...');
             try {
                 const clearedAt = Date.now();
-                const updates = {};
-                updates[`sales/${monthKey}`] = { total: 0, orders: [], orderTotals: {}, refundTotals: {}, updatedAt: clearedAt };
-                updates['settings/monthlySalesControl'] = { monthKey, cleared: true, clearedAt };
-                await set(ref(database, `sales/${monthKey}`), updates[`sales/${monthKey}`]);
-                await set(ref(database, 'settings/monthlySalesControl'), updates['settings/monthlySalesControl']);
-                // تحقق فعلي من Firebase قبل إظهار رسالة النجاح.
+                await remove(ref(database, `sales/${monthKey}`));
+                await set(ref(database, 'settings/monthlySalesControl'), { monthKey, cleared: true, clearedAt });
                 const verify = await get(ref(database, `sales/${monthKey}`));
-                const v = verify.exists() ? (verify.val() || {}) : {};
-                if (money(v.total) !== 0) throw new Error('لم يتم حفظ قيمة المبيعات = 0 في Firebase');
+                if (verify.exists()) throw new Error('بيانات المبيعات الشهرية ما زالت موجودة في Firebase');
+                monthlySalesClearedAt = clearedAt;
+                monthlySalesClearedMonthKey = monthKey;
                 saveLocalSalesData(monthKey, 0, []);
+                // تصفير الجزء الشهري من سجل التحليلات المحفوظ حتى لا تعود القيمة القديمة عند إعادة الفتح.
+                try {
+                    const aRef = ref(database, `analytics/${monthKey}`);
+                    const aSnap = await get(aRef);
+                    if (aSnap.exists()) {
+                        await update(aRef, { monthlySales: 0, dailySales: {}, savedAt: Date.now() });
+                    }
+                } catch (e) {}
+                try { localStorage.removeItem('pro_analytics'); } catch (e) {}
                 analyticsCache = null;
                 const salesStatEl = document.getElementById('statTotalSales');
                 if (salesStatEl) salesStatEl.textContent = '0 ج';
                 if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(null);
-                showToast('🧹 تم تصفير المبيعات الشهرية في Firebase — الطلبات لم تُحذف');
+                showToast('🗑️ تم حذف المبيعات الشهرية فعلياً من Firebase — ستبدأ المبيعات من الصفر');
             } catch (e) {
                 console.error('deleteMonthlySales failed:', e);
-                showToast('❌ فشل تصفير المبيعات الشهرية: ' + (e?.message || 'تحقق من صلاحيات Firebase'), 'error');
+                showToast('❌ فشل حذف المبيعات الشهرية: ' + (e?.message || 'تحقق من صلاحيات Firebase'), 'error');
             } finally { hidePageLoading(); }
         };
 
@@ -4841,6 +4926,34 @@
             runOrderRetentionSweep();
         }
 
+        window.deleteAllOrders = async function() {
+            if (!database || !firebaseReady) { showToast('❌ قاعدة البيانات غير متصلة', 'error'); return; }
+            if (!allOrders.length) { showToast('⚠️ لا توجد طلبات للحذف', 'warning'); return; }
+            if (!confirm(`⚠️ حذف جميع الطلبات (${allOrders.length}) نهائياً؟\n\nسيتم حذف الطلبات من صفحة الطلبات ومن Firebase فوراً، حتى لو لم تمر 24 ساعة.\nلا يمكن التراجع عن هذا الإجراء.`)) return;
+            showPageLoading('جاري حذف جميع الطلبات من Firebase...');
+            try {
+                await remove(ref(database, 'orders'));
+                Object.keys(hideFromPageTimers).forEach(oid => clearTimeout(hideFromPageTimers[oid]));
+                Object.keys(hideFromPageCountdowns).forEach(oid => clearInterval(hideFromPageCountdowns[oid]));
+                Object.keys(deleteFromDBTimers).forEach(oid => clearTimeout(deleteFromDBTimers[oid]));
+                hideFromPageTimers = {};
+                hideFromPageCountdowns = {};
+                deleteFromDBTimers = {};
+                allOrders = [];
+                previousStatuses = {};
+                hiddenOrderIds.clear();
+                deductedOrders.clear();
+                deletingOrderIds.clear();
+                renderOrders();
+                updateStats();
+                await updateAnalyticsCache(true);
+                showToast('🗑️ تم حذف جميع الطلبات من Firebase');
+            } catch (e) {
+                console.error('deleteAllOrders failed:', e);
+                showToast('❌ فشل حذف جميع الطلبات: ' + (e?.message || ''), 'error');
+            } finally { hidePageLoading(); }
+        };
+
         window.forceRefreshOrders = async () => {
             const snap = await get(ref(database, 'orders'));
             const orders = [];
@@ -4862,6 +4975,7 @@
             
             if (currentFilter === 'pending') f = f.filter(o => o.status === 'pending');
             else if (currentFilter === 'active') f = f.filter(o => o.status === 'accepted' || o.status === 'delivering');
+            else if (currentFilter === 'completed') f = f.filter(o => o.status === 'delivered');
             
             if (!f.length) { 
                 c.innerHTML = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>لا توجد طلبات</h3><p style="font-size:12px;color:var(--text-muted);margin-top:8px;">الطلبات المكتملة/المرفوضة تختفي من هنا بعد 5 دقائق (لكنها محفوظة 24 ساعة للاسترجاع)</p></div>'; 
