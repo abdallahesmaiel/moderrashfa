@@ -4277,36 +4277,88 @@
                 const snap = await get(sRef);
                 const existing = snap.exists() ? (snap.val() || {}) : {};
                 const orderTotals = existing.orderTotals && typeof existing.orderTotals === 'object' ? { ...existing.orderTotals } : {};
-                const refundTotals = existing.refundTotals && typeof existing.refundTotals === 'object' ? { ...existing.refundTotals } : {};
-                // لو تم التصفير، لا نعيد أي طلبات أقدم من لحظة التصفير.
-                if (monthlySalesClearedMonthKey === monthKey && monthlySalesClearedAt > 0) {
-                    for (const id of Object.keys(orderTotals)) {
-                        const oldOrder = allOrders.find(x => x.id === id);
-                        if (!oldOrder || Number(oldOrder.deliveredAt || 0) <= monthlySalesClearedAt) delete orderTotals[id];
-                    }
-                    for (const id of Object.keys(refundTotals)) {
-                        const oldReturn = Array.isArray(returnsCache) ? returnsCache.find(x => x.id === id) : null;
-                        if (!oldReturn || Number(oldReturn.returnedAt || 0) <= monthlySalesClearedAt) delete refundTotals[id];
-                    }
-                }
+
+                // سجل المبيعات مستقل تماماً عن orders: حذف الطلب لاحقاً لا يحذف هذه القيمة.
                 orderTotals[order.id] = total;
-                const netTotal = getLedgerTotal({ orderTotals, refundTotals }) ?? total;
                 const orderIds = Object.keys(orderTotals);
-                await update(sRef, { total: money(netTotal), orders: orderIds, orderTotals, refundTotals, updatedAt: Date.now() });
-                await set(ref(database, 'settings/analyticsControl'), { cleared: false, restoredAt: Date.now() });
-                saveLocalSalesData(monthKey, money(netTotal), orderIds);
+                const netTotal = money(Object.values(orderTotals).reduce((sum, value) => sum + money(value), 0));
+
+                await set(sRef, {
+                    total: netTotal,
+                    orders: orderIds,
+                    orderTotals,
+                    updatedAt: Date.now(),
+                    ledgerVersion: 3
+                });
+                saveLocalSalesData(monthKey, netTotal, orderIds);
+
+                // التحليلات سجل مستقل أيضاً، ولا يعتمد وجود الطلب في orders.
+                await recordDeliveredAnalytics(order, total, monthKey);
+
                 const stat = document.getElementById('statTotalSales');
                 if (stat) stat.textContent = moneyText(netTotal) + ' ج';
                 return true;
             } catch (e) {
                 console.error('recordDeliveredSale failed:', e);
-                try {
-                    const k = `sales_${monthKey}_orderTotals`;
-                    const l = JSON.parse(localStorage.getItem(k) || '{}');
-                    l[order.id] = total;
-                    localStorage.setItem(k, JSON.stringify(l));
-                    saveLocalSalesData(monthKey, total, [order.id]);
-                } catch (_) {}
+                return false;
+            }
+        }
+
+        async function recordDeliveredAnalytics(order, total, monthKey) {
+            if (!database || !order?.id) return false;
+            try {
+                const aRef = ref(database, `analytics/${monthKey}`);
+                const snap = await get(aRef);
+                const d = snap.exists() ? (snap.val() || {}) : {};
+                const ledger = d.deliveredOrderLedger && typeof d.deliveredOrderLedger === 'object'
+                    ? { ...d.deliveredOrderLedger } : {};
+                const isNew = !Object.prototype.hasOwnProperty.call(ledger, order.id);
+                ledger[order.id] = money(total);
+
+                const dailySales = d.dailySales && typeof d.dailySales === 'object' ? { ...d.dailySales } : {};
+                const day = new Date(Number(order.deliveredAt || Date.now()));
+                const dayKey = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+                if (isNew) dailySales[dayKey] = money((dailySales[dayKey] || 0) + money(total));
+
+                const productMap = d.productSales && typeof d.productSales === 'object' ? { ...d.productSales } : {};
+                if (isNew) {
+                    (Array.isArray(order.items) ? order.items : []).forEach(item => {
+                        const name = String(item?.name || item?.productName || item?.productId || 'منتج');
+                        const q = Math.max(0, Number(item?.quantity || 0));
+                        const r = money(item?.price) * q;
+                        const old = productMap[name] && typeof productMap[name] === 'object' ? productMap[name] : { q: 0, r: 0 };
+                        productMap[name] = { q: Number(old.q || 0) + q, r: money(Number(old.r || 0) + r) };
+                    });
+                }
+
+                const topProducts = Object.entries(productMap)
+                    .sort((a, b) => Number(b[1]?.q || 0) - Number(a[1]?.q || 0))
+                    .slice(0, 5);
+                const deliveredCount = Object.keys(ledger).length;
+                const previousTotalOrders = Math.max(0, Number(d.totalOrders || 0));
+                const totalOrders = Math.max(previousTotalOrders, deliveredCount);
+                const monthlySales = money(Object.values(ledger).reduce((sum, value) => sum + money(value), 0));
+
+                const analytics = {
+                    ...d,
+                    monthKey,
+                    monthlySales,
+                    totalSalesAll: money(Number(d.totalSalesAll || 0) + (isNew ? money(total) : 0)),
+                    totalOrders,
+                    deliveredCount,
+                    rejectedOrders: Math.max(0, Number(d.rejectedOrders || 0)),
+                    conversionRate: totalOrders > 0 ? ((deliveredCount / totalOrders) * 100).toFixed(1) : '0.0',
+                    topProducts,
+                    dailySales,
+                    productSales: productMap,
+                    deliveredOrderLedger: ledger,
+                    timestamp: Date.now()
+                };
+                await set(aRef, { ...analytics, savedAt: Date.now(), schemaVersion: 3 });
+                saveAnalyticsLocal(analytics);
+                return true;
+            } catch (e) {
+                console.error('recordDeliveredAnalytics failed:', e);
                 return false;
             }
         }
@@ -4314,25 +4366,52 @@
         function getLedgerTotal(data) {
             const ledger = data?.orderTotals;
             if (!ledger || typeof ledger !== 'object') return null;
-            const gross = Object.values(ledger).reduce((s, v) => s + money(v), 0);
-            const refunds = data?.refundTotals && typeof data.refundTotals === 'object'
-                ? Object.values(data.refundTotals).reduce((s, v) => s + money(v), 0) : 0;
-            return money(Math.max(0, gross - refunds));
+            return money(Object.values(ledger).reduce((s, v) => s + money(v), 0));
         }
+
+        // خصم قيمة المرتجع من المبيعات الشهرية فقط بعد استلام المرتجع وتسليم الأموال.
+        // لا يعتمد هذا الخصم على وجود الطلب داخل orders، ويُسجل returnId لمنع الخصم المكرر.
         async function recordReturnFinancialImpact(returnId, amount, returnedAt) {
-            const a = money(amount);
-            if (!returnId || a <= 0) return;
-            const d = new Date(Number(returnedAt || Date.now()));
-            const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            const sRef = ref(database, `sales/${monthKey}`);
-            const snap = await get(sRef);
-            const ex = snap.exists() ? (snap.val() || {}) : {};
-            const ot = ex.orderTotals && typeof ex.orderTotals === 'object' ? { ...ex.orderTotals } : {};
-            const rt = ex.refundTotals && typeof ex.refundTotals === 'object' ? { ...ex.refundTotals } : {};
-            rt[returnId] = a;
-            const net = getLedgerTotal({ orderTotals: ot, refundTotals: rt });
-            await update(sRef, { refundTotals: rt, total: net, updatedAt: Date.now() });
+            try {
+                const now = new Date(returnedAt || Date.now());
+                const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const salesRef = ref(database, `sales/${monthKey}`);
+                const refundAmount = money(amount);
+                if (!returnId || refundAmount <= 0) return true;
+
+                await runTransaction(salesRef, current => {
+                    const data = (current && typeof current === 'object') ? current : {};
+                    const refundTotals = (data.refundTotals && typeof data.refundTotals === 'object')
+                        ? { ...data.refundTotals } : {};
+
+                    // منع خصم نفس المرتجع أكثر من مرة.
+                    if (Object.prototype.hasOwnProperty.call(refundTotals, returnId)) return data;
+
+                    const previousTotal = money(data.total || 0);
+                    const nextTotal = money(Math.max(0, previousTotal - refundAmount));
+                    refundTotals[returnId] = refundAmount;
+
+                    return {
+                        ...data,
+                        total: nextTotal,
+                        refundTotals,
+                        updatedAt: Date.now()
+                    };
+                });
+
+                // تحديث الرقم الظاهر مباشرة من القيمة المحفوظة في Firebase.
+                const saved = await get(salesRef);
+                const savedTotal = saved.exists() ? money(saved.val()?.total || 0) : 0;
+                saveLocalSalesData(monthKey, savedTotal, saved.val()?.orderTotals ? Object.keys(saved.val().orderTotals) : []);
+                const stat = document.getElementById('statTotalSales');
+                if (stat) stat.textContent = moneyText(savedTotal) + ' ج';
+                return true;
+            } catch (e) {
+                console.error('recordReturnFinancialImpact failed:', e);
+                throw e;
+            }
         }
+
         async function getSalesData(monthKey) {
             try {
                 const s = await get(ref(database, `sales/${monthKey}`));
@@ -4359,97 +4438,41 @@
         async function updateMonthlySales() {
             const now = new Date();
             const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            const ms = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-            const me = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
-            const clearedAt = await loadMonthlySalesControl(monthKey);
-
-            const deliveredOrders = allOrders.filter(o => {
-                if (o.status !== 'delivered') return false;
-                const deliveredAt = Number(o.deliveredAt || 0);
-                return deliveredAt >= ms && deliveredAt <= me && (!clearedAt || deliveredAt > clearedAt);
-            });
-            const grossSales = deliveredOrders.reduce((s, o) => s + getOrderSalesTotal(o), 0);
-            const orderIds = deliveredOrders.map(o => o.id);
-            const completedReturns = Array.isArray(returnsCache) ? returnsCache : [];
-            const refundTotal = completedReturns
-                .filter(r => {
-                    const returnedAt = Number(r?.returnedAt || 0);
-                    return r && r.status === 'completed' && returnedAt >= ms && returnedAt <= me && (!clearedAt || returnedAt > clearedAt);
-                })
-                .reduce((s, r) => s + money(r.refundTotal ?? r.total ?? r.returnedProductsTotal ?? 0), 0);
-            let totalSales = money(Math.max(0, grossSales - refundTotal));
-
-            // بعد التصفير لا تعيد إنشاء sales/الشهر بقيمة قديمة أو بصفر كل مرة.
-            // يظل المسار محذوفاً فعلياً حتى تصل أول عملية بيع جديدة بعد التصفير.
-            if (clearedAt && deliveredOrders.length === 0) {
-                try { await remove(ref(database, `sales/${monthKey}`)); } catch (e) {}
-                saveLocalSalesData(monthKey, 0, []);
-                const stat = document.getElementById('statTotalSales');
-                if (stat) stat.textContent = '0 ج';
-                return { totalSales: 0, deliveredOrders: [], saved: true, cleared: true };
-            }
-
             try {
-                const existing = await getSalesData(monthKey);
-                const ledger = existing?.orderTotals && typeof existing.orderTotals === 'object' ? { ...existing.orderTotals } : {};
-                deliveredOrders.forEach(o => { ledger[o.id] = getOrderSalesTotal(o); });
-                const rt = existing?.refundTotals && typeof existing.refundTotals === 'object' ? { ...existing.refundTotals } : {};
-                completedReturns
-                    .filter(r => {
-                        const returnedAt = Number(r?.returnedAt || 0);
-                        return r && r.status === 'completed' && returnedAt >= ms && returnedAt <= me && (!clearedAt || returnedAt > clearedAt);
-                    })
-                    .forEach(r => { rt[r.id] = money(r.refundTotal ?? r.total ?? r.returnedProductsTotal ?? 0); });
-                const lt = getLedgerTotal({ orderTotals: ledger, refundTotals: rt });
-                if (lt !== null) totalSales = lt;
-                await set(ref(database, `sales/${monthKey}`), { total: totalSales, orders: orderIds, updatedAt: Date.now(), orderTotals: ledger, refundTotals: rt });
+                const data = await getSalesData(monthKey);
+                const totalSales = money(data?.total || 0);
+                const orderIds = data?.orderTotals && typeof data.orderTotals === 'object'
+                    ? Object.keys(data.orderTotals) : (Array.isArray(data?.orders) ? data.orders : []);
                 saveLocalSalesData(monthKey, totalSales, orderIds);
+                const stat = document.getElementById('statTotalSales');
+                if (stat) stat.textContent = moneyText(totalSales) + ' ج';
+                return { totalSales, deliveredOrders: orderIds, saved: true };
             } catch (e) {
-                saveLocalSalesData(monthKey, totalSales, orderIds);
+                console.error('updateMonthlySales failed:', e);
+                return { totalSales: 0, deliveredOrders: [], saved: false };
             }
-            const stat = document.getElementById('statTotalSales');
-            if (stat) stat.textContent = moneyText(totalSales) + ' ج';
-            return { totalSales, deliveredOrders, saved: true };
         }
 
         // ============================================================
         // ===== Analytics =====
         // ============================================================
+        // التحليلات تُقرأ من سجل analytics المحفوظ، وليس من orders.
+        // لذلك حذف الطلبات أو حذف/قبول المرتجعات لا يغيّر الأرقام التاريخية.
         function calcAnalytics() {
             const now = new Date();
-            const ms = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-            const delivered = allOrders.filter(o => o.status === 'delivered');
             const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            const dailySales = {};
-            delivered.forEach(o => {
-                if (o.deliveredAt >= ms) {
-                    const d = new Date(o.deliveredAt);
-                    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    dailySales[day] = money((dailySales[day] || 0) + money(o.total));
-                }
-            });
-            const sales = {};
-            delivered.forEach(o => (o.items || []).forEach(i => {
-                if (!sales[i.name]) sales[i.name] = { q: 0, r: 0 };
-                sales[i.name].q += i.quantity || 0;
-                sales[i.name].r = money(sales[i.name].r + money(i.price) * Number(i.quantity || 0));
-            }));
-            const top = Object.entries(sales).sort((a, b) => b[1].q - a[1].q).slice(0, 5);
-            const monthlyGross = delivered.reduce((s, o) => {
-                const deliveredAt = Number(o.deliveredAt || 0);
-                return deliveredAt >= ms ? s + getOrderSalesTotal(o) : s;
-            }, 0);
+            const d = analyticsCache && String(analyticsCache.monthKey || '') === monthKey ? { ...analyticsCache } : {};
             return {
-                monthlySales: money(monthlyGross),
-                totalSalesAll: money(delivered.reduce((s, o) => s + getOrderSalesTotal(o), 0)),
-                conversionRate: allOrders.length > 0 ? ((delivered.length / allOrders.length) * 100).toFixed(1) : 0,
-                totalOrders: allOrders.length,
-                rejectedOrders: allOrders.filter(o => o.status === 'rejected').length,
-                deliveredCount: delivered.length,
-                topProducts: top,
-                dailySales,
+                monthlySales: money(d.monthlySales || 0),
+                totalSalesAll: money(d.totalSalesAll || 0),
+                conversionRate: d.conversionRate ?? '0.0',
+                totalOrders: Number(d.totalOrders || 0),
+                rejectedOrders: Number(d.rejectedOrders || 0),
+                deliveredCount: Number(d.deliveredCount || 0),
+                topProducts: Array.isArray(d.topProducts) ? d.topProducts : [],
+                dailySales: d.dailySales && typeof d.dailySales === 'object' ? d.dailySales : {},
                 monthKey,
-                timestamp: Date.now()
+                timestamp: d.timestamp || Date.now()
             };
         }
 
@@ -4460,26 +4483,45 @@
         }
         async function saveAnalyticsToFirebase(d, force = false) {
             if (!firebaseReady || !database || (!force && analyticsSuppressed)) return false;
-            try { await set(ref(database, `analytics/${d.monthKey}`), { ...d, savedAt: Date.now(), schemaVersion: 2 }); return true; }
+            try { await set(ref(database, `analytics/${d.monthKey}`), { ...d, savedAt: Date.now(), schemaVersion: 3 }); return true; }
             catch (e) { return false; }
         }
         async function updateAnalyticsCache(force = false) {
-            if (analyticsSuppressed && !force) { analyticsCache = null; if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(null); return; }
+            if (analyticsSuppressed && !force) {
+                analyticsCache = null;
+                if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(null);
+                return;
+            }
             const now = new Date();
             const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            await loadMonthlySalesControl(monthKey);
-            const d = calcAnalytics();
-            await updateMonthlySales();
-            const sd = await getSalesData(d.monthKey);
-            if (sd) {
-                d.monthlySales = money(sd.total);
-                const lc = sd.orderTotals && typeof sd.orderTotals === 'object' ? Object.keys(sd.orderTotals).length : 0;
-                d.deliveredCount = Math.max(Number(d.deliveredCount) || 0, lc);
-                d.totalSalesAll = Math.max(money(d.totalSalesAll), money(sd.total));
-            }
+            try {
+                const snap = await get(ref(database, `analytics/${monthKey}`));
+                if (snap.exists()) {
+                    const d = snap.val() || {};
+                    saveAnalyticsLocal(d);
+                    if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(d);
+                    return d;
+                }
+            } catch (e) { console.error('load analytics failed:', e); }
+
+            // لا نعيد بناء التحليلات من orders؛ غياب سجل analytics يعني عدم وجود بيانات محفوظة.
+            const sd = await getSalesData(monthKey);
+            const d = {
+                monthKey,
+                monthlySales: money(sd?.total || 0),
+                totalSalesAll: 0,
+                conversionRate: '0.0',
+                totalOrders: 0,
+                rejectedOrders: 0,
+                deliveredCount: sd?.orderTotals ? Object.keys(sd.orderTotals).length : 0,
+                topProducts: [],
+                dailySales: {},
+                timestamp: Date.now()
+            };
             saveAnalyticsLocal(d);
-            await saveAnalyticsToFirebase(d, force);
+            if (force) await saveAnalyticsToFirebase(d, true);
             if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(d);
+            return d;
         }
         async function loadStoredAnalytics() {
             analyticsSuppressed = false; analyticsCache = null;
@@ -4551,7 +4593,20 @@
                     const aRef = ref(database, `analytics/${monthKey}`);
                     const aSnap = await get(aRef);
                     if (aSnap.exists()) {
-                        await update(aRef, { monthlySales: 0, dailySales: {}, savedAt: Date.now() });
+                        const oldAnalytics = aSnap.val() || {};
+                        // تصفير الشهر يمسح دفتر المبيعات الشهري داخل التحليلات أيضاً.
+                        // لا نترك deliveredOrderLedger القديم حتى لا يعود عند أول طلب جديد.
+                        await update(aRef, {
+                            monthlySales: 0,
+                            dailySales: {},
+                            topProducts: [],
+                            productSales: {},
+                            deliveredOrderLedger: {},
+                            deliveredCount: 0,
+                            conversionRate: '0.0',
+                            totalSalesAll: Number(oldAnalytics.totalSalesAll || 0),
+                            savedAt: Date.now()
+                        });
                     }
                 } catch (e) {}
                 try { localStorage.removeItem('pro_analytics'); } catch (e) {}
@@ -6313,8 +6368,6 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 
                 await update(ref(database), su);
                 await loadReturns();
-                await recordReturnFinancialImpact(returnId, total, now);
-                await updateMonthlySales();
                 await refreshReturns();
                 
                 showToast(`✅ تم الاعتماد - جاري استلام المرتجع من العميل`);
@@ -6357,6 +6410,10 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 }
                 
                 await update(ref(database), su);
+
+                // ✅ الآن فقط: تم استلام المرتجع وتسليم الأموال، لذلك تُخصم قيمته من المبيعات الشهرية.
+                await recordReturnFinancialImpact(r.returnId || requestId, Number(r.total || 0), now);
+                await updateMonthlySales();
                 await refreshReturns();
                 
                 // ✅ جدولة الإخفاء من الصفحة بعد 5 دقائق
