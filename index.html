@@ -288,6 +288,22 @@
         .btn-block { width: 100%; justify-content: center; }
         .btn.is-loading { pointer-events: none; opacity: .75; cursor: wait; }
 
+        /* ===== Invoice Settings ===== */
+        .toggle-row{display:flex;align-items:center;gap:9px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius);padding:10px 12px;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;transition:var(--transition)}
+        .toggle-row:hover{border-color:var(--gold-500);color:var(--text-primary)}
+        .toggle-row input{appearance:none;-webkit-appearance:none;width:40px;height:22px;border-radius:50px;background:#475569;position:relative;cursor:pointer;flex:none;transition:.2s}
+        .toggle-row input::after{content:'';position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+        .toggle-row input:checked{background:var(--gold-500)}
+        .toggle-row input:checked::after{right:21px}
+        .invoice-preview-shell{background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-xl);padding:14px;position:sticky;top:100px}
+        .invoice-preview-title{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 4px 12px;margin-bottom:10px;border-bottom:1px solid var(--border-color);font-weight:800;color:var(--gold-300)}
+        .invoice-preview-content{background:#fff;border-radius:12px;padding:10px;min-height:520px;overflow:auto;color:#111}
+        .invoice-preview-content .invoice-sheet{width:100%;max-width:420px;margin:0 auto;background:#fff;color:#111;padding:18px;border-radius:8px;box-shadow:none;font-family:Tahoma,Arial,sans-serif}
+        .invoice-preview-content .invoice-head{text-align:center;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:12px}.invoice-preview-content .store-name{font-size:24px;font-weight:900;color:#111}.invoice-preview-content .invoice-title{font-size:15px;font-weight:800;margin-top:5px;color:#333}
+        .invoice-preview-content .invoice-meta{font-size:12px;line-height:1.9;border-bottom:1px solid #bbb;padding-bottom:10px;color:#111}.invoice-preview-content .invoice-section-title{font-size:14px;font-weight:900;margin:12px 0 7px;color:#111}
+        .invoice-preview-content .invoice-items{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px;color:#111}.invoice-preview-content .invoice-items th{background:#e9ecef;color:#111;font-weight:900;padding:7px 4px;border:1px solid #555}.invoice-preview-content .invoice-items td{padding:7px 4px;border:1px solid #777;font-weight:700;color:#111}.invoice-preview-content .invoice-items .item-name{width:42%;word-break:break-word}.invoice-preview-content .invoice-items .item-qty{width:15%;text-align:center}.invoice-preview-content .invoice-items .item-price{width:21%;text-align:center}.invoice-preview-content .invoice-items .item-total{width:22%;text-align:center;font-weight:900}
+        .invoice-preview-content .invoice-totals{margin-top:10px;border:1px solid #777;border-radius:7px;padding:7px 9px;font-size:11px;color:#111}.invoice-preview-content .invoice-totals>div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-weight:700}.invoice-preview-content .invoice-totals .discount{color:#b91c1c}.invoice-preview-content .invoice-totals .grand-total{border-top:2px solid #111;margin-top:4px;padding-top:7px;font-size:15px;font-weight:900}.invoice-preview-content .barcode-title{text-align:center;font-weight:900;font-size:11px;margin-top:12px;color:#111}.invoice-preview-content .barcode-wrap{margin:6px auto 0;width:100%;max-width:300px}.invoice-preview-content .barcode-number{text-align:center;font-family:Arial,sans-serif;font-size:14px;font-weight:900;letter-spacing:2px;color:#111}.invoice-preview-content .qr-wrap{text-align:center;margin:12px auto 0}.invoice-preview-content .qr-wrap img{width:130px;height:130px;display:block;margin:0 auto}.invoice-preview-content .invoice-footer{text-align:center;border-top:1px dashed #777;margin-top:12px;padding-top:10px;font-size:11px;font-weight:800;line-height:1.8;color:#222}.invoice-preview-content .invoice-footer small{font-weight:600;color:#333}
+
         /* ===== Container ===== */
         .container {
             max-width: 1800px;
@@ -1992,6 +2008,7 @@
         <!-- Tabs -->
         <div class="tabs-container">
             <button class="tab active" onclick="window.switchTab('orders')"><i class="fa-solid fa-list-check"></i> الطلبات <span class="tab-badge hidden" id="pendingBadge">0</span></button>
+            <button class="tab" onclick="window.switchTab('invoice')"><i class="fa-solid fa-receipt"></i> إعدادات الفاتورة</button>
             <button class="tab" onclick="window.switchTab('products')"><i class="fa-solid fa-boxes-stacked"></i> المنتجات <span class="tab-badge warning hidden" id="lowStockBadge">0</span></button>
             <button class="tab" onclick="window.switchTab('add')"><i class="fa-solid fa-plus-circle"></i> إضافة منتج</button>
             <button class="tab" onclick="window.switchTab('coupons')"><i class="fa-solid fa-ticket"></i> الكوبونات</button>
@@ -2016,6 +2033,10 @@
                         <button class="btn btn-outline btn-sm" onclick="window.filterOrders('pending')">الجديدة</button>
                         <button class="btn btn-outline btn-sm" onclick="window.filterOrders('active')">النشطة</button>
                         <button class="btn btn-outline btn-sm" onclick="window.filterOrders('completed')">المكتملة</button>
+                        <label class="toggle-row" style="padding:6px 10px;font-size:11px;min-height:34px;">
+                            <input type="checkbox" id="orderMessagesEnabled" checked onchange="window.toggleOrderMessages(this.checked)">
+                            <span>رسائل الحالة</span>
+                        </label>
                         <button class="btn btn-danger btn-sm" onclick="window.deleteAllOrders()" title="حذف جميع الطلبات من Firebase"><i class="fa-solid fa-trash"></i> حذف الكل</button>
                         <button class="btn btn-gold btn-sm" onclick="window.forceRefreshOrders()"><i class="fa-solid fa-rotate"></i> تحديث</button>
                     </div>
@@ -2536,6 +2557,59 @@
         </div>
 
     </div>
+
+    <!-- ===== Panel: Invoice Settings ===== -->
+        <div class="panel" id="panel-invoice">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-receipt"></i> إعدادات ومعاينة الفاتورة</div>
+                    <button class="btn btn-gold btn-sm" onclick="window.saveInvoiceSettings()"><i class="fa-solid fa-save"></i> حفظ الإعدادات</button>
+                </div>
+                <div class="two-column-grid">
+                    <div>
+                        <div class="card" style="padding:16px;margin-bottom:14px;box-shadow:none;">
+                            <div class="card-title" style="margin-bottom:14px;"><i class="fa-solid fa-store"></i> بيانات المتجر</div>
+                            <div class="form-group"><label class="form-label">اسم المتجر</label><input id="invoiceStoreName" class="form-input" value="بروفيشنال" oninput="window.updateInvoicePreview()"></div>
+                            <div class="form-group"><label class="form-label">رقم الهاتف</label><input id="invoiceStorePhone" class="form-input" dir="ltr" placeholder="01103127696" oninput="window.updateInvoicePreview()"></div>
+                            <div class="form-group"><label class="form-label">العنوان</label><textarea id="invoiceStoreAddress" class="form-input form-textarea" placeholder="عنوان المتجر" oninput="window.updateInvoicePreview()"></textarea></div>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+                                <label class="toggle-row"><input type="checkbox" id="invoiceShowStoreName" checked onchange="window.updateInvoicePreview()"><span>إظهار اسم المتجر</span></label>
+                                <label class="toggle-row"><input type="checkbox" id="invoiceShowStorePhone" onchange="window.updateInvoicePreview()"><span>إظهار الهاتف</span></label>
+                                <label class="toggle-row"><input type="checkbox" id="invoiceShowStoreAddress" onchange="window.updateInvoicePreview()"><span>إظهار العنوان</span></label>
+                            </div>
+                        </div>
+
+                        <div class="card" style="padding:16px;margin-bottom:14px;box-shadow:none;">
+                            <div class="card-title" style="margin-bottom:14px;"><i class="fa-solid fa-qrcode"></i> الباركود و QR</div>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+                                <label class="toggle-row"><input type="checkbox" id="invoiceShowBarcode" checked onchange="window.updateInvoicePreview()"><span>إظهار باركود الفاتورة</span></label>
+                                <label class="toggle-row"><input type="checkbox" id="invoiceShowQR" onchange="window.updateInvoicePreview()"><span>إظهار QR Code</span></label>
+                            </div>
+                            <div class="form-group" style="margin-top:12px;"><label class="form-label">محتوى QR</label><input id="invoiceQRContent" class="form-input" dir="ltr" placeholder="رقم الطلب أو رابط الفاتورة" oninput="window.updateInvoicePreview()"></div>
+                        </div>
+
+                        <div class="card" style="padding:16px;box-shadow:none;">
+                            <div class="card-title" style="margin-bottom:14px;"><i class="fa-solid fa-percent"></i> الضريبة</div>
+                            <label class="toggle-row" style="margin-bottom:12px;"><input type="checkbox" id="invoiceTaxEnabled" onchange="window.updateInvoicePreview()"><span>تفعيل الضريبة على الفاتورة</span></label>
+                            <div class="form-group"><label class="form-label">نسبة الضريبة (%)</label><input type="number" id="invoiceTaxRate" class="form-input" min="0" max="100" step="0.01" value="0" oninput="window.updateInvoicePreview()"></div>
+                            <div class="form-group"><label class="form-label">تطبيق الضريبة على</label>
+                                <select id="invoiceTaxMode" class="form-select" onchange="window.updateInvoicePreview()">
+                                    <option value="invoice">الفاتورة ككل</option>
+                                    <option value="products">المنتجات فقط</option>
+                                </select>
+                            </div>
+                            <div style="font-size:11px;color:var(--text-muted);line-height:1.8;">الضريبة هنا خاصة بعرض وحساب الفاتورة، ولا تغيّر إجمالي الطلب المحفوظ أو المبيعات والتحليلات الحالية.</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="invoice-preview-shell">
+                            <div class="invoice-preview-title"><span>👁️ معاينة الفاتورة</span><span style="font-size:11px;color:var(--text-muted);">تتحدث تلقائياً</span></div>
+                            <div id="invoicePreviewContent" class="invoice-preview-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <!-- ===== Print Area ===== -->
     <div id="printArea" style="display:none;"></div>
@@ -3288,6 +3362,14 @@
         let currentDiscountType = 'none';
         let editCurrentDiscountType = 'none';
 
+        let messageAutomationSettings = { enabled: true };
+        let invoiceSettings = {
+            storeName: 'بروفيشنال', storePhone: '', storeAddress: '',
+            showStoreName: true, showStorePhone: false, showStoreAddress: false,
+            showBarcode: true, showQR: false, qrContent: '',
+            taxEnabled: false, taxRate: 0, taxMode: 'invoice'
+        };
+
         let barcodeScannerStream = null;
         let barcodeScannerReader = null;
         let barcodeScannerLoop = false;
@@ -3591,7 +3673,11 @@
         function msgDelivered(o) { return buildDetailedOrderMessage(o, '📦 تم تسليم طلبك بنجاح'); }
         function msgRejected(o) { return `${buildDetailedOrderMessage(o, '❌ تم رفض طلبك')}\n\nسبب الرفض: ${o?.rejectionReason || 'أسباب تقنية'}\n📞 01103127696`; }
 
-        async function sendWhatsApp(phone, message, type = 'واتساب') {
+        async function sendWhatsApp(phone, message, type = 'واتساب', options = {}) {
+            if (!options.manual && messageAutomationSettings.enabled === false) {
+                addToMessageLog(phone || 'غير معروف', type, false, 'تم الإيقاف من إعدادات الطلبات');
+                return false;
+            }
             if (!phone || !message) { addToMessageLog(phone || 'غير معروف', type, false, 'بيانات ناقصة'); return false; }
             const cp = formatPhoneNumber(phone);
             try {
@@ -5183,7 +5269,7 @@
             const o = allOrders.find(x => x.id === oid); if (!o) return;
             try {
                 await update(ref(database, `orders/${oid}`), { status: 'accepted', acceptedAt: Date.now() });
-                const sent = await sendWhatsApp(o.phone, msgAccept(o), 'قبول يدوي');
+                const sent = await sendWhatsApp(o.phone, msgAccept(o), 'قبول يدوي', { manual: true });
                 showToast(sent ? '✅ تم القبول' : '✅ تم القبول (فشل واتساب)', sent ? 'success' : 'warning');
             } catch (e) { showToast('❌ فشل', 'error'); }
         };
@@ -5220,7 +5306,7 @@
                 let msg; if (o.status === 'accepted') msg = msgAccept(o);
                 else if (o.status === 'delivering') msg = msgDelivering(o);
                 else msg = msgAccept(o);
-                sendWhatsApp(o.phone, msg, 'يدوي');
+                sendWhatsApp(o.phone, msg, 'يدوي', { manual: true });
             }
         };
 
@@ -5252,16 +5338,51 @@
         // ============================================================
         // ===== Print Receipt =====
         // ============================================================
+        function getInvoiceSettingsSnapshot() {
+            return { ...invoiceSettings };
+        }
+
+        function getInvoiceTaxData(o) {
+            const s = getInvoiceSettingsSnapshot();
+            const items = o?.items || [];
+            const productsBase = items.reduce((sum, i) => sum + Number(i.price || 0) * Number(i.quantity || 0), 0);
+            const deliveryFee = Number(o?.deliveryFee || 0), codFee = Number(o?.codFee || 0);
+            const discount = Number(o?.coupon?.discount || 0);
+            const invoiceBase = Math.max(0, productsBase + deliveryFee + codFee - discount);
+            const rate = Math.min(100, Math.max(0, Number(s.taxRate || 0)));
+            if (!s.taxEnabled || rate <= 0) return { base: 0, amount: 0, rate, mode: s.taxMode || 'invoice' };
+            const base = s.taxMode === 'products' ? productsBase : invoiceBase;
+            return { base, amount: base * rate / 100, rate, mode: s.taxMode || 'invoice' };
+        }
+
+        function getInvoiceQRValue(o) {
+            const configured = String(invoiceSettings.qrContent || '').trim();
+            return configured || `ORDER:${String(o?.id || '').slice(-8)}`;
+        }
+
+        function getInvoiceQRImage(o) {
+            if (!invoiceSettings.showQR) return '';
+            const value = encodeURIComponent(getInvoiceQRValue(o));
+            return `<div class="qr-wrap"><div class="qr-title">QR Code</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${value}" crossorigin="anonymous" alt="QR Code"></div>`;
+        }
+
         function buildInvoiceBody(o) {
+            const s = getInvoiceSettingsSnapshot();
             const date = new Date(o.createdAt || Date.now()).toLocaleString('ar-EG');
-            const subtotal = (o.items || []).reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 0), 0);
-            const deliveryFee = Number(o.deliveryFee || 0), codFee = Number(o.codFee || 0), total = Number(o.total || 0);
+            const subtotal = (o.items || []).reduce((sum, i) => sum + Number(i.price || 0) * Number(i.quantity || 0), 0);
+            const deliveryFee = Number(o.deliveryFee || 0), codFee = Number(o.codFee || 0), orderTotal = Number(o.total || 0);
             const pmName = getPaymentMethodName(o.paymentMethod || 'cod');
             const coupon = o.coupon || null, discount = Number(coupon?.discount || 0);
+            const tax = getInvoiceTaxData(o);
+            const invoiceTotal = orderTotal + tax.amount;
             const barcode = getInvoiceBarcode(o);
             const itemsHtml = (o.items || []).map(i => `<tr><td class="item-name">${escapeHtml(i.name || '---')}</td><td class="item-qty">${Number(i.quantity || 0)}</td><td class="item-price">${Number(i.price || 0).toFixed(2)} ج</td><td class="item-total">${(Number(i.price || 0) * Number(i.quantity || 0)).toFixed(2)} ج</td></tr>`).join('');
+            const storeName = s.showStoreName ? escapeHtml(s.storeName || 'بروفيشنال') : '';
+            const storePhone = s.showStorePhone && s.storePhone ? `<div class="store-contact-line">${escapeHtml(s.storePhone)}</div>` : '';
+            const storeAddress = s.showStoreAddress && s.storeAddress ? `<div class="store-contact-line">${escapeHtml(s.storeAddress)}</div>` : '';
+            const barcodeHtml = s.showBarcode ? `<div class="barcode-title">باركود الفاتورة EAN-13</div><div class="barcode-wrap">${buildEAN13Svg(barcode)}</div><div class="barcode-number">${barcode}</div>` : '';
             return `<div class="invoice-sheet" dir="rtl">
-                <div class="invoice-head"><div class="store-name">🏪 بروفيشنال</div><div class="invoice-title">فاتورة طلب إلكترونية</div></div>
+                <div class="invoice-head">${storeName ? `<div class="store-name">🏪 ${storeName}</div>` : ''}${storePhone}${storeAddress}<div class="invoice-title">فاتورة طلب إلكترونية</div></div>
                 <div class="invoice-meta">
                     <div><b>رقم الطلب:</b> #${escapeHtml(String(o.id || '').slice(-8))}</div>
                     <div><b>التاريخ:</b> ${escapeHtml(date)}</div>
@@ -5278,12 +5399,12 @@
                     <div><span>الشحن</span><strong>${deliveryFee <= 0 ? 'مجاني 🎉' : deliveryFee.toFixed(2) + ' ج'}</strong></div>
                     ${codFee > 0 ? `<div><span>رسوم الدفع</span><strong>${codFee.toFixed(2)} ج</strong></div>` : ''}
                     ${discount > 0 ? `<div class="discount"><span>الخصم</span><strong>-${discount.toFixed(2)} ج</strong></div>` : ''}
-                    <div class="grand-total"><span>الإجمالي النهائي</span><strong>${total.toFixed(2)} ج</strong></div>
+                    ${tax.amount > 0 ? `<div><span>الضريبة (${tax.rate.toFixed(2)}%${tax.mode === 'products' ? ' على المنتجات' : ' على الفاتورة'})</span><strong>+${tax.amount.toFixed(2)} ج</strong></div>` : ''}
+                    <div class="grand-total"><span>الإجمالي النهائي</span><strong>${invoiceTotal.toFixed(2)} ج</strong></div>
                 </div>
-                <div class="barcode-title">باركود الفاتورة EAN-13</div>
-                <div class="barcode-wrap">${buildEAN13Svg(barcode)}</div>
-                <div class="barcode-number">${barcode}</div>
-                <div class="invoice-footer">شكراً لاختياركم بروفيشنال 🏪<br><small>احتفظ بالفاتورة لاستخدامها عند الحاجة إلى المرتجعات</small></div>
+                ${barcodeHtml}
+                ${getInvoiceQRImage(o)}
+                <div class="invoice-footer">شكراً لاختياركم ${storeName ? escapeHtml(s.storeName || 'بروفيشنال') : 'متجرنا'} 🏪<br><small>احتفظ بالفاتورة لاستخدامها عند الحاجة إلى المرتجعات</small></div>
             </div>`;
         }
 
@@ -5456,6 +5577,82 @@
             } finally {
                 try { frame?.remove(); } catch (_) {}
             }
+        };
+
+        // ============================================================
+        // ===== Message Automation + Invoice Settings =====
+        // ============================================================
+        function loadMessageAutomationSettings() {
+            return get(ref(database, 'settings/messageAutomation')).then(s => {
+                if (s.exists()) messageAutomationSettings = { ...messageAutomationSettings, ...(s.val() || {}) };
+                const el = document.getElementById('orderMessagesEnabled');
+                if (el) el.checked = messageAutomationSettings.enabled !== false;
+                return messageAutomationSettings;
+            }).catch(() => messageAutomationSettings);
+        }
+
+        window.toggleOrderMessages = async function(enabled) {
+            messageAutomationSettings.enabled = !!enabled;
+            try {
+                await set(ref(database, 'settings/messageAutomation'), { enabled: messageAutomationSettings.enabled, updatedAt: Date.now() });
+                showToast(messageAutomationSettings.enabled ? '✅ تم تفعيل رسائل حالة الطلب' : '⏸️ تم إيقاف رسائل حالة الطلب', messageAutomationSettings.enabled ? 'success' : 'warning');
+                renderOrders();
+            } catch (e) {
+                messageAutomationSettings.enabled = !messageAutomationSettings.enabled;
+                const el = document.getElementById('orderMessagesEnabled'); if (el) el.checked = messageAutomationSettings.enabled;
+                showToast('❌ تعذر حفظ حالة الرسائل', 'error');
+            }
+        };
+
+        function loadInvoiceSettings() {
+            return get(ref(database, 'settings/invoice')).then(s => {
+                if (s.exists()) invoiceSettings = { ...invoiceSettings, ...(s.val() || {}) };
+                const map = {
+                    invoiceStoreName: invoiceSettings.storeName,
+                    invoiceStorePhone: invoiceSettings.storePhone,
+                    invoiceStoreAddress: invoiceSettings.storeAddress,
+                    invoiceQRContent: invoiceSettings.qrContent,
+                    invoiceTaxRate: invoiceSettings.taxRate
+                };
+                Object.keys(map).forEach(id => { const el = document.getElementById(id); if (el) el.value = map[id] ?? ''; });
+                ['invoiceShowStoreName','invoiceShowStorePhone','invoiceShowStoreAddress','invoiceShowBarcode','invoiceShowQR','invoiceTaxEnabled'].forEach(id => {
+                    const key = id.replace(/^invoice/, '').replace(/^./, c => c.toLowerCase());
+                    const el = document.getElementById(id); if (el) el.checked = invoiceSettings[key] !== false;
+                });
+                const mode = document.getElementById('invoiceTaxMode'); if (mode) mode.value = invoiceSettings.taxMode || 'invoice';
+                updateInvoicePreview();
+                return invoiceSettings;
+            }).catch(() => invoiceSettings);
+        }
+
+        function getInvoicePreviewOrder() {
+            return allOrders[0] || {
+                id: 'PREVIEW1234', createdAt: Date.now(), recipientName: 'عميل تجريبي', phone: '01000000000', address: 'عنوان تجريبي', paymentMethod: 'cod',
+                deliveryFee: 30, codFee: 0, total: 230, items: [{ name: 'منتج تجريبي', price: 200, quantity: 1 }]
+            };
+        }
+
+        window.updateInvoicePreview = function() {
+            const ids = {
+                storeName:'invoiceStoreName', storePhone:'invoiceStorePhone', storeAddress:'invoiceStoreAddress', qrContent:'invoiceQRContent', taxRate:'invoiceTaxRate'
+            };
+            Object.entries(ids).forEach(([key,id]) => { const el=document.getElementById(id); if(el) invoiceSettings[key] = el.value; });
+            ['showStoreName','showStorePhone','showStoreAddress','showBarcode','showQR','taxEnabled'].forEach(key => { const el=document.getElementById('invoice'+key.charAt(0).toUpperCase()+key.slice(1)); if(el) invoiceSettings[key]=el.checked; });
+            const mode=document.getElementById('invoiceTaxMode'); if(mode) invoiceSettings.taxMode=mode.value;
+            const target=document.getElementById('invoicePreviewContent');
+            if (target) target.innerHTML = buildInvoiceBody(getInvoicePreviewOrder());
+        };
+
+        window.saveInvoiceSettings = async function() {
+            window.updateInvoicePreview();
+            invoiceSettings.taxRate = Math.min(100, Math.max(0, Number(invoiceSettings.taxRate || 0)));
+            const restore = setButtonLoading(document.activeElement, 'جاري الحفظ...');
+            showPageLoading('جاري حفظ إعدادات الفاتورة...');
+            try {
+                await set(ref(database, 'settings/invoice'), { ...invoiceSettings, updatedAt: Date.now() });
+                showToast('✅ تم حفظ إعدادات الفاتورة');
+            } catch (e) { showToast('❌ فشل حفظ إعدادات الفاتورة', 'error'); }
+            finally { restore?.(); hidePageLoading(); }
         };
 
         // ============================================================
@@ -6739,13 +6936,14 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         window.switchTab = function(n) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            const tabs = ['orders','products','add','coupons','wallets','about','contact','messages','logo','flashsale','promo','analytics','returns'];
+            const tabs = ['orders','invoice','products','add','coupons','wallets','about','contact','messages','logo','flashsale','promo','analytics','returns'];
             const idx = tabs.indexOf(n);
             const at = document.querySelectorAll('.tab');
             if (idx >= 0 && at[idx]) at[idx].classList.add('active');
             const pn = document.getElementById('panel-' + n);
             if (pn) pn.classList.add('active');
             if (n === 'orders') renderOrders();
+            if (n === 'invoice') { loadInvoiceSettings(); updateInvoicePreview(); }
             if (n === 'products') renderProducts();
             if (n === 'coupons') renderCoupons();
             if (n === 'wallets') loadWalletSettings();
@@ -6957,12 +7155,14 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         // ============================================================
         // ===== Auth =====
         // ============================================================
-        function showAdmin() {
+        async function showAdmin() {
             document.getElementById('loginFullscreen')?.classList.add('hidden');
             document.getElementById('adminBar').style.display = 'flex';
             document.getElementById('mainContent').style.display = 'block';
             if (!firebaseReady) { showLogin(); return; }
             if (!productsListener) setupProducts();
+            // تحميل إعداد الرسائل أولاً حتى لا تُرسل رسالة تلقائية قبل معرفة حالة زر التفعيل/الإيقاف.
+            await Promise.allSettled([loadMessageAutomationSettings(), loadInvoiceSettings()]);
             if (!window._ordersSetup) { setupOrders(); window._ordersSetup = true; }
             setupPushDatabaseNotifications();
             updateNotificationButton();
@@ -6984,7 +7184,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             }
             startOrderRetentionWatcher();
             Promise.allSettled([
-                loadLogo(), loadStoredAnalytics(), loadMessageLog(), loadWalletSettings(),
+                loadLogo(), loadStoredAnalytics(), loadMessageLog(), loadWalletSettings(), loadInvoiceSettings(), loadMessageAutomationSettings(),
                 loadCoupons(), loadFlashSaleSettings(), loadAboutSettings(), loadContactSettings(),
                 loadClientMessages(), loadPromoSlides(), loadReturns(), loadReturnRequests()
             ]).then(() => { 
