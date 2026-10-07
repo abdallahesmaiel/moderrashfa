@@ -5579,14 +5579,33 @@
         }
 
         function getInvoiceQRValue(o) {
-            const configured = String(invoiceSettings.qrContent || '').trim();
-            return configured || `ORDER:${String(o?.id || '').slice(-8)}`;
+            const s = getInvoiceSettingsSnapshot();
+            const items = (o?.items || []).map(i => ({
+                product: String(i?.name || i?.productName || i?.productId || 'منتج'),
+                quantity: Number(i?.quantity || 0),
+                price: Number(i?.price || 0),
+                total: Number(i?.price || 0) * Number(i?.quantity || 0)
+            }));
+            const subtotal = items.reduce((sum, i) => sum + i.total, 0);
+            const deliveryFee = Number(o?.deliveryFee || 0);
+            const codFee = Number(o?.codFee || 0);
+            const discount = Number(o?.coupon?.discount || 0);
+            const tax = getInvoiceTaxData(o);
+            const invoiceTotal = Number(o?.total || 0) + tax.amount;
+            const payload = {
+                orderNumber: String(o?.id || '').slice(-8),
+                products: items,
+                total: Number(invoiceTotal.toFixed(2)),
+                storeName: String(s.storeName || 'بروفيشنال'),
+                storePhone: String(s.storePhone || '01103127696')
+            };
+            return JSON.stringify(payload);
         }
 
         function getInvoiceQRImage(o) {
             if (!invoiceSettings.showQR) return '';
             const value = encodeURIComponent(getInvoiceQRValue(o));
-            return `<div class="qr-wrap"><div class="qr-title">QR Code</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${value}" crossorigin="anonymous" alt="QR Code"></div>`;
+            return `<div class="qr-wrap" dir="ltr"><div class="qr-title" dir="rtl">QR Code</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${value}" crossorigin="anonymous" alt="QR Code"></div>`;
         }
 
         function buildInvoiceBody(o) {
@@ -5633,7 +5652,7 @@
 
         function buildInvoiceHtml(o) {
             return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>فاتورة #${escapeHtml(String(o.id || '').slice(-8))}</title><style>
-                *{box-sizing:border-box}html,body{margin:0!important;padding:0!important;background:#f3f4f6!important;color:#111!important;font-family:Tahoma,Arial,sans-serif!important;opacity:1!important;filter:none!important;-webkit-text-fill-color:#111!important}.invoice-sheet,.invoice-sheet *{opacity:1!important;filter:none!important}body{padding:16px}.invoice-sheet{width:420px;max-width:100%;margin:0 auto;background:#fff;padding:22px;border-radius:12px;box-shadow:0 3px 18px rgba(0,0,0,.08);color:#111}.invoice-head{text-align:center;border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:14px}.store-name{font-size:27px;font-weight:900;color:#111}.invoice-title{font-size:16px;font-weight:800;margin-top:6px;color:#333}.invoice-meta{font-size:13px;line-height:1.9;border-bottom:1px solid #bbb;padding-bottom:12px}.invoice-meta b{color:#111}.invoice-section-title{font-size:16px;font-weight:900;margin:14px 0 8px;color:#111}.invoice-items{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;color:#111}.invoice-items th{background:#e9ecef;color:#111;font-weight:900;padding:9px 5px;border:1px solid #555}.invoice-items td{padding:9px 5px;border:1px solid #777;font-weight:700;color:#111;vertical-align:middle}.invoice-items .item-name{width:42%;word-break:break-word}.invoice-items .item-qty{width:15%;text-align:center}.invoice-items .item-price{width:21%;text-align:center}.invoice-items .item-total{width:22%;text-align:center;font-weight:900}.invoice-totals{margin-top:12px;border:1px solid #777;border-radius:8px;padding:9px 11px;font-size:13px;color:#111}.invoice-totals>div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-weight:700}.invoice-totals strong{font-weight:900;color:#111}.invoice-totals .discount{color:#b91c1c}.invoice-totals .grand-total{border-top:2px solid #111;margin-top:5px;padding-top:9px;font-size:17px;font-weight:900}.barcode-title{text-align:center;font-weight:900;font-size:13px;margin-top:15px;color:#111}.barcode-wrap{margin:8px auto 0;width:100%;max-width:360px}.barcode-number{text-align:center;font-family:Arial,sans-serif;font-size:17px;font-weight:900;letter-spacing:2px;margin-top:-5px;color:#111}.invoice-footer{text-align:center;border-top:1px dashed #777;margin-top:15px;padding-top:12px;font-size:13px;font-weight:800;line-height:1.8;color:#222}.invoice-footer small{font-weight:600;color:#333}.print-btn{display:block;margin:15px auto 0;padding:11px 25px;border:0;border-radius:8px;background:#111;color:#fff;font-size:15px;font-weight:800}@media print{html,body{background:#fff}body{padding:0}.invoice-sheet{width:80mm;box-shadow:none;border-radius:0;padding:10px}.print-btn{display:none}}
+                *{box-sizing:border-box}html,body{margin:0!important;padding:0!important;background:#f3f4f6!important;color:#111!important;font-family:Tahoma,Arial,sans-serif!important;opacity:1!important;filter:none!important;-webkit-text-fill-color:#111!important}.invoice-sheet,.invoice-sheet *{opacity:1!important;filter:none!important}body{padding:16px}.invoice-sheet{width:420px;max-width:100%;margin:0 auto;background:#fff;padding:22px;border-radius:12px;box-shadow:0 3px 18px rgba(0,0,0,.08);color:#111}.invoice-head{text-align:center;border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:14px}.store-name{font-size:27px;font-weight:900;color:#111}.invoice-title{font-size:16px;font-weight:800;margin-top:6px;color:#333}.invoice-meta{font-size:13px;line-height:1.9;border-bottom:1px solid #bbb;padding-bottom:12px}.invoice-meta b{color:#111}.invoice-section-title{font-size:16px;font-weight:900;margin:14px 0 8px;color:#111}.invoice-items{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;color:#111}.invoice-items th{background:#e9ecef;color:#111;font-weight:900;padding:9px 5px;border:1px solid #555}.invoice-items td{padding:9px 5px;border:1px solid #777;font-weight:700;color:#111;vertical-align:middle}.invoice-items .item-name{width:42%;word-break:break-word}.invoice-items .item-qty{width:15%;text-align:center}.invoice-items .item-price{width:21%;text-align:center}.invoice-items .item-total{width:22%;text-align:center;font-weight:900}.invoice-totals{margin-top:12px;border:1px solid #777;border-radius:8px;padding:9px 11px;font-size:13px;color:#111}.invoice-totals>div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-weight:700}.invoice-totals strong{font-weight:900;color:#111}.invoice-totals .discount{color:#b91c1c}.invoice-totals .grand-total{border-top:2px solid #111;margin-top:5px;padding-top:9px;font-size:17px;font-weight:900}.barcode-title{text-align:center;font-weight:900;font-size:13px;margin-top:15px;color:#111}.barcode-wrap{display:block;margin:8px auto 0;width:100%;max-width:360px;text-align:center}.barcode-wrap svg{display:block;width:100%;height:auto;margin:0 auto}.barcode-number{text-align:center;font-family:Arial,sans-serif;font-size:17px;font-weight:900;letter-spacing:2px;margin-top:-5px;color:#111}.qr-wrap{display:block;width:100%;max-width:100%;margin:14px auto 0!important;text-align:center!important;direction:ltr!important}.qr-wrap .qr-title{display:block;text-align:center!important;direction:rtl!important;font-weight:900;font-size:13px;margin-bottom:6px;color:#111}.qr-wrap img{display:block!important;width:180px!important;height:180px!important;max-width:180px!important;max-height:180px!important;margin:0 auto!important;position:static!important;float:none!important}.invoice-footer{text-align:center;border-top:1px dashed #777;margin-top:15px;padding-top:12px;font-size:13px;font-weight:800;line-height:1.8;color:#222}.invoice-footer small{font-weight:600;color:#333}.print-btn{display:block;margin:15px auto 0;padding:11px 25px;border:0;border-radius:8px;background:#111;color:#fff;font-size:15px;font-weight:800}@media print{html,body{background:#fff}body{padding:0}.invoice-sheet{width:80mm;box-shadow:none;border-radius:0;padding:10px}.print-btn{display:none}}
             </style></head><body>${buildInvoiceBody(o)}<button class="print-btn" onclick="window.print()">🖨️ طباعة</button><script>window.onload=function(){setTimeout(function(){try{window.print()}catch(e){}},400)};<\/script><!-- Professional unified latest: preserves exclusive offers, analytics, Cloudinary cleanup, and barcode camera/image search. -->
 </body></html>`;
         }
