@@ -2052,7 +2052,10 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-title"><i class="fa-solid fa-boxes-stacked"></i> المنتجات والمخزون</div>
-                    <button class="btn btn-gold btn-sm" onclick="window.switchTab('add')"><i class="fa-solid fa-plus"></i> إضافة منتج</button>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+                        <button class="btn btn-danger btn-sm" onclick="window.deleteAllProducts()" title="حذف جميع المنتجات من Firebase"><i class="fa-solid fa-trash-can"></i> حذف الكل</button>
+                        <button class="btn btn-gold btn-sm" onclick="window.switchTab('add')"><i class="fa-solid fa-plus"></i> إضافة منتج</button>
+                    </div>
                 </div>
                 <div class="search-filter-wrapper">
                     <div class="search-box">
@@ -2468,7 +2471,12 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-title"><i class="fa-solid fa-sliders-h"></i> العروض الحصرية</div>
-                    <button class="btn btn-gold btn-sm" onclick="window.openAddPromoModal()"><i class="fa-solid fa-plus"></i> إضافة عرض</button>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+                        <button class="btn btn-success btn-sm" onclick="window.activateAllPromoSlides()" title="تنشيط جميع العروض الحصرية"><i class="fa-solid fa-play"></i> تنشيط الكل</button>
+                        <button class="btn btn-outline btn-sm" onclick="window.deactivateAllPromoSlides()" title="إلغاء تنشيط جميع العروض الحصرية"><i class="fa-solid fa-pause"></i> إلغاء تنشيط الكل</button>
+                        <button class="btn btn-danger btn-sm" onclick="window.deleteAllPromoSlides()" title="حذف جميع العروض الحصرية من Firebase"><i class="fa-solid fa-trash-can"></i> حذف الكل</button>
+                        <button class="btn btn-gold btn-sm" onclick="window.openAddPromoModal()"><i class="fa-solid fa-plus"></i> إضافة عرض</button>
+                    </div>
                 </div>
                 <div id="promoSlidesList" class="promo-slides-grid">
                     <div class="promo-empty">
@@ -4005,6 +4013,31 @@
                 </div>`;
             }).join('');
         }
+
+        window.deleteAllProducts = async function() {
+            if (!allProducts.length) { showToast('ℹ️ لا توجد منتجات للحذف', 'info'); return; }
+            if (!firebaseReady || !database) { showToast('❌ قاعدة البيانات غير متصلة', 'error'); return; }
+            const count = allProducts.length;
+            if (!confirm(`⚠️ حذف جميع المنتجات نهائياً؟\n\nسيتم حذف ${count} منتج من Firebase ولا يمكن التراجع عن العملية.`)) return;
+            showPageLoading('جاري حذف جميع المنتجات...', 'يرجى الانتظار');
+            try {
+                await remove(ref(database, 'products'));
+                const verify = await get(ref(database, 'products'));
+                if (verify.exists()) throw new Error('بيانات المنتجات ما زالت موجودة في Firebase');
+                allProducts = [];
+                currentSearchQuery = '';
+                currentCategoryFilter = 'all';
+                const search = document.getElementById('productSearchInput');
+                if (search) search.value = '';
+                document.querySelectorAll('#categoryFilterTags .filter-tag').forEach(b => b.classList.toggle('active', b.dataset.category === 'all'));
+                renderProducts();
+                updateStats();
+                showToast(`🗑️ تم حذف جميع المنتجات (${count})`, 'success');
+            } catch (e) {
+                console.error('deleteAllProducts failed:', e);
+                showToast('❌ فشل حذف جميع المنتجات: ' + (e?.message || 'تحقق من صلاحيات Firebase'), 'error');
+            } finally { hidePageLoading(); }
+        };
 
         // ============================================================
         // ===== Barcode =====
@@ -6228,6 +6261,13 @@
                 c.innerHTML = `<div class="promo-empty"><i class="fa-solid fa-image"></i><h3 style="font-size:15px;">لا توجد عروض حصرية</h3><p style="font-size:12px;">أضف عرضاً جديداً</p><button class="btn btn-gold btn-sm" onclick="window.openAddPromoModal()"><i class="fa-solid fa-plus"></i> إضافة عرض</button></div>`;
                 return;
             }
+            const globalToggle = document.getElementById('promoGlobalToggleBtn');
+            const hasActivePromo = allPromoSlides.some(s => s.active !== false);
+            if (globalToggle) {
+                globalToggle.className = `btn ${hasActivePromo ? 'btn-outline' : 'btn-success'} btn-sm`;
+                globalToggle.innerHTML = `<i class="fa-solid ${hasActivePromo ? 'fa-pause' : 'fa-play'}"></i> ${hasActivePromo ? 'إلغاء تنشيط الكل' : 'تنشيط الكل'}`;
+                globalToggle.title = hasActivePromo ? 'إلغاء تنشيط جميع العروض الحصرية' : 'تنشيط جميع العروض الحصرية';
+            }
             c.innerHTML = allPromoSlides.map((s, i) => {
                 const ia = s.active !== false;
                 const linkedIds = Array.isArray(s.linkedProductIds)
@@ -6247,9 +6287,8 @@
                         ${linkedNames.length ? `<span style="background:var(--discount-bg);color:var(--discount-color);padding:2px 8px;border-radius:50px;font-weight:700;"><i class="fa-solid fa-link"></i> ${linkedNames.length} منتج مرتبط</span>` : ''}
                     </div>
                     <div class="promo-actions">
-                        <button class="btn btn-gold btn-sm" onclick="window.editPromoSlide('${s.id}')"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn ${ia ? 'btn-outline' : 'btn-success'} btn-sm" onclick="window.togglePromoSlide('${s.id}')"><i class="fa-solid ${ia ? 'fa-pause' : 'fa-play'}"></i></button>
-                        <button class="btn btn-danger btn-sm" onclick="window.deletePromoSlide('${s.id}')"><i class="fa-solid fa-trash"></i></button>
+                        <button class="btn btn-gold btn-sm" onclick="window.editPromoSlide('${s.id}')"><i class="fa-solid fa-pen"></i> تعديل</button>
+                        <button class="btn btn-danger btn-sm" onclick="window.deletePromoSlide('${s.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
                     </div>
                 </div>`;
             }).join('');
@@ -6406,18 +6445,65 @@
             } catch (e) { showToast('❌ فشل', 'error'); }
             finally { restore?.(); hidePageLoading(); }
         };
-        window.togglePromoSlide = async function(id) {
-            const s = allPromoSlides.find(x => x.id === id);
-            if (!s) return;
-            const ns = s.active === false;
-            try { await update(ref(database, `settings/promotionalSlides/${id}`), { active: ns, updatedAt: Date.now() }); showToast(ns ? '✅ تم التفعيل' : '⏸️ تم الإيقاف'); }
-            catch (e) { showToast('❌ فشل', 'error'); }
-        };
+        async function setAllPromoSlidesActive(active) {
+            if (!allPromoSlides.length) { showToast('⚠️ لا توجد عروض حصرية', 'warning'); return; }
+            if (!firebaseReady || !database) { showToast('❌ قاعدة البيانات غير متصلة', 'error'); return; }
+            const actionText = active ? 'تنشيط' : 'إلغاء تنشيط';
+            if (!confirm(`هل تريد ${actionText} جميع العروض الحصرية (${allPromoSlides.length} عرض)؟`)) return;
+            showPageLoading(`جاري ${actionText} جميع العروض...`);
+            try {
+                const updates = {};
+                const now = Date.now();
+                allPromoSlides.forEach(s => {
+                    updates[`settings/promotionalSlides/${s.id}/active`] = active;
+                    updates[`settings/promotionalSlides/${s.id}/updatedAt`] = now;
+                });
+                await update(ref(database), updates);
+                allPromoSlides = allPromoSlides.map(s => ({ ...s, active, updatedAt: now }));
+                renderPromoSlides();
+                showToast(active ? '✅ تم تنشيط جميع العروض الحصرية وستظهر في المتجر' : '⏸️ تم إلغاء تنشيط جميع العروض الحصرية وستختفي من المتجر', 'success');
+            } catch (e) {
+                console.error('setAllPromoSlidesActive failed:', e);
+                showToast('❌ فشل تغيير حالة جميع العروض: ' + (e?.message || 'تحقق من الصلاحيات'), 'error');
+            } finally {
+                hidePageLoading();
+            }
+        }
+        window.activateAllPromoSlides = async function() { await setAllPromoSlidesActive(true); };
+        window.deactivateAllPromoSlides = async function() { await setAllPromoSlidesActive(false); };
         window.deletePromoSlide = async function(id) {
             const s = allPromoSlides.find(x => x.id === id);
-            if (!confirm(`حذف "${s?.title || ''}"؟`)) return;
-            try { await remove(ref(database, `settings/promotionalSlides/${id}`)); showToast('🗑️ تم الحذف'); }
-            catch (e) { showToast('❌ فشل', 'error'); }
+            if (!s || !firebaseReady || !database) { showToast('❌ قاعدة البيانات غير متصلة', 'error'); return; }
+            if (!confirm(`حذف العرض "${s?.title || ''}" نهائياً؟`)) return;
+            try {
+                await remove(ref(database, `settings/promotionalSlides/${id}`));
+                const verify = await get(ref(database, `settings/promotionalSlides/${id}`));
+                if (verify.exists()) throw new Error('العرض ما زال موجوداً في Firebase');
+                allPromoSlides = allPromoSlides.filter(x => x.id !== id);
+                renderPromoSlides();
+                showToast('🗑️ تم حذف العرض نهائياً', 'success');
+            } catch (e) {
+                console.error('deletePromoSlide failed:', e);
+                showToast('❌ فشل حذف العرض: ' + (e?.message || 'تحقق من الصلاحيات'), 'error');
+            }
+        };
+        window.deleteAllPromoSlides = async function() {
+            if (!allPromoSlides.length) { showToast('ℹ️ لا توجد عروض حصرية للحذف', 'info'); return; }
+            if (!firebaseReady || !database) { showToast('❌ قاعدة البيانات غير متصلة', 'error'); return; }
+            const count = allPromoSlides.length;
+            if (!confirm(`⚠️ حذف جميع العروض الحصرية نهائياً؟\n\nسيتم حذف ${count} عرض من Firebase ولا يمكن التراجع عن العملية.`)) return;
+            showPageLoading('جاري حذف جميع العروض الحصرية...', 'يرجى الانتظار');
+            try {
+                await remove(ref(database, 'settings/promotionalSlides'));
+                const verify = await get(ref(database, 'settings/promotionalSlides'));
+                if (verify.exists()) throw new Error('بيانات العروض ما زالت موجودة في Firebase');
+                allPromoSlides = [];
+                renderPromoSlides();
+                showToast(`🗑️ تم حذف جميع العروض الحصرية (${count})`, 'success');
+            } catch (e) {
+                console.error('deleteAllPromoSlides failed:', e);
+                showToast('❌ فشل حذف جميع العروض: ' + (e?.message || 'تحقق من صلاحيات Firebase'), 'error');
+            } finally { hidePageLoading(); }
         };
         document.getElementById('promoModal')?.addEventListener('click', function(e) { if (e.target === this) window.closePromoModal(); });
         document.getElementById('promoCategory')?.addEventListener('change', function() { window.updatePromoProductsList(); });
@@ -6530,25 +6616,7 @@
                 return; 
             }
             
-            // ✅ زر حذف الكل للطلبات المكتملة
-            const finishedRequests = list.filter(r => String(r.status || '').toLowerCase() === 'completed');
-            const showBulkDelete = finishedRequests.length > 0;
-            
             let html = '';
-            if (showBulkDelete) {
-                html += `
-                    <div style="grid-column:1/-1;background:rgba(239,68,68,0.05);border:1px dashed rgba(239,68,68,0.3);border-radius:var(--radius);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-                        <span style="font-size:12px;color:var(--text-secondary);">
-                            <i class="fa-solid fa-info-circle" style="color:var(--status-rejected);"></i>
-                            يوجد <strong>${finishedRequests.length}</strong> طلب مكتمل - يمكنك حذفها من الموقع وقاعدة البيانات
-                        </span>
-                        <button class="btn btn-danger btn-sm" onclick="window.deleteAllCompletedReturns()">
-                            <i class="fa-solid fa-trash-can"></i> حذف كل الطلبات المكتملة
-                        </button>
-                    </div>
-                `;
-            }
-            
             html += list.map(r => {
                 const status = String(r.status || 'pending').toLowerCase();
                 const sl = { 
@@ -6957,6 +7025,9 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 if (r.phoneHash) {
                     updates[`returnRequestIndex/${r.phoneHash}/${requestId}`] = null;
                 }
+                if (status === 'completed' && r.returnId) {
+                    updates[`returns/${r.returnId}`] = null;
+                }
                 
                 await update(ref(database), updates);
                 
@@ -6977,44 +7048,73 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         
         // ✅ دالة حذف كل الطلبات المكتملة
         window.deleteAllCompletedReturns = async function() {
-            const completed = returnRequestsCache.filter(r => String(r.status || '').toLowerCase() === 'completed');
-            if (!completed.length) { 
-                showToast('⚠️ لا توجد طلبات مكتملة للحذف', 'warning'); 
-                return; 
+            // تبويب «المرتجعات المكتملة» يعرض السجلات من returns، لذلك يجب حذفها من returns فعلياً.
+            // ونحذف أيضاً طلب الاسترجاع المرتبط وفهرسه حتى لا تبقى نسخة من السجل في Firebase.
+            const completedReturns = returnsCache.filter(r => String(r.status || '').toLowerCase() === 'completed');
+            if (!completedReturns.length) {
+                showToast('⚠️ لا توجد مرتجعات مكتملة للحذف', 'warning');
+                return;
             }
-            
-            if (!confirm(`⚠️ حذف ${completed.length} طلب استرجاع مكتمل نهائياً؟\n\n✅ سيتم الحذف من الموقع\n✅ سيتم الحذف من قاعدة البيانات\n\n⚠️ لا يمكن التراجع!`)) return;
-            
-            showPageLoading(`جاري حذف ${completed.length} طلب...`);
+
+            if (!confirm(`⚠️ حذف ${completedReturns.length} مرتجع مكتمل نهائياً؟\n\n✅ سيتم حذف سجلات المرتجعات من Firebase\n✅ سيتم حذف طلبات الاسترجاع المرتبطة وفهارسها\n\n⚠️ لا يمكن التراجع!`)) return;
+
+            showPageLoading(`جاري حذف ${completedReturns.length} مرتجع...`);
             try {
+                if (!returnRequestsCache.length) await loadReturnRequests();
+
                 const updates = {};
-                const removedIds = new Set();
-                
-                for (const r of completed) {
-                    updates[`returnRequests/${r.id}`] = null;
-                    if (r.phoneHash) {
-                        updates[`returnRequestIndex/${r.phoneHash}/${r.id}`] = null;
+                const removedReturnIds = new Set();
+                const removedRequestIds = new Set();
+
+                for (const ret of completedReturns) {
+                    const returnId = String(ret.id);
+                    updates[`returns/${returnId}`] = null;
+                    removedReturnIds.add(returnId);
+
+                    const request = returnRequestsCache.find(req =>
+                        String(req.returnId || '') === returnId ||
+                        String(req.id || '') === String(ret.sourceRequestId || '')
+                    );
+
+                    if (request) {
+                        const requestId = String(request.id);
+                        updates[`returnRequests/${requestId}`] = null;
+                        removedRequestIds.add(requestId);
+                        if (request.phoneHash) {
+                            updates[`returnRequestIndex/${request.phoneHash}/${requestId}`] = null;
+                        }
                     }
-                    removedIds.add(r.id);
                 }
-                
+
                 await update(ref(database), updates);
-                
-                returnRequestsCache = returnRequestsCache.filter(x => !removedIds.has(x.id));
-                removedIds.forEach(id => hiddenReturnRequestIds.delete(id));
-                
-                showToast(`🗑️ تم حذف ${completed.length} طلب مكتمل`);
-                
+
+                // التحقق من الحذف الفعلي لسجلات returns من قاعدة البيانات.
+                const verify = await get(ref(database, 'returns'));
+                const remaining = verify.exists() ? (verify.val() || {}) : {};
+                const stillExists = [...removedReturnIds].filter(id => Object.prototype.hasOwnProperty.call(remaining, id));
+                if (stillExists.length) throw new Error(`تعذر حذف ${stillExists.length} سجل مرتجع من Firebase`);
+
+                returnsCache = returnsCache.filter(r => !removedReturnIds.has(String(r.id)));
+                returnRequestsCache = returnRequestsCache.filter(r => !removedRequestIds.has(String(r.id)));
+
+                removedRequestIds.forEach(id => {
+                    hiddenReturnRequestIds.delete(id);
+                    if (hideReturnFromPageTimers[id]) { clearTimeout(hideReturnFromPageTimers[id]); delete hideReturnFromPageTimers[id]; }
+                    if (hideReturnFromPageCountdowns[id]) { clearInterval(hideReturnFromPageCountdowns[id]); delete hideReturnFromPageCountdowns[id]; }
+                    if (deleteReturnFromDBTimers[id]) { clearTimeout(deleteReturnFromDBTimers[id]); delete deleteReturnFromDBTimers[id]; }
+                });
+
                 window.renderReturnsContent();
-                await updateReturnsBadge();
+                updateReturnsBadge();
+                showToast(`🗑️ تم حذف ${completedReturns.length} مرتجع مكتمل نهائياً من قاعدة البيانات`, 'success');
             } catch (e) {
                 console.error('Delete all completed returns failed:', e);
-                showToast('❌ فشل الحذف: ' + (e.message || ''), 'error');
+                showToast('❌ فشل حذف المرتجعات المكتملة: ' + (e?.message || 'تحقق من صلاحيات Firebase'), 'error');
             } finally {
                 hidePageLoading();
             }
         };
-        
+
         window.renderReturns = function() { window.renderReturnsContent(); };
         
         window.refreshReturns = async function() {
