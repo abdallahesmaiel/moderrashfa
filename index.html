@@ -3440,16 +3440,13 @@
         };
 
         const CLOUDINARY_CLOUD_NAME = 'dzprjrvu7';
-        const CLOUDINARY_UPLOAD_PRESET = 'rashfa_preset';
-        const CLOUDINARY_API_KEY = '671577839241732';
-        const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-        const CORS_PROXY = 'https://corsproxy.io/?';
-
-        const CONVOBEST_CONFIG = {
-            instanceId: 'aa7a2d79-0d6b-4320-a16d-6147035e2989',
-            apiToken: '979f73cd13bc0153b326f95f28f376f3',
-            apiUrl: 'https://api.convobest.com/v1/messages/send'
-        };
+        // ملاحظة أمان: لا توجد هنا أي مفاتيح سرية. التوكنات محفوظة في Vercel Environment Variables
+        // ويتم استخدامها فقط من داخل مجلد /api على الخادم.
+        async function adminAuthHeaders(forceRefresh = false) {
+            const t = await auth?.currentUser?.getIdToken(forceRefresh);
+            if (!t) throw new Error('يجب تسجيل الدخول كأدمن أولاً.');
+            return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t };
+        }
 
         const CATEGORIES = [
             { id: 'مستلزمات شخصية', icon: 'fa-shopping-basket', emoji: '🛒', label: 'بقالة' },
@@ -3708,15 +3705,24 @@
             const maxRetries = 3;
             updateUploadProgress(prefix, retryCount > 0 ? 5 : 0,
                 retryCount > 0 ? `إعادة المحاولة ${retryCount + 1}/${maxRetries}...` : 'بدء الرفع...', 'loading');
-            const fd = new FormData();
-            fd.append('file', file);
-            fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-            fd.append('folder', folder);
-            fd.append('api_key', CLOUDINARY_API_KEY);
             try {
+                let sigResp = await fetch('/api/cloudinary-sign', { method: 'POST', headers: await adminAuthHeaders(), body: JSON.stringify({ folder }) });
+                if (sigResp.status === 401) {   // جلسة منتهية: جدّد التوكن وأعد المحاولة مرة
+                    sigResp = await fetch('/api/cloudinary-sign', { method: 'POST', headers: await adminAuthHeaders(true), body: JSON.stringify({ folder }) });
+                }
+                const sig = await sigResp.json().catch(() => ({}));
+                if (!sigResp.ok || !sig.signature) throw new Error(sig.error || 'تعذر الحصول على تصريح الرفع');
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('api_key', sig.api_key);
+                fd.append('timestamp', sig.timestamp);
+                fd.append('signature', sig.signature);
+                fd.append('folder', sig.folder);
+                fd.append('upload_preset', sig.upload_preset);
+                const uploadUrl = `https://api.cloudinary.com/v1_1/${sig.cloud_name}/image/upload`;
                 const result = await new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
-                    xhr.open('POST', CLOUDINARY_UPLOAD_URL, true);
+                    xhr.open('POST', uploadUrl, true);
                     xhr.timeout = 120000;
                     xhr.upload.addEventListener('loadstart', () => updateUploadProgress(prefix, 1, 'بدء الرفع...', 'loading'));
                     xhr.upload.addEventListener('progress', (event) => {
@@ -3838,13 +3844,13 @@
             if (!phone || !message) { addToMessageLog(phone || 'غير معروف', type, false, 'بيانات ناقصة'); return false; }
             const cp = formatPhoneNumber(phone);
             try {
-                const r = await fetch(`${CORS_PROXY}${encodeURIComponent(CONVOBEST_CONFIG.apiUrl)}`, {
+                const r = await fetch('/api/send-whatsapp', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                    body: JSON.stringify({ instance_id: CONVOBEST_CONFIG.instanceId, access_token: CONVOBEST_CONFIG.apiToken, phone: cp, message })
+                    headers: await adminAuthHeaders(),
+                    body: JSON.stringify({ phone: cp, message })
                 });
-                const d = await r.json();
-                if (r.ok && (d.success || d.status === 'success' || d.status === 'sent' || d.id)) {
+                const d = await r.json().catch(() => ({}));
+                if (r.ok && d.success) {
                     addToMessageLog(cp, type, true, 'Convobest ✓');
                     return true;
                 }
@@ -4459,7 +4465,7 @@
                 const deleteToken = p?.cloudinary_delete_token || '';
                 if (publicId) {
                     try {
-                        const resp = await fetch('/api/cloudinary-delete', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ public_id:publicId, resource_type:'image' }) });
+                        const resp = await fetch('/api/cloudinary-delete', { method:'POST', headers: await adminAuthHeaders(), body:JSON.stringify({ public_id:publicId }) });
                         imageDeleted = resp.ok;
                     } catch (_) {}
                 }
