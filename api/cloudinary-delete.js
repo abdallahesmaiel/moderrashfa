@@ -10,7 +10,8 @@ module.exports = async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
 
   const { CLOUDINARY_CLOUD_NAME: cloud, CLOUDINARY_API_KEY: apiKey, CLOUDINARY_API_SECRET: secret } = process.env;
-  if (!cloud || !apiKey || !secret) return res.status(500).json({ error: 'خدمة الصور غير مهيأة' });
+  const missing = [['CLOUDINARY_CLOUD_NAME', cloud], ['CLOUDINARY_API_KEY', apiKey], ['CLOUDINARY_API_SECRET', secret]].filter(x => !x[1]).map(x => x[0]);
+  if (missing.length) return res.status(500).json({ error: 'متغيرات ناقصة في Vercel: ' + missing.join(', '), code: 'MISSING_ENV' });
 
   const publicId = String((req.body || {}).public_id || '');
   const inAllowedFolder = ALLOWED_FOLDERS.some(f => publicId.startsWith(f + '/'));
