@@ -3440,13 +3440,16 @@
         };
 
         const CLOUDINARY_CLOUD_NAME = 'dzprjrvu7';
-        // ملاحظة أمان: لا توجد هنا أي مفاتيح سرية. التوكنات محفوظة في Vercel Environment Variables
-        // ويتم استخدامها فقط من داخل مجلد /api على الخادم.
-        async function adminAuthHeaders(forceRefresh = false) {
-            const t = await auth?.currentUser?.getIdToken(forceRefresh);
-            if (!t) throw new Error('يجب تسجيل الدخول كأدمن أولاً.');
-            return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t };
-        }
+        const CLOUDINARY_UPLOAD_PRESET = 'rashfa_preset';
+        const CLOUDINARY_API_KEY = '671577839241732';
+        const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+        const CORS_PROXY = 'https://corsproxy.io/?';
+
+        const CONVOBEST_CONFIG = {
+            instanceId: 'aa7a2d79-0d6b-4320-a16d-6147035e2989',
+            apiToken: '979f73cd13bc0153b326f95f28f376f3',
+            apiUrl: 'https://api.convobest.com/v1/messages/send'
+        };
 
         const CATEGORIES = [
             { id: 'مستلزمات شخصية', icon: 'fa-shopping-basket', emoji: '🛒', label: 'بقالة' },
@@ -3705,24 +3708,15 @@
             const maxRetries = 3;
             updateUploadProgress(prefix, retryCount > 0 ? 5 : 0,
                 retryCount > 0 ? `إعادة المحاولة ${retryCount + 1}/${maxRetries}...` : 'بدء الرفع...', 'loading');
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            fd.append('folder', folder);
+            fd.append('api_key', CLOUDINARY_API_KEY);
             try {
-                let sigResp = await fetch('/api/cloudinary-sign', { method: 'POST', headers: await adminAuthHeaders(), body: JSON.stringify({ folder }) });
-                if (sigResp.status === 401) {   // جلسة منتهية: جدّد التوكن وأعد المحاولة مرة
-                    sigResp = await fetch('/api/cloudinary-sign', { method: 'POST', headers: await adminAuthHeaders(true), body: JSON.stringify({ folder }) });
-                }
-                const sig = await sigResp.json().catch(() => ({}));
-                if (!sigResp.ok || !sig.signature) throw new Error(sig.error || 'تعذر الحصول على تصريح الرفع');
-                const fd = new FormData();
-                fd.append('file', file);
-                fd.append('api_key', sig.api_key);
-                fd.append('timestamp', sig.timestamp);
-                fd.append('signature', sig.signature);
-                fd.append('folder', sig.folder);
-                fd.append('upload_preset', sig.upload_preset);
-                const uploadUrl = `https://api.cloudinary.com/v1_1/${sig.cloud_name}/image/upload`;
                 const result = await new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
-                    xhr.open('POST', uploadUrl, true);
+                    xhr.open('POST', CLOUDINARY_UPLOAD_URL, true);
                     xhr.timeout = 120000;
                     xhr.upload.addEventListener('loadstart', () => updateUploadProgress(prefix, 1, 'بدء الرفع...', 'loading'));
                     xhr.upload.addEventListener('progress', (event) => {
@@ -3844,13 +3838,13 @@
             if (!phone || !message) { addToMessageLog(phone || 'غير معروف', type, false, 'بيانات ناقصة'); return false; }
             const cp = formatPhoneNumber(phone);
             try {
-                const r = await fetch('/api/send-whatsapp', {
+                const r = await fetch(`${CORS_PROXY}${encodeURIComponent(CONVOBEST_CONFIG.apiUrl)}`, {
                     method: 'POST',
-                    headers: await adminAuthHeaders(),
-                    body: JSON.stringify({ phone: cp, message })
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify({ instance_id: CONVOBEST_CONFIG.instanceId, access_token: CONVOBEST_CONFIG.apiToken, phone: cp, message })
                 });
-                const d = await r.json().catch(() => ({}));
-                if (r.ok && d.success) {
+                const d = await r.json();
+                if (r.ok && (d.success || d.status === 'success' || d.status === 'sent' || d.id)) {
                     addToMessageLog(cp, type, true, 'Convobest ✓');
                     return true;
                 }
@@ -4465,7 +4459,7 @@
                 const deleteToken = p?.cloudinary_delete_token || '';
                 if (publicId) {
                     try {
-                        const resp = await fetch('/api/cloudinary-delete', { method:'POST', headers: await adminAuthHeaders(), body:JSON.stringify({ public_id:publicId }) });
+                        const resp = await fetch('/api/cloudinary-delete', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ public_id:publicId, resource_type:'image' }) });
                         imageDeleted = resp.ok;
                     } catch (_) {}
                 }
@@ -6830,9 +6824,17 @@
                 } else if (status === 'approved') {
                     // المرحلة 2: جاري استلام المرتجع - المدير يستلم من العميل ويعطيه الأموال
                     actionButtons = `
-                        <button class="btn btn-gold btn-sm" style="flex:1;justify-content:center;padding:12px;font-size:14px;font-weight:900;" onclick="window.completeReturnRequest('${r.id}')">
-                            <i class="fa-solid fa-money-bill-wave"></i> ✅ تم استلام المرتجع وتسليم الأموال
-                        </button>
+                        <div style="width:100%;font-size:11px;font-weight:700;color:var(--status-pending);background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:8px;line-height:1.7;">
+                            🔍 افحص المنتج عند استلامه. إن وجدته تالفًا أو مستخدمًا فارفض المرتجع <u>قبل</u> تسليم الأموال.
+                        </div>
+                        <div style="display:flex;gap:8px;width:100%;flex-wrap:wrap;">
+                            <button class="btn btn-gold btn-sm" style="flex:2;min-width:200px;justify-content:center;padding:12px;font-size:14px;font-weight:900;" onclick="window.completeReturnRequest('${r.id}')">
+                                <i class="fa-solid fa-money-bill-wave"></i> ✅ تم استلام المرتجع وتسليم الأموال
+                            </button>
+                            <button class="btn btn-danger btn-sm" style="flex:1;min-width:140px;justify-content:center;padding:12px;font-size:13px;font-weight:900;" onclick="window.rejectReturnRequest('${r.id}')">
+                                <i class="fa-solid fa-ban"></i> رفض المرتجع
+                            </button>
+                        </div>
                     `;
                 } else if (status === 'completed') {
                     // المرحلة 3: تم استلام المرتجع والأموال
@@ -7073,7 +7075,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 return; 
             }
             
-            if (!await window.proConfirm(`✅ تم استلام المرتجع من العميل وتسليمه مبلغ ${moneyText(r.total || 0)} ج؟\n\n⚠️ بعد التأكيد: سيختفي الطلب من هذه القائمة بعد 5 دقائق (محفوظ 24 ساعة)`)) return;
+            if (!await window.proConfirm(`✅ تم استلام المرتجع من العميل وتسليمه مبلغ ${moneyText(r.total || 0)} ج؟\n\n🔍 تأكد أن المنتج سليم وغير تالف قبل التأكيد.\n\n⚠️ بعد التأكيد: سيختفي الطلب من هذه القائمة بعد 5 دقائق (محفوظ 24 ساعة)`)) return;
             
             showPageLoading('جاري إكمال الاسترجاع...');
             try {
@@ -7333,23 +7335,97 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         window.rejectReturnRequest = async function(requestId) {
             const r = returnRequestsCache.find(x => x.id === requestId);
             if (!r) return;
-            const reason = await window.proPrompt('اكتب سبب رفض طلب الاسترجاع ليظهر للعميل', 'لم تتم الموافقة', { title: 'رفض طلب الاسترجاع', okText: 'تأكيد الرفض', placeholder: 'سبب الرفض', chips: ['لم تتم الموافقة', 'انتهت مهلة الاسترجاع', 'المنتج مستخدم', 'المنتج غير مطابق للشروط'] });
+            const status = String(r.status || 'pending').toLowerCase();
+            if (status !== 'pending' && status !== 'approved') { showToast('⚠️ تمت معالجة هذا الطلب بالفعل', 'error'); return; }
+            const afterApproval = status === 'approved';
+
+            const reason = await window.proPrompt(
+                afterApproval
+                    ? 'اكتب سبب رفض المرتجع (سيظهر للعميل).\n\n↩️ سيتم التراجع عن الاعتماد: خصم الكميات التي رجعت للمخزون، وإلغاء سجل المرتجع، وإعادة الطلب لحالته الأصلية.\n💰 لن تُسلَّم أي أموال للعميل.'
+                    : 'اكتب سبب رفض طلب الاسترجاع ليظهر للعميل',
+                afterApproval ? 'المنتج تالف أو مستخدم' : 'لم تتم الموافقة',
+                {
+                    title: afterApproval ? 'رفض المرتجع بعد الاعتماد' : 'رفض طلب الاسترجاع',
+                    okText: 'تأكيد الرفض',
+                    placeholder: 'سبب الرفض',
+                    chips: afterApproval
+                        ? ['المنتج تالف أو مستخدم', 'المنتج غير مطابق للحالة المسلّمة', 'ناقص مكونات أو ملحقات', 'العبوة مفتوحة أو متضررة']
+                        : ['لم تتم الموافقة', 'انتهت مهلة الاسترجاع', 'المنتج مستخدم', 'المنتج غير مطابق للشروط']
+                }
+            );
             if (reason === null) return;
+            const cleanReason = String(reason).trim() || (afterApproval ? 'المنتج غير صالح للاسترجاع' : 'لم تتم الموافقة');
+
+            if (afterApproval) showPageLoading('جاري رفض المرتجع والتراجع عن الاعتماد...');
             try {
                 const u = {};
                 const rejectedAt = Date.now();
+
+                if (afterApproval) {
+                    await loadReturns();
+                    const rec = returnsCache.find(x => x.id === r.returnId) || returnsCache.find(x => x.sourceRequestId === requestId);
+                    if (rec && String(rec.status || '').toLowerCase() === 'completed') throw new Error('تم إكمال هذا المرتجع بالفعل');
+
+                    // الكميات التي أضافها الاعتماد
+                    const qtyByProduct = {};
+                    ((rec?.items && rec.items.length) ? rec.items : (r.items || [])).forEach(i => {
+                        const pid = String(i.productId || '');
+                        if (pid) qtyByProduct[pid] = (qtyByProduct[pid] || 0) + Math.max(0, Math.floor(Number(i.quantity || 0)));
+                    });
+
+                    // 1) خصم الكميات من المخزون (كانت أُضيفت عند الاعتماد) دون النزول تحت الصفر
+                    Object.keys(qtyByProduct).forEach(pid => {
+                        const p = allProducts.find(x => String(x.id) === pid);
+                        if (p) u[`products/${pid}/quantity`] = Math.max(0, Number(p.quantity || 0) - qtyByProduct[pid]);
+                    });
+
+                    // 2) إلغاء سجل المرتجع المرتبط
+                    if (rec?.id) u[`returns/${rec.id}`] = null;
+
+                    // 3) إرجاع كميات الطلب المسترجعة لما قبل الاعتماد وإعادة حالة الطلب
+                    const o = allOrders.find(x => x.id === r.orderId);
+                    if (o) {
+                        Object.keys(qtyByProduct).forEach(pid => {
+                            const cur = Number(o.returnedQuantities?.[pid] || 0);
+                            const next = Math.max(0, cur - qtyByProduct[pid]);
+                            u[`orders/${o.id}/returnedQuantities/${pid}`] = next > 0 ? next : null;
+                        });
+                        if (o.status === 'returned') {
+                            const others = {};
+                            returnsCache.filter(x => x.orderId === o.id && x.id !== rec?.id && x.status !== 'cancelled')
+                                .forEach(x => (x.items || []).forEach(i => { const k = String(i.productId || ''); if (k) others[k] = (others[k] || 0) + Number(i.quantity || 0); }));
+                            const stillFull = (o.items || []).every(oi => Number(oi.quantity || 0) <= (others[String(oi.productId || '')] || 0));
+                            if (!stillFull) {
+                                u[`orders/${o.id}/status`] = (rec?.originalStatus && rec.originalStatus !== 'returned') ? rec.originalStatus : 'delivered';
+                                u[`orders/${o.id}/returnedAt`] = null;
+                            }
+                        }
+                    }
+                    u[`returnRequests/${requestId}/rejectedAfterApproval`] = true;
+                    u[`returnRequests/${requestId}/returnId`] = null;
+                    u[`returnRequests/${requestId}/approvedAt`] = null;
+                }
+
                 u[`returnRequests/${requestId}/status`] = 'rejected';
-                u[`returnRequests/${requestId}/rejectionReason`] = reason;
+                u[`returnRequests/${requestId}/rejectionReason`] = cleanReason;
                 u[`returnRequests/${requestId}/rejectedAt`] = rejectedAt;
                 if (r.phoneHash) {
                     u[`returnRequestIndex/${r.phoneHash}/${requestId}/status`] = 'rejected';
-                    u[`returnRequestIndex/${r.phoneHash}/${requestId}/rejectionReason`] = reason;
+                    u[`returnRequestIndex/${r.phoneHash}/${requestId}/rejectionReason`] = cleanReason;
                     u[`returnRequestIndex/${r.phoneHash}/${requestId}/rejectedAt`] = rejectedAt;
+                    if (afterApproval) {
+                        u[`returnRequestIndex/${r.phoneHash}/${requestId}/returnId`] = null;
+                        u[`returnRequestIndex/${r.phoneHash}/${requestId}/approvedAt`] = null;
+                    }
                 }
                 await update(ref(database), u);
+                await loadReturns();
                 await refreshReturns();
-                showToast('❌ تم الرفض - الطلب محفوظ 24 ساعة');
-            } catch (e) { showToast('❌ فشل', 'error'); }
+                showToast(afterApproval ? '❌ تم رفض المرتجع والتراجع عن الاعتماد - لم تُسلَّم أي أموال' : '❌ تم الرفض - الطلب محفوظ 24 ساعة');
+            } catch (e) {
+                console.error(e);
+                showToast('❌ فشل: ' + (e.message || ''), 'error');
+            } finally { if (afterApproval) hidePageLoading(); }
         };
         
         // ============================================================
