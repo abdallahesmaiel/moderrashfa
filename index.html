@@ -1956,6 +1956,48 @@
         .deposit-check{display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:800;font-size:13px}
         .deposit-check input{width:20px;height:20px;accent-color:#10b981;flex:none}
         .deposit-box small{display:block;margin-top:6px;font-size:11px;font-weight:700;color:var(--text-secondary);line-height:1.8}
+
+        /* ===== التجار والموافقات ===== */
+        .vx-box{background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:16px;margin-bottom:16px}
+        .vx-box h4,.vx-h{font-size:15px;font-weight:800;color:var(--gold-300);margin:0 0 12px}
+        .vx-h{margin:20px 0 12px}
+        .vx-form{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px}
+        .vx-wide{grid-column:1/-1}
+        .vx-hint{display:block;margin-top:10px;font-size:11px;color:var(--text-muted);font-weight:600;line-height:1.8}
+        .vx-card{background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:14px;margin-bottom:12px}
+        .vx-card.susp{opacity:.7;border-color:rgba(239,68,68,.4)}
+        .vx-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+        .vx-name{font-weight:900;font-size:15px;color:var(--text-primary)}
+        .vx-sub{font-size:12px;color:var(--text-secondary);font-weight:600;flex:1;min-width:120px}
+        .vx-pill{padding:3px 10px;border-radius:99px;font-size:11px;font-weight:800;background:rgba(16,185,129,.15);color:#6ee7b7}
+        .vx-pill.bad{background:rgba(239,68,68,.15);color:#fca5a5}.vx-pill.wait{background:rgba(245,158,11,.15);color:#fcd34d}
+        .vx-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+        .vx-stat{background:var(--bg-primary);border:1px solid var(--border-color);border-radius:10px;padding:8px 10px}
+        .vx-stat small{display:block;font-size:11px;color:var(--text-muted);font-weight:700}
+        .vx-stat b{font-size:15px;font-weight:900;color:var(--text-primary)}
+        .vx-stat.key{border-color:var(--gold-500)}.vx-stat.key b{color:var(--gold-300)}
+        .vx-act{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+        .vx-act .form-input{width:90px;padding:7px 10px}
+        .vx-inv{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg-tertiary);border:1px dashed var(--border-color);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;font-size:12px;font-weight:700}
+        .vx-inv .lnk{flex:1;min-width:160px;direction:ltr;text-align:left;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .vx-ap{display:grid;grid-template-columns:120px 1fr;gap:14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:12px;margin-bottom:12px}
+        .vx-ap img{width:120px;height:120px;object-fit:cover;border-radius:12px;background:var(--bg-primary)}
+        .vx-ap h5{font-size:15px;font-weight:900;margin:0 0 4px}
+        .vx-ap p{font-size:12px;color:var(--text-secondary);line-height:1.8;margin:4px 0;max-height:64px;overflow:auto}
+        .vx-ap .meta{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+        .vx-ov{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:16px}
+        .vx-ov.show{display:flex}
+        .vx-md{width:100%;max-width:420px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:18px}
+        .vx-md h4{margin:0 0 12px;font-size:15px;font-weight:900;color:var(--gold-300)}
+        .vx-md .form-input{margin-bottom:10px}
+        .vx-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+        .vx-held{background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(245,158,11,.03));border:1px solid rgba(245,158,11,.45);border-radius:var(--radius-lg);padding:14px;margin-bottom:16px}
+        .vx-held>h4{font-size:14px;font-weight:900;color:#fcd34d;margin:0 0 10px}
+        .vx-ho{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px}
+        .vx-ho-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;font-weight:800;margin-bottom:6px}
+        .vx-ho-h .id{color:var(--gold-300)}
+        .vx-part{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;font-weight:700;padding:4px 0;color:var(--text-secondary)}
+        @media(max-width:600px){.vx-form{grid-template-columns:1fr}.vx-ap{grid-template-columns:90px 1fr}.vx-ap img{width:90px;height:90px}}
 </style>
 <style id="pro-admin-enhancements">
 /* toasts */
@@ -2113,6 +2155,8 @@
             <button class="tab" onclick="window.switchTab('promo')"><i class="fa-solid fa-sliders-h"></i> العروض الحصرية</button>
             <button class="tab" onclick="window.switchTab('analytics')"><i class="fa-solid fa-chart-simple"></i> التحليلات</button>
             <button class="tab" onclick="window.switchTab('returns')"><i class="fa-solid fa-rotate-left"></i> المرتجعات <span class="tab-badge hidden" id="returnsBadge">0</span></button>
+            <button class="tab" onclick="window.switchTab('vendors')"><i class="fa-solid fa-store"></i> التجار</button>
+            <button class="tab" onclick="window.switchTab('approvals')"><i class="fa-solid fa-circle-check"></i> موافقات المنتجات <span class="tab-badge warning hidden" id="vxApprBadge">0</span></button>
         </div>
 
         <!-- ===== Panel: Orders ===== -->
@@ -2764,6 +2808,41 @@
                 <div id="analyticsContent"><div class="empty-state"><i class="fa-solid fa-chart-bar"></i><h3>جاري التحميل...</h3></div></div>
             </div>
         </div>
+
+        <!-- ===== Panel: Vendors ===== -->
+        <div class="panel" id="panel-vendors">
+            <div class="card">
+                <div class="card-header"><div class="card-title"><i class="fa-solid fa-store"></i> التجار</div></div>
+                <div class="vx-box">
+                    <h4>🔗 إنشاء رابط دعوة لتاجر جديد</h4>
+                    <div class="vx-form">
+                        <div><label class="form-label">اسم التاجر / ملاحظة</label><input id="vxInvNote" class="form-input" placeholder="مثال: متجر أحمد للإلكترونيات" maxlength="60"></div>
+                        <div><label class="form-label">عمولة المتجر %</label><input id="vxInvRate" type="number" class="form-input" min="0" max="100" step="0.5" value="10"></div>
+                        <div class="vx-wide"><label class="form-label">رابط صفحة التاجر</label><input id="vxInvBase" class="form-input" dir="ltr" placeholder="https://your-site.com/vendor.html"></div>
+                    </div>
+                    <button class="btn btn-gold btn-sm" onclick="window.vxCreateInvite()"><i class="fa-solid fa-link"></i> إنشاء رابط الدعوة</button>
+                    <small class="vx-hint">يصلح الرابط لتاجر واحد فقط، وبعد التسجيل يتوقف تلقائياً. التاجر يختار اسم المستخدم والرقم السري بنفسه.</small>
+                </div>
+                <div id="vxInvites"></div>
+                <h4 class="vx-h">🏪 التجار المسجلون <span id="vxCount"></span></h4>
+                <div id="vxList"></div>
+            </div>
+        </div>
+
+        <!-- ===== Panel: Approvals ===== -->
+        <div class="panel" id="panel-approvals">
+            <div class="card">
+                <div class="card-header"><div class="card-title"><i class="fa-solid fa-circle-check"></i> موافقات منتجات التجار</div></div>
+                <div id="vxApprovals"></div>
+            </div>
+        </div>
+
+        <!-- vendor prompt modal -->
+        <div class="vx-ov" id="vxAskOv"><div class="vx-md">
+            <h4 id="vxAskTitle">—</h4>
+            <div id="vxAskFields"></div>
+            <div class="vx-btns"><button class="btn btn-outline btn-sm" id="vxAskNo">إلغاء</button><button class="btn btn-gold btn-sm" id="vxAskYes">تأكيد</button></div>
+        </div></div>
 
         <!-- ===== Panel: Returns (محسّن) ===== -->
         <div class="panel" id="panel-returns">
@@ -4356,6 +4435,7 @@
                 allProducts = p;
                 updateStats();
                 renderProducts();
+                try { renderApprovals(); renderVendorsPanel(); } catch (_) {}
                 updateAnalyticsCache();
                 updateFlashSalePreview();
                 updatePromoProductsList();
@@ -4403,6 +4483,7 @@
                     <img class="product-img-admin" src="${p.image || ''}" alt="${escapeHtml(p.name || '')}" loading="lazy" onerror="this.style.background='var(--bg-primary)';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2240%22>🏪</text></svg>';">
                     <div class="product-card-body">
                         <h4>${escapeHtml(p.name || '---')}</h4>
+                        ${p.vendorId ? `<div style="margin-bottom:6px;font-size:11px;font-weight:800;color:${p.approval === 'approved' ? '#6ee7b7' : (p.approval === 'rejected' ? '#fca5a5' : '#fcd34d')}">🏪 ${escapeHtml(p.vendorName || 'تاجر')} — ${p.approval === 'approved' ? 'معتمد' : (p.approval === 'rejected' ? 'مرفوض' : 'بانتظار الموافقة')}</div>` : ''}
                         <div style="margin-bottom:6px;"><span class="category-badge-admin"><i class="fa-solid ${getCategoryIcon(cat)}"></i> ${getCategoryEmoji(cat)} ${cat}</span>${p.needsDetails ? ' <span class="category-badge-admin" style="background:rgba(201,169,110,.15);color:var(--gold-300);" title="يطلب تفاصيل من العميل">✍️ يطلب تفاصيل</span>' : ''}</div>
                         <div class="product-meta">${ph}<span class="stock-indicator stock-${lvl}">📦 ${lbl}</span></div>
                         <div class="stock-bar"><div class="stock-bar-fill ${barCls}" style="width:${pct}%"></div></div>
@@ -5717,6 +5798,7 @@
                                 await updateMonthlySales(); 
                             }
                             else if (o.status === 'rejected') { await recordRejectedAnalytics(o); await sendWhatsApp(o.phone, msgRejected(o), 'رفض'); }
+                            if (['delivered','rejected','returned'].includes(o.status)) reconcileVendorParts();
                         }, 300);
                     }
                     previousStatuses[o.id] = o.status;
@@ -5807,6 +5889,10 @@
             
             // ✅ فلترة الطلبات - استثناء المخفية من الصفحة
             let f = allOrders.filter(o => !hiddenOrderIds.has(o.id));
+            // طلبات فيها منتجات تجار لم يجهزوها كلها: لا تظهر في القائمة العادية قبل جاهزية الجميع
+            const heldOrders = f.filter(o => isOrderHeld(o));
+            f = f.filter(o => !isOrderHeld(o));
+            const heldHtml = buildHeldOrdersHtml(heldOrders);
             {
                 const cnt = { all: f.length, pending: f.filter(o => o.status === 'pending').length, active: f.filter(o => o.status === 'accepted' || o.status === 'delivering').length, completed: f.filter(o => o.status === 'delivered').length };
                 Object.keys(cnt).forEach(k => { const el = document.getElementById('fc-' + k); if (el) el.textContent = cnt[k]; });
@@ -5821,11 +5907,11 @@
             }
             
             if (!f.length) { 
-                c.innerHTML = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>لا توجد طلبات</h3><p style="font-size:12px;color:var(--text-muted);margin-top:8px;">الطلبات المكتملة/المرفوضة تختفي من هنا بعد 5 دقائق (لكنها محفوظة 24 ساعة للاسترجاع)</p></div>'; 
+                c.innerHTML = heldHtml + '<div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>لا توجد طلبات</h3><p style="font-size:12px;color:var(--text-muted);margin-top:8px;">الطلبات المكتملة/المرفوضة تختفي من هنا بعد 5 دقائق (لكنها محفوظة 24 ساعة للاسترجاع)</p></div>'; 
                 return; 
             }
             
-            c.innerHTML = f.map(o => {
+            c.innerHTML = heldHtml + f.map(o => {
                 const date = o.createdAt ? new Date(o.createdAt).toLocaleString('ar-EG') : '';
                 const isRej = o.status === 'rejected', isDone = o.status === 'delivered', isReturned = o.status === 'returned';
                 const cIdx = STATUS_FLOW.indexOf(o.status);
@@ -8105,16 +8191,243 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         // ============================================================
         // ===== Tab Switching =====
         // ============================================================
+
+        // ============================================================
+        // ===== التجار (Marketplace) =====
+        // ============================================================
+        let vxVendors = {}, vxInvites = {}, vxParts = {}, vxPayouts = {}, vxListening = false;
+        const vxFinalizing = new Set();
+        const vxR2 = n => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+        const vxFmt = n => { const v = vxR2(n); return (v % 1 === 0 ? String(v) : v.toFixed(2)); };
+        const vxItems = p => Array.isArray(p?.items) ? p.items : Object.values(p?.items || {});
+        const vxSub = p => vxR2(vxItems(p).reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 0), 0));
+        const vxPartsOf = oid => vxParts[oid] || [];
+        const vxVendorName = vid => vxVendors[vid]?.name || 'تاجر';
+
+        function isOrderHeld(o) {
+            if (!o || o.status !== 'pending') return false;
+            const ps = vxPartsOf(o.id);
+            return ps.length > 0 && ps.some(p => p.status !== 'ready');
+        }
+        const VX_ST = { pending: ['🆕 لم يبدأ', 'wait'], preparing: ['🛠️ قيد التجهيز', 'wait'], ready: ['✅ جاهز', ''], unavailable: ['⚠️ غير متوفر', 'bad'], cancelled: ['🚫 ملغي', 'bad'], delivered: ['📦 مسلَّم', ''], returned: ['↩️ مرتجع', 'bad'] };
+        function buildHeldOrdersHtml(list) {
+            if (!list.length) return '';
+            return `<div class="vx-held"><h4>⏳ بانتظار جاهزية التجار (${list.length}) — سيظهر الطلب في القائمة بعد أن يجهز كل التجار منتجاتهم</h4>` + list.map(o => `
+                <div class="vx-ho"><div class="vx-ho-h"><span class="id">#${escapeHtml(String(o.id).slice(-8))}</span><span>${escapeHtml(o.recipientName || '')}</span><span style="color:var(--text-muted);font-weight:600">${o.createdAt ? new Date(o.createdAt).toLocaleString('ar-EG') : ''}</span>
+                    <button class="btn btn-danger btn-sm" style="margin-inline-start:auto" onclick="window.openRejectModal('${o.id}')">❌ رفض الطلب</button></div>
+                    ${vxPartsOf(o.id).map(p => { const [l, c] = VX_ST[p.status] || [p.status, '']; return `<div class="vx-part"><b style="color:var(--text-primary)">🏪 ${escapeHtml(vxVendorName(p.vendorId))}</b><span class="vx-pill ${c}">${l}</span><span>${vxItems(p).length} صنف — ${vxFmt(vxSub(p))} ج</span>${p.status === 'unavailable' ? `<span style="color:#fca5a5">${escapeHtml(p.unavailableNote || 'بدون سبب')}</span>` : ''}</div>`; }).join('')}
+                    ${vxItems({ items: o.items }).some(i => !i.vendorId) && vxPartsOf(o.id).length ? '<div class="vx-part">🏬 منتجات المتجر نفسه جاهزة دائماً</div>' : ''}
+                </div>`).join('') + '</div>';
+        }
+
+        function setupVendorListeners() {
+            if (vxListening || !database) return; vxListening = true;
+            onValue(ref(database, 'vendors'), s => { vxVendors = s.val() || {}; renderVendorsPanel(); renderApprovals(); reconcileVendorParts(); }, e => console.warn('vendors', e));
+            onValue(ref(database, 'vendorInvites'), s => { vxInvites = s.val() || {}; renderVendorsPanel(); }, e => console.warn('invites', e));
+            onValue(ref(database, 'vendorPayouts'), s => { vxPayouts = s.val() || {}; renderVendorsPanel(); }, e => console.warn('payouts', e));
+            onValue(ref(database, 'vendorOrders'), s => {
+                const by = {}, d = s.val() || {};
+                Object.keys(d).forEach(vid => Object.keys(d[vid] || {}).forEach(oid => { (by[oid] = by[oid] || []).push({ ...d[vid][oid], vendorId: vid, id: oid }); }));
+                vxParts = by;
+                if (document.getElementById('panel-orders')?.classList.contains('active')) renderOrders();
+                renderVendorsPanel(); reconcileVendorParts();
+            }, e => console.warn('vendorOrders', e));
+        }
+
+        // مطابقة حالة الطلب الرئيسي مع أجزاء التجار (تسليم ← عمولة | رفض ← إلغاء | مرتجع)
+        async function reconcileVendorParts() {
+            if (!database || !allOrders?.length || !Object.keys(vxVendors).length) return;
+            for (const o of allOrders) {
+                const ps = vxPartsOf(o.id); if (!ps.length) continue;
+                for (const p of ps) {
+                    const key = o.id + '|' + p.vendorId + '|' + o.status;
+                    if (vxFinalizing.has(key)) continue;
+                    const path = `vendorOrders/${p.vendorId}/${o.id}`;
+                    try {
+                        if (o.status === 'delivered' && p.status !== 'delivered' && !['cancelled', 'returned'].includes(p.status)) {
+                            vxFinalizing.add(key);
+                            const rate = Number(vxVendors[p.vendorId]?.commission) || 0, gross = vxSub(p);
+                            const commission = vxR2(gross * rate / 100);
+                            await update(ref(database, path), { status: 'delivered', deliveredAt: o.deliveredAt || Date.now(), commissionRate: rate, commissionAmount: commission, netAmount: vxR2(gross - commission), grossAmount: gross });
+                        } else if (o.status === 'rejected' && !['cancelled', 'delivered'].includes(p.status)) {
+                            vxFinalizing.add(key);
+                            await update(ref(database, path), { status: 'cancelled', cancelledAt: Date.now() });
+                        } else if (o.status === 'returned' && p.status !== 'returned') {
+                            vxFinalizing.add(key);
+                            await update(ref(database, path), { status: 'returned', returnedAt: Date.now(), netAmount: 0, commissionAmount: 0 });
+                        }
+                    } catch (e) { vxFinalizing.delete(key); console.warn('vendor part sync', e); }
+                }
+            }
+        }
+
+        // ---- نافذة إدخال صغيرة ----
+        function vxAsk(title, fields) {
+            return new Promise(res => {
+                const ov = document.getElementById('vxAskOv');
+                document.getElementById('vxAskTitle').textContent = title;
+                document.getElementById('vxAskFields').innerHTML = fields.map((f, i) => f.type === 'textarea'
+                    ? `<textarea class="form-input" id="vxF${i}" placeholder="${escapeHtml(f.ph || '')}" style="min-height:80px">${escapeHtml(f.value || '')}</textarea>`
+                    : `<input class="form-input" id="vxF${i}" type="${f.type || 'text'}" placeholder="${escapeHtml(f.ph || '')}" value="${escapeHtml(f.value ?? '')}" ${f.step ? `step="${f.step}"` : ''} ${f.min != null ? `min="${f.min}"` : ''}>`).join('');
+                ov.classList.add('show');
+                const done = v => { ov.classList.remove('show'); document.getElementById('vxAskYes').onclick = document.getElementById('vxAskNo').onclick = null; res(v); };
+                document.getElementById('vxAskYes').onclick = () => done(fields.map((_, i) => document.getElementById('vxF' + i).value));
+                document.getElementById('vxAskNo').onclick = () => done(null);
+                setTimeout(() => document.getElementById('vxF0')?.focus(), 50);
+            });
+        }
+
+        // ---- الدعوات ----
+        function vxBaseUrl() {
+            let b = ''; try { b = localStorage.getItem('vx_base_url') || ''; } catch (_) {}
+            return b || (location.origin + location.pathname.replace(/[^/]*$/, '') + 'vendor.html');
+        }
+        window.vxCreateInvite = async function() {
+            const note = document.getElementById('vxInvNote').value.trim();
+            const rate = parseFloat(document.getElementById('vxInvRate').value);
+            const base = document.getElementById('vxInvBase').value.trim() || vxBaseUrl();
+            if (!(rate >= 0 && rate <= 100)) { showToast('⚠️ العمولة من 0 إلى 100', 'error'); return; }
+            try { localStorage.setItem('vx_base_url', base); } catch (_) {}
+            const bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
+            const token = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+            try {
+                await set(ref(database, 'vendorInvites/' + token), { note, commission: rate, createdAt: Date.now() });
+                document.getElementById('vxInvNote').value = '';
+                const link = base + (base.includes('?') ? '&' : '?') + 'invite=' + token;
+                try { await navigator.clipboard.writeText(link); showToast('✅ تم إنشاء الرابط ونسخه'); } catch (_) { showToast('✅ تم إنشاء الرابط'); }
+            } catch (e) { console.error(e); showToast('❌ تعذر إنشاء الدعوة (راجع قواعد Firebase)', 'error'); }
+        };
+        window.vxCopyInvite = async function(token) {
+            const base = document.getElementById('vxInvBase').value.trim() || vxBaseUrl();
+            const link = base + (base.includes('?') ? '&' : '?') + 'invite=' + token;
+            try { await navigator.clipboard.writeText(link); showToast('✅ تم نسخ الرابط'); } catch (_) { prompt('انسخ الرابط:', link); }
+        };
+        window.vxShareInvite = function(token) {
+            const base = document.getElementById('vxInvBase').value.trim() || vxBaseUrl();
+            const link = base + (base.includes('?') ? '&' : '?') + 'invite=' + token;
+            window.open('https://wa.me/?text=' + encodeURIComponent('أهلاً بك! هذا رابط تسجيلك كتاجر في متجرنا:\n' + link), '_blank', 'noopener');
+        };
+        window.vxDeleteInvite = async function(token) {
+            if (!await window.proConfirm('حذف رابط الدعوة؟ لن يعمل بعد الحذف.')) return;
+            try { await remove(ref(database, 'vendorInvites/' + token)); showToast('تم الحذف'); } catch (e) { showToast('❌ تعذر الحذف', 'error'); }
+        };
+
+        // ---- التجار ----
+        function vxAccount(vid) {
+            let gross = 0, comm = 0, net = 0, active = 0, ready = 0, waiting = 0;
+            Object.values(vxParts).forEach(ps => ps.forEach(p => {
+                if (p.vendorId !== vid) return;
+                if (p.status === 'delivered') { gross += vxSub(p); comm += Number(p.commissionAmount || 0); net += Number(p.netAmount || 0); }
+                else if (p.status === 'ready') ready++; else if (['pending', 'preparing'].includes(p.status)) waiting++;
+            }));
+            const paid = Object.values(vxPayouts[vid] || {}).reduce((s, p) => s + Number(p.amount || 0), 0);
+            return { gross: vxR2(gross), comm: vxR2(comm), net: vxR2(net), paid: vxR2(paid), bal: vxR2(net - paid), ready, waiting };
+        }
+        function renderVendorsPanel() {
+            const baseEl = document.getElementById('vxInvBase');
+            if (baseEl && !baseEl.value) baseEl.value = vxBaseUrl();
+            const invBox = document.getElementById('vxInvites'), list = document.getElementById('vxList');
+            if (!invBox || !list) return;
+            const invs = Object.entries(vxInvites).sort((x, y) => (y[1].createdAt || 0) - (x[1].createdAt || 0));
+            const open = invs.filter(([, v]) => !v.usedBy);
+            invBox.innerHTML = open.length ? `<h4 class="vx-h">📨 دعوات لم تُستخدم (${open.length})</h4>` + open.map(([t, v]) => `
+                <div class="vx-inv"><span>${escapeHtml(v.note || 'بدون اسم')}</span><span class="vx-pill wait">عمولة ${vxFmt(v.commission)}%</span><span class="lnk">…${t.slice(-10)}</span>
+                <button class="btn btn-outline btn-sm" onclick="window.vxCopyInvite('${t}')"><i class="fa-solid fa-copy"></i> نسخ</button>
+                <button class="btn btn-whatsapp btn-sm" onclick="window.vxShareInvite('${t}')"><i class="fa-brands fa-whatsapp"></i></button>
+                <button class="btn btn-danger btn-sm" onclick="window.vxDeleteInvite('${t}')"><i class="fa-solid fa-trash"></i></button></div>`).join('') : '';
+            const vs = Object.entries(vxVendors).sort((x, y) => (y[1].createdAt || 0) - (x[1].createdAt || 0));
+            const cnt = document.getElementById('vxCount'); if (cnt) cnt.textContent = vs.length ? `(${vs.length})` : '';
+            if (!vs.length) { list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-store"></i><h3>لا يوجد تجار بعد</h3><p style="font-size:12px;color:var(--text-muted);margin-top:8px">أنشئ رابط دعوة وأرسله للتاجر ليسجل حسابه.</p></div>'; return; }
+            list.innerHTML = vs.map(([vid, v]) => {
+                const mine = (allProducts || []).filter(p => p.vendorId === vid);
+                const pend = mine.filter(p => (p.approval || 'pending') === 'pending').length, appr = mine.filter(p => p.approval === 'approved').length;
+                const ac = vxAccount(vid), susp = v.status === 'suspended';
+                return `<div class="vx-card ${susp ? 'susp' : ''}">
+                    <div class="vx-top"><span class="vx-name">🏪 ${escapeHtml(v.name || '—')}</span><span class="vx-pill ${susp ? 'bad' : ''}">${susp ? 'موقوف' : 'نشط'}</span>
+                        <span class="vx-sub">@${escapeHtml(v.username || '')} — ${v.phone ? `<a href="tel:${escapeHtml(v.phone)}" style="color:inherit">${escapeHtml(v.phone)}</a>` : ''}</span></div>
+                    <div class="vx-stats">
+                        <div class="vx-stat key"><small>الرصيد المستحق له</small><b>${vxFmt(ac.bal)} ج</b></div>
+                        <div class="vx-stat"><small>مبيعات مسلَّمة</small><b>${vxFmt(ac.gross)} ج</b></div>
+                        <div class="vx-stat"><small>عمولتك</small><b>${vxFmt(ac.comm)} ج</b></div>
+                        <div class="vx-stat"><small>تم دفعه له</small><b>${vxFmt(ac.paid)} ج</b></div>
+                        <div class="vx-stat"><small>المنتجات</small><b>${mine.length} <span style="font-size:11px;color:var(--text-muted)">(${appr} معتمد / ${pend} معلق)</span></b></div>
+                        <div class="vx-stat"><small>طلبات عنده</small><b>${ac.waiting} قيد التجهيز / ${ac.ready} جاهز</b></div>
+                    </div>
+                    <div class="vx-act">
+                        <span style="font-size:12px;font-weight:800;color:var(--text-secondary)">العمولة %</span>
+                        <input class="form-input" type="number" min="0" max="100" step="0.5" id="vxRate-${vid}" value="${Number(v.commission) || 0}">
+                        <button class="btn btn-outline btn-sm" onclick="window.vxSaveRate('${vid}')">حفظ</button>
+                        <button class="btn btn-gold btn-sm" onclick="window.vxPayout('${vid}')"><i class="fa-solid fa-money-bill-transfer"></i> تسجيل دفعة</button>
+                        <button class="btn btn-sm ${susp ? 'btn-gold' : 'btn-danger'}" onclick="window.vxToggle('${vid}')">${susp ? '▶️ تفعيل' : '⏸️ إيقاف'}</button>
+                    </div></div>`;
+            }).join('');
+        }
+        window.vxSaveRate = async function(vid) {
+            const r = parseFloat(document.getElementById('vxRate-' + vid)?.value);
+            if (!(r >= 0 && r <= 100)) { showToast('⚠️ العمولة من 0 إلى 100', 'error'); return; }
+            try { await update(ref(database, 'vendors/' + vid), { commission: r }); showToast('✅ تم حفظ العمولة (تسري على الطلبات القادمة)'); } catch (e) { showToast('❌ تعذر الحفظ', 'error'); }
+        };
+        window.vxPayout = async function(vid) {
+            const ac = vxAccount(vid);
+            const v = await vxAsk(`تسجيل دفعة لـ ${vxVendorName(vid)} (المستحق ${vxFmt(ac.bal)} ج)`, [{ type: 'number', ph: 'المبلغ (ج)', value: ac.bal > 0 ? ac.bal : '', step: '0.01', min: 0 }, { type: 'text', ph: 'ملاحظة (مثال: تحويل فودافون كاش)' }]);
+            if (!v) return;
+            const amount = parseFloat(v[0]);
+            if (!(amount > 0)) { showToast('⚠️ اكتب مبلغاً صحيحاً', 'error'); return; }
+            try { await set(push(ref(database, 'vendorPayouts/' + vid)), { amount: vxR2(amount), note: (v[1] || '').trim().slice(0, 120), createdAt: Date.now() }); showToast('✅ تم تسجيل الدفعة'); } catch (e) { showToast('❌ تعذر الحفظ', 'error'); }
+        };
+        window.vxToggle = async function(vid) {
+            const v = vxVendors[vid]; if (!v) return; const susp = v.status !== 'suspended';
+            if (!await window.proConfirm(susp ? `إيقاف "${v.name}"؟ ستختفي منتجاته من المتجر ولن يستطيع الدخول.` : `إعادة تفعيل "${v.name}"؟`)) return;
+            try {
+                const up = { [`vendors/${vid}/status`]: susp ? 'suspended' : 'active' };
+                (allProducts || []).filter(p => p.vendorId === vid).forEach(p => { up[`products/${p.id}/vendorSuspended`] = susp ? true : null; });
+                await update(ref(database), up); showToast(susp ? 'تم إيقاف التاجر' : 'تم تفعيل التاجر');
+            } catch (e) { console.error(e); showToast('❌ تعذر التنفيذ', 'error'); }
+        };
+
+        // ---- موافقات المنتجات ----
+        function renderApprovals() {
+            const box = document.getElementById('vxApprovals'); if (!box) return;
+            const vp = (allProducts || []).filter(p => p.vendorId && p.approval !== 'approved');
+            const pend = vp.filter(p => (p.approval || 'pending') === 'pending'), rej = vp.filter(p => p.approval === 'rejected');
+            const bd = document.getElementById('vxApprBadge'); if (bd) { bd.textContent = pend.length; bd.classList.toggle('hidden', !pend.length); }
+            if (!document.getElementById('panel-approvals')?.classList.contains('active')) return;
+            if (!vp.length) { box.innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-check"></i><h3>لا توجد منتجات بانتظار المراجعة</h3></div>'; return; }
+            const card = (p, rejected) => {
+                const bp = Number(p.price || 0), fp = Number(p.finalPrice ?? bp);
+                return `<div class="vx-ap"><img src="${escapeHtml(p.image || '')}" alt="" loading="lazy">
+                    <div><h5>${escapeHtml(p.name || '—')}</h5>
+                    <div class="meta"><span class="vx-pill">🏪 ${escapeHtml(p.vendorName || vxVendorName(p.vendorId))}</span><span class="vx-pill wait">${escapeHtml(p.category || '')}</span><span class="vx-pill">${vxFmt(fp)} ج${fp < bp ? ` (بدل ${vxFmt(bp)})` : ''}</span><span class="vx-pill">الكمية ${Number(p.quantity) || 0}</span>${p.needsDetails ? '<span class="vx-pill wait">يطلب تفاصيل</span>' : ''}</div>
+                    <p>${escapeHtml(p.description || '')}</p>
+                    ${rejected ? `<p style="color:#fca5a5">سبب الرفض: ${escapeHtml(p.approvalNote || '—')}</p>` : ''}
+                    <div class="vx-act" style="margin-top:8px"><button class="btn btn-gold btn-sm" onclick="window.vxApprove('${p.id}')">✅ اعتماد</button>
+                    ${rejected ? '' : `<button class="btn btn-danger btn-sm" onclick="window.vxReject('${p.id}')">❌ رفض</button>`}
+                    <button class="btn btn-outline btn-sm" onclick="window.openEditModal('${p.id}')"><i class="fa-solid fa-pen"></i> تعديل</button></div></div></div>`;
+            };
+            box.innerHTML = (pend.length ? `<h4 class="vx-h">⏳ بانتظار الموافقة (${pend.length})</h4>` + pend.map(p => card(p, false)).join('') : '')
+                + (rej.length ? `<h4 class="vx-h">❌ مرفوضة (${rej.length})</h4>` + rej.map(p => card(p, true)).join('') : '');
+        }
+        window.vxApprove = async function(pid) {
+            try { await update(ref(database, 'products/' + pid), { approval: 'approved', approvalNote: '', approvedAt: Date.now() }); showToast('✅ تم اعتماد المنتج وظهر في المتجر'); } catch (e) { showToast('❌ تعذر الاعتماد', 'error'); }
+        };
+        window.vxReject = async function(pid) {
+            const v = await vxAsk('سبب رفض المنتج (سيراه التاجر)', [{ type: 'textarea', ph: 'مثال: الصورة غير واضحة / الوصف ناقص' }]);
+            if (!v) return;
+            try { await update(ref(database, 'products/' + pid), { approval: 'rejected', approvalNote: (v[0] || '').trim().slice(0, 200) }); showToast('تم رفض المنتج'); } catch (e) { showToast('❌ تعذر الرفض', 'error'); }
+        };
+
         window.switchTab = function(n) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            const tabs = ['orders','invoice','products','add','coupons','wallets','about','contact','messages','logo','flashsale','promo','analytics','returns'];
+            const tabs = ['orders','invoice','products','add','coupons','wallets','about','contact','messages','logo','flashsale','promo','analytics','returns','vendors','approvals'];
             const idx = tabs.indexOf(n);
             const at = document.querySelectorAll('.tab');
             if (idx >= 0 && at[idx]) at[idx].classList.add('active');
             const pn = document.getElementById('panel-' + n);
             if (pn) pn.classList.add('active');
             if (n === 'orders') renderOrders();
+            if (n === 'vendors') renderVendorsPanel();
+            if (n === 'approvals') renderApprovals();
             if (n === 'invoice') { loadInvoiceSettings(); updateInvoicePreview(); }
             if (n === 'products') renderProducts();
             if (n === 'coupons') renderCoupons();
@@ -8337,6 +8650,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             // تحميل إعداد الرسائل أولاً حتى لا تُرسل رسالة تلقائية قبل معرفة حالة زر التفعيل/الإيقاف.
             await Promise.allSettled([loadMessageAutomationSettings(), loadInvoiceSettings()]);
             if (!window._ordersSetup) { setupOrders(); window._ordersSetup = true; }
+            setupVendorListeners();
             setupPushDatabaseNotifications();
             updateNotificationButton();
             if ('Notification' in window && Notification.permission === 'granted') {
