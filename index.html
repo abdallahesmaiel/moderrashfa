@@ -8495,6 +8495,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                         <button class="btn btn-outline btn-sm" onclick="window.vxSaveRate('${vid}')">حفظ</button>
                         <button class="btn btn-gold btn-sm" onclick="window.vxPayout('${vid}')"><i class="fa-solid fa-money-bill-transfer"></i> تسجيل دفعة</button>
                         <button class="btn btn-sm ${susp ? 'btn-gold' : 'btn-danger'}" onclick="window.vxToggle('${vid}')">${susp ? '▶️ تفعيل' : '⏸️ إيقاف'}</button>
+                        <button class="btn btn-danger btn-sm" onclick="window.vxDeleteVendor('${vid}')"><i class="fa-solid fa-trash"></i> حذف التاجر</button>
                     </div></div>`;
             }).join('');
         }
@@ -8510,6 +8511,19 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             const amount = parseFloat(v[0]);
             if (!(amount > 0)) { showToast('⚠️ اكتب مبلغاً صحيحاً', 'error'); return; }
             try { await set(push(ref(database, 'vendorPayouts/' + vid)), { amount: vxR2(amount), note: (v[1] || '').trim().slice(0, 120), createdAt: Date.now() }); showToast('✅ تم تسجيل الدفعة'); } catch (e) { showToast('❌ تعذر الحفظ', 'error'); }
+        };
+        window.vxDeleteVendor = async function(vid) {
+            const v = vxVendors[vid]; if (!v) return;
+            const mine = (allProducts || []).filter(p => p.vendorId === vid);
+            const ac = vxAccount(vid);
+            const debt = ac.bal > 0 ? `\n⚠️ للتاجر رصيد مستحق ${vxFmt(ac.bal)} ج لم يُدفع بعد!` : '';
+            if (!await window.proConfirm(`⚠️ حذف التاجر "${v.name}" نهائياً؟\n\nسيتم حذف حسابه و${mine.length} منتج من المتجر ولا يمكن التراجع.\n(سجل الطلبات والدفعات يبقى محفوظاً)${debt}`)) return;
+            try {
+                const up = { [`vendors/${vid}`]: null };
+                mine.forEach(p => { up[`products/${p.id}`] = null; });
+                await update(ref(database), up);
+                showToast('🗑️ تم حذف التاجر ومنتجاته');
+            } catch (e) { console.error(e); showToast('❌ تعذر حذف التاجر', 'error'); }
         };
         window.vxToggle = async function(vid) {
             const v = vxVendors[vid]; if (!v) return; const susp = v.status !== 'suspended';
