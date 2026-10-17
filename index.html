@@ -2817,10 +2817,11 @@
                     <h4>🔗 إنشاء رابط دعوة لتاجر جديد</h4>
                     <div class="vx-form">
                         <div><label class="form-label">اسم التاجر / ملاحظة</label><input id="vxInvNote" class="form-input" placeholder="مثال: متجر أحمد للإلكترونيات" maxlength="60"></div>
-                        <div><label class="form-label">عمولة المتجر %</label><input id="vxInvRate" type="number" class="form-input" min="0" max="100" step="0.5" value="10"></div>
+                        <div><label class="form-label">نسبة المتجر % (+ زيادة / - خصم)</label><input id="vxInvRate" type="text" inputmode="text" dir="ltr" class="form-input" placeholder="+15 أو -15" value="-10"></div>
                         <div class="vx-wide"><label class="form-label">رابط صفحة التاجر</label><input id="vxInvBase" class="form-input" dir="ltr" placeholder="https://your-site.com/vendor.html"></div>
                     </div>
                     <button class="btn btn-gold btn-sm" onclick="window.vxCreateInvite()"><i class="fa-solid fa-link"></i> إنشاء رابط الدعوة</button>
+                    <small class="vx-hint">🔹 <b>+15</b> = تاجر جملة: يُضاف 15% فوق سعره ويظهر للعميل بالسعر الأعلى (التاجر ياخد سعره كما كتبه).<br>🔹 <b>-15</b> (أو 15 بدون علامة) = السعر اللي كتبه التاجر يشمل نسبة المتجر: يُخصم 15% منه عند التسوية.<br></small>
                     <small class="vx-hint">يصلح الرابط لتاجر واحد فقط، وبعد التسجيل يتوقف تلقائياً. التاجر يختار اسم المستخدم والرقم السري بنفسه.</small>
                 </div>
                 <div id="vxInvites"></div>
@@ -4436,6 +4437,7 @@
                 updateStats();
                 renderProducts();
                 try { renderApprovals(); renderVendorsPanel(); } catch (_) {}
+                try { vxSyncMarkup(); } catch (_) {}
                 updateAnalyticsCache();
                 updateFlashSalePreview();
                 updatePromoProductsList();
@@ -8204,6 +8206,18 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         const vxFinalizing = new Set();
         const vxR2 = n => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
         const vxFmt = n => { const v = vxR2(n); return (v % 1 === 0 ? String(v) : v.toFixed(2)); };
+        // ===== نسبة المتجر: القيمة المخزنة commission  (موجبة = خصم من سعر التاجر | سالبة = زيادة فوق سعر التاجر) =====
+        function vxParseRate(raw) {
+            let t = String(raw ?? '').trim().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[٫،,]/g, '.').replace(/[%٪\s]/g, '').replace(/[−–—]/g, '-');
+            const m = t.match(/^([+-]?)(\d+(?:\.\d+)?)$/);
+            if (!m) return null;
+            const v = parseFloat(m[2]);
+            if (!(v >= 0 && v <= 100)) return null;
+            return m[1] === '+' && v > 0 ? -v : v;
+        }
+        const vxIsPlus = c => (Number(c) || 0) < 0;
+        const vxRateLabel = c => { c = Number(c) || 0; return c < 0 ? `+${vxFmt(-c)}%` : (c > 0 ? `-${vxFmt(c)}%` : '0%'); };
+        const vxRateInput = c => { c = Number(c) || 0; return c < 0 ? `+${vxFmt(-c)}` : (c > 0 ? `-${vxFmt(c)}` : '0'); };
         const vxItems = p => Array.isArray(p?.items) ? p.items : Object.values(p?.items || {});
         const vxSub = p => vxR2(vxItems(p).reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 0), 0));
         const vxPartsOf = oid => vxParts[oid] || [];
@@ -8285,7 +8299,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 const vrows = rows.sort((a, b) => b.gross - a.gross).map(r => {
                     const top = Object.entries(r.prods).sort((a, b) => b[1].q - a[1].q).slice(0, 3).map(([n, o]) => `${escapeHtml(n)} (${o.q})`).join('، ') || '—';
                     return `<div style="background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius);padding:12px 14px;">
-                        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><b style="color:var(--gold-300)">🏪 ${escapeHtml(vxVendorName(r.vid))}</b><span style="font-size:11px;color:var(--text-muted)">عمولة ${vxFmt(vxVendors[r.vid]?.commission || 0)}%</span></div>
+                        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><b style="color:var(--gold-300)">🏪 ${escapeHtml(vxVendorName(r.vid))}</b><span style="font-size:11px;color:var(--text-muted)">نسبة ${vxRateLabel(vxVendors[r.vid]?.commission)}${vxIsPlus(vxVendors[r.vid]?.commission) ? ' (جملة)' : ''}</span></div>
                         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;margin-top:8px;font-size:12px">
                             <div>مبيعات الشهر<br><b>${vxFmt(r.gross)} ج</b></div><div>عمولة المتجر<br><b style="color:#6ee7b7">${vxFmt(r.comm)} ج</b></div>
                             <div>صافي التاجر<br><b>${vxFmt(r.net)} ج</b></div><div>رصيده المستحق<br><b style="color:var(--gold-300)">${vxFmt(r.allNet - r.paid)} ج</b></div>
@@ -8301,10 +8315,37 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             } catch (e) { console.warn('vxAnalyticsHtml', e); return ''; }
         }
 
+        // ===== زيادة أسعار منتجات تجار الجملة (+%) تلقائياً — وتُرجَع لو التاجر بقى (-%) =====
+        let vxVendorsLoaded = false; const vxMkBusy = new Set();
+        async function vxSyncMarkup() {
+            if (!database || !vxVendorsLoaded || !allProducts.length) return;
+            const up = {};
+            allProducts.forEach(p => {
+                if (!p.vendorId || p.approval !== 'approved' || !vxVendors[p.vendorId]) return;
+                const c = Number(vxVendors[p.vendorId].commission) || 0, rate = c < 0 ? -c : 0;
+                const price = Number(p.price) || 0, fin = Number(p.finalPrice ?? p.price) || 0, mk = p.mk;
+                const intact = !!mk && vxR2(price) === vxR2(mk.price) && vxR2(fin) === vxR2(mk.final);
+                const base = intact ? { price: Number(mk.basePrice), final: Number(mk.baseFinal) } : { price, final: fin };
+                const k = `products/${p.id}`;
+                if (rate > 0) {
+                    if (intact && Number(mk.rate) === rate) return;
+                    const np = vxR2(base.price * (1 + rate / 100)), nf = vxR2(base.final * (1 + rate / 100));
+                    up[k + '/price'] = np; up[k + '/finalPrice'] = nf;
+                    up[k + '/mk'] = { rate, price: np, final: nf, basePrice: base.price, baseFinal: base.final };
+                } else if (mk) {
+                    if (intact) { up[k + '/price'] = base.price; up[k + '/finalPrice'] = base.final; }
+                    up[k + '/mk'] = null;
+                }
+            });
+            const keys = Object.keys(up); if (!keys.length) return;
+            const sig = JSON.stringify(up); if (vxMkBusy.has(sig)) return; vxMkBusy.add(sig);
+            try { await update(ref(database), up); } catch (e) { console.warn('markup sync', e); } finally { setTimeout(() => vxMkBusy.delete(sig), 4000); }
+        }
+
         function setupVendorListeners() {
             setupLiveAnalytics();
             if (vxListening || !database) return; vxListening = true;
-            onValue(ref(database, 'vendors'), s => { vxVendors = s.val() || {}; renderVendorsPanel(); renderApprovals(); reconcileVendorParts(); }, e => console.warn('vendors', e));
+            onValue(ref(database, 'vendors'), s => { vxVendors = s.val() || {}; vxVendorsLoaded = true; renderVendorsPanel(); renderApprovals(); reconcileVendorParts(); vxSyncMarkup(); }, e => console.warn('vendors', e));
             onValue(ref(database, 'vendorInvites'), s => { vxInvites = s.val() || {}; renderVendorsPanel(); }, e => console.warn('invites', e));
             onValue(ref(database, 'vendorPayouts'), s => { vxPayouts = s.val() || {}; renderVendorsPanel(); try { if (document.getElementById('panel-analytics')?.classList.contains('active') && analyticsCache) renderAnalyticsHTML(analyticsCache); } catch (_) {} }, e => console.warn('payouts', e));
             onValue(ref(database, 'vendorOrders'), s => {
@@ -8335,9 +8376,11 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                     try {
                         if (o.status === 'delivered' && p.status !== 'delivered' && !['cancelled', 'returned'].includes(p.status)) {
                             vxFinalizing.add(key);
-                            const rate = Number(vxVendors[p.vendorId]?.commission) || 0, gross = vxSub(p);
-                            const commission = vxR2(gross * rate / 100);
-                            await update(ref(database, path), { status: 'delivered', deliveredAt: o.deliveredAt || Date.now(), commissionRate: rate, commissionAmount: commission, netAmount: vxR2(gross - commission), grossAmount: gross });
+                            const cv = Number(vxVendors[p.vendorId]?.commission) || 0, rate = Math.abs(cv), gross = vxSub(p);
+                            // زيادة (+): السعر عند العميل = سعر التاجر × (1+نسبة) ← التاجر ياخد سعره الأصلي والباقي عمولة
+                            // خصم (-): السعر يشمل النسبة ← العمولة = السعر × النسبة
+                            const commission = cv < 0 ? vxR2(gross - gross / (1 + rate / 100)) : vxR2(gross * rate / 100);
+                            await update(ref(database, path), { status: 'delivered', deliveredAt: o.deliveredAt || Date.now(), commissionRate: rate, commissionMode: cv < 0 ? 'plus' : 'minus', commissionAmount: commission, netAmount: vxR2(gross - commission), grossAmount: gross });
                         } else if (o.status === 'rejected' && !['cancelled', 'delivered'].includes(p.status)) {
                             vxFinalizing.add(key);
                             await update(ref(database, path), { status: 'cancelled', cancelledAt: Date.now() });
@@ -8373,9 +8416,9 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         }
         window.vxCreateInvite = async function() {
             const note = document.getElementById('vxInvNote').value.trim();
-            const rate = parseFloat(document.getElementById('vxInvRate').value);
+            const rate = vxParseRate(document.getElementById('vxInvRate').value);
             const base = document.getElementById('vxInvBase').value.trim() || vxBaseUrl();
-            if (!(rate >= 0 && rate <= 100)) { showToast('⚠️ العمولة من 0 إلى 100', 'error'); return; }
+            if (rate === null) { showToast('⚠️ اكتب النسبة مثل +15 أو -15 (من 0 إلى 100)', 'error'); return; }
             try { localStorage.setItem('vx_base_url', base); } catch (_) {}
             const bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
             const token = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -8420,7 +8463,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             const invs = Object.entries(vxInvites).sort((x, y) => (y[1].createdAt || 0) - (x[1].createdAt || 0));
             const open = invs.filter(([, v]) => !v.usedBy);
             invBox.innerHTML = open.length ? `<h4 class="vx-h">📨 دعوات لم تُستخدم (${open.length})</h4>` + open.map(([t, v]) => `
-                <div class="vx-inv"><span>${escapeHtml(v.note || 'بدون اسم')}</span><span class="vx-pill wait">عمولة ${vxFmt(v.commission)}%</span><span class="lnk">…${t.slice(-10)}</span>
+                <div class="vx-inv"><span>${escapeHtml(v.note || 'بدون اسم')}</span><span class="vx-pill wait">نسبة ${vxRateLabel(v.commission)}</span><span class="lnk">…${t.slice(-10)}</span>
                 <button class="btn btn-outline btn-sm" onclick="window.vxCopyInvite('${t}')"><i class="fa-solid fa-copy"></i> نسخ</button>
                 <button class="btn btn-whatsapp btn-sm" onclick="window.vxShareInvite('${t}')"><i class="fa-brands fa-whatsapp"></i></button>
                 <button class="btn btn-danger btn-sm" onclick="window.vxDeleteInvite('${t}')"><i class="fa-solid fa-trash"></i></button></div>`).join('') : '';
@@ -8447,8 +8490,8 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                         <div class="vx-stat"><small>المرتجعة</small><b style="color:#c4b5fd">${oc.returned}</b></div>
                     </div>
                     <div class="vx-act">
-                        <span style="font-size:12px;font-weight:800;color:var(--text-secondary)">العمولة %</span>
-                        <input class="form-input" type="number" min="0" max="100" step="0.5" id="vxRate-${vid}" value="${Number(v.commission) || 0}">
+                        <span style="font-size:12px;font-weight:800;color:var(--text-secondary)">النسبة % (+ / -)</span>
+                        <input class="form-input" type="text" dir="ltr" style="max-width:90px" placeholder="+15 / -15" id="vxRate-${vid}" value="${vxRateInput(v.commission)}">
                         <button class="btn btn-outline btn-sm" onclick="window.vxSaveRate('${vid}')">حفظ</button>
                         <button class="btn btn-gold btn-sm" onclick="window.vxPayout('${vid}')"><i class="fa-solid fa-money-bill-transfer"></i> تسجيل دفعة</button>
                         <button class="btn btn-sm ${susp ? 'btn-gold' : 'btn-danger'}" onclick="window.vxToggle('${vid}')">${susp ? '▶️ تفعيل' : '⏸️ إيقاف'}</button>
@@ -8456,9 +8499,9 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             }).join('');
         }
         window.vxSaveRate = async function(vid) {
-            const r = parseFloat(document.getElementById('vxRate-' + vid)?.value);
-            if (!(r >= 0 && r <= 100)) { showToast('⚠️ العمولة من 0 إلى 100', 'error'); return; }
-            try { await update(ref(database, 'vendors/' + vid), { commission: r }); showToast('✅ تم حفظ العمولة (تسري على الطلبات القادمة)'); } catch (e) { showToast('❌ تعذر الحفظ', 'error'); }
+            const r = vxParseRate(document.getElementById('vxRate-' + vid)?.value);
+            if (r === null) { showToast('⚠️ اكتب النسبة مثل +15 أو -15 (من 0 إلى 100)', 'error'); return; }
+            try { await update(ref(database, 'vendors/' + vid), { commission: r }); showToast(r < 0 ? '✅ تم الحفظ — أسعار منتجات التاجر ستُزاد تلقائياً' : '✅ تم حفظ النسبة (تسري على الطلبات القادمة)'); } catch (e) { showToast('❌ تعذر الحفظ', 'error'); }
         };
         window.vxPayout = async function(vid) {
             const ac = vxAccount(vid);
