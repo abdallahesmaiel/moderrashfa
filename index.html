@@ -4455,7 +4455,7 @@
         function renderProducts() {
             const g = document.getElementById('productsGrid');
             if (!g) return;
-            let filtered = [...allProducts];
+            let filtered = allProducts.filter(p => !p.vendorId); // منتجات التجار لا تظهر هنا (تُدار من تبويب التجار/الموافقات)
             if (currentCategoryFilter !== 'all') filtered = filtered.filter(p => p.category === currentCategoryFilter);
             if (currentSearchQuery) filtered = filtered.filter(p =>
                 (p.name || '').toLowerCase().includes(currentSearchQuery) ||
@@ -4498,16 +4498,16 @@
         }
 
         window.deleteAllProducts = async function() {
-            if (!allProducts.length) { showToast('ℹ️ لا توجد منتجات للحذف', 'info'); return; }
+            const own = allProducts.filter(p => !p.vendorId);
+            if (!own.length) { showToast('ℹ️ لا توجد منتجات للحذف', 'info'); return; }
             if (!firebaseReady || !database) { showToast('❌ قاعدة البيانات غير متصلة', 'error'); return; }
-            const count = allProducts.length;
-            if (!await window.proConfirm(`⚠️ حذف جميع المنتجات نهائياً؟\n\nسيتم حذف ${count} منتج من Firebase ولا يمكن التراجع عن العملية.`)) return;
+            const count = own.length;
+            if (!await window.proConfirm(`⚠️ حذف جميع منتجات المتجر نهائياً؟\n\nسيتم حذف ${count} منتج من Firebase ولا يمكن التراجع عن العملية.\n(منتجات التجار لن تُحذف)`)) return;
             showPageLoading('جاري حذف جميع المنتجات...', 'يرجى الانتظار');
             try {
-                await remove(ref(database, 'products'));
-                const verify = await get(ref(database, 'products'));
-                if (verify.exists()) throw new Error('بيانات المنتجات ما زالت موجودة في Firebase');
-                allProducts = [];
+                const up = {}; own.forEach(p => { up[`products/${p.id}`] = null; });
+                await update(ref(database), up);
+                allProducts = allProducts.filter(p => p.vendorId);
                 currentSearchQuery = '';
                 currentCategoryFilter = 'all';
                 const search = document.getElementById('productSearchInput');
@@ -4515,7 +4515,7 @@
                 document.querySelectorAll('#categoryFilterTags .filter-tag').forEach(b => b.classList.toggle('active', b.dataset.category === 'all'));
                 renderProducts();
                 updateStats();
-                showToast(`🗑️ تم حذف جميع المنتجات (${count})`, 'success');
+                showToast(`🗑️ تم حذف منتجات المتجر (${count})`, 'success');
             } catch (e) {
                 console.error('deleteAllProducts failed:', e);
                 showToast('❌ فشل حذف جميع المنتجات: ' + (e?.message || 'تحقق من صلاحيات Firebase'), 'error');
@@ -4856,8 +4856,8 @@
             const el = (id) => document.getElementById(id);
             if (el('statOrders')) el('statOrders').textContent = allOrders.length;
             if (el('statPending')) el('statPending').textContent = allOrders.filter(o => ['pending','accepted','delivering'].includes(o.status)).length;
-            if (el('statProducts')) el('statProducts').textContent = allProducts.length;
-            const low = allProducts.filter(p => (p.quantity || 0) <= Math.max(1, Math.ceil((p.initialStock || p.quantity || 0) * 0.05))).length;
+            if (el('statProducts')) el('statProducts').textContent = allProducts.filter(p => !p.vendorId).length;
+            const low = allProducts.filter(p => !p.vendorId && (p.quantity || 0) <= Math.max(1, Math.ceil((p.initialStock || p.quantity || 0) * 0.05))).length;
             if (el('statLowStock')) el('statLowStock').textContent = low;
             if (el('statWarningCard')) el('statWarningCard').classList.toggle('warning-stat', low > 0);
             
@@ -6138,7 +6138,7 @@
             const o = addItemCurrentOrder();
             const orderItems = o ? (Array.isArray(o.items) ? o.items : Object.values(o.items || {})) : [];
             const q = String(document.getElementById('addItemSearch')?.value || '').trim().toLowerCase();
-            let list = allProducts.filter(p => !q || [p.name, p.category, p.barcode, p.description].some(v => String(v || '').toLowerCase().includes(q)));
+            let list = allProducts.filter(p => !p.vendorId).filter(p => !q || [p.name, p.category, p.barcode, p.description].some(v => String(v || '').toLowerCase().includes(q)));
             list.sort((a, b) => ((Number(b.quantity) > 0) - (Number(a.quantity) > 0)) || String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
             const total = list.length; list = list.slice(0, 50);
             if (!list.length) { box.innerHTML = '<div class="ai-empty">لا توجد منتجات مطابقة للبحث</div>'; return; }
@@ -8431,6 +8431,8 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 const mine = (allProducts || []).filter(p => p.vendorId === vid);
                 const pend = mine.filter(p => (p.approval || 'pending') === 'pending').length, appr = mine.filter(p => p.approval === 'approved').length;
                 const ac = vxAccount(vid), susp = v.status === 'suspended';
+                const oc = { total: 0, rejected: 0, returned: 0 };
+                Object.values(vxParts || {}).forEach(a => a.forEach(pt => { if (pt.vendorId !== vid) return; oc.total++; if (pt.status === 'returned') oc.returned++; else if (['cancelled', 'unavailable'].includes(pt.status)) oc.rejected++; }));
                 return `<div class="vx-card ${susp ? 'susp' : ''}">
                     <div class="vx-top"><span class="vx-name">🏪 ${escapeHtml(v.name || '—')}</span><span class="vx-pill ${susp ? 'bad' : ''}">${susp ? 'موقوف' : 'نشط'}</span>
                         <span class="vx-sub">@${escapeHtml(v.username || '')} — ${v.phone ? `<a href="tel:${escapeHtml(v.phone)}" style="color:inherit">${escapeHtml(v.phone)}</a>` : ''}</span></div>
@@ -8440,7 +8442,9 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                         <div class="vx-stat"><small>عمولتك</small><b>${vxFmt(ac.comm)} ج</b></div>
                         <div class="vx-stat"><small>تم دفعه له</small><b>${vxFmt(ac.paid)} ج</b></div>
                         <div class="vx-stat"><small>المنتجات</small><b>${mine.length} <span style="font-size:11px;color:var(--text-muted)">(${appr} معتمد / ${pend} معلق)</span></b></div>
-                        <div class="vx-stat"><small>طلبات عنده</small><b>${ac.waiting} قيد التجهيز / ${ac.ready} جاهز</b></div>
+                        <div class="vx-stat"><small>الطلبات</small><b>${oc.total} <span style="font-size:11px;color:var(--text-muted)">(${ac.waiting} قيد التجهيز / ${ac.ready} جاهز)</span></b></div>
+                        <div class="vx-stat"><small>المرفوضة</small><b style="color:#fca5a5">${oc.rejected}</b></div>
+                        <div class="vx-stat"><small>المرتجعة</small><b style="color:#c4b5fd">${oc.returned}</b></div>
                     </div>
                     <div class="vx-act">
                         <span style="font-size:12px;font-weight:800;color:var(--text-secondary)">العمولة %</span>
