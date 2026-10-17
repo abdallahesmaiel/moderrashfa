@@ -4879,6 +4879,8 @@
         async function syncHomepageCashbox(monthKey) {
             const stat = document.getElementById('statTotalSales');
             if (!stat) return 0;
+            // إذا كانت التحليلات محذوفة/مصفّرة يدوياً فالخزنة تتبعها بالضبط (بدون إعادة بناء تلقائية)
+            if (analyticsSuppressed) { stat.textContent = '0.00 ج'; return 0; }
             try {
                 // الخزنة والتحليلات لهما الآن مصدر واحد فقط: analytics/${monthKey}.
                 // لا نقرأ sales كرقم بديل حتى لا يظهر رقم مختلف عن التحليلات.
@@ -5545,6 +5547,7 @@
                     <h3 style="color:var(--gold-300);margin-bottom:12px;font-size:15px;">🏆 أفضل المنتجات</h3>
                     <div style="display:flex;flex-direction:column;gap:8px;">${th}</div>
                 </div>
+                ${vxAnalyticsHtml(d)}
                 <div style="text-align:center;margin-top:14px;color:var(--text-muted);font-size:11px;">آخر تحديث: ${new Date(d.timestamp || Date.now()).toLocaleString('ar-EG')}</div>`;
         }
 
@@ -5798,7 +5801,7 @@
                                 await updateMonthlySales(); 
                             }
                             else if (o.status === 'rejected') { await recordRejectedAnalytics(o); await sendWhatsApp(o.phone, msgRejected(o), 'رفض'); }
-                            if (['delivered','rejected','returned'].includes(o.status)) reconcileVendorParts();
+                            if (['accepted','delivering','delivered','rejected','returned'].includes(o.status)) reconcileVendorParts();
                         }, 300);
                     }
                     previousStatuses[o.id] = o.status;
@@ -6060,6 +6063,7 @@
 
         window.manualAcceptOrder = async (oid) => {
             const o = allOrders.find(x => x.id === oid); if (!o) return;
+            if (vxHeldBlock(o)) return;
             try {
                 await update(ref(database, `orders/${oid}`), { status: 'accepted', acceptedAt: Date.now() });
                 const sent = await sendWhatsApp(o.phone, msgAccept(o), 'قبول يدوي', { manual: true });
@@ -6285,6 +6289,7 @@
 
         window.advanceStatus = async (oid, ns) => {
             const o = allOrders.find(x => x.id === oid); if (!o) return;
+            if (ns !== 'rejected' && vxHeldBlock(o)) return;
             const busyKey = oid + ':' + ns;
             if (statusBusy.has(busyKey) || o.status === ns) return;
             statusBusy.add(busyKey);
@@ -8204,10 +8209,20 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         const vxPartsOf = oid => vxParts[oid] || [];
         const vxVendorName = vid => vxVendors[vid]?.name || 'تاجر';
 
+        const vxVendorIdsOf = o => [...new Set(vxItems({ items: o?.items }).map(i => i.vendorId).filter(Boolean))];
+        // الطلب محجوز إذا فيه أي تاجر (من أصناف الطلب نفسها) لم يؤكد جاهزيته — حتى لو جزء التاجر لم يصل بعد.
         function isOrderHeld(o) {
             if (!o || o.status !== 'pending') return false;
-            const ps = vxPartsOf(o.id);
-            return ps.length > 0 && ps.some(p => p.status !== 'ready');
+            const ps = vxPartsOf(o.id), need = vxVendorIdsOf(o);
+            if (!need.length && !ps.length) return false;
+            const byV = {}; ps.forEach(p => { byV[p.vendorId] = p; });
+            if (need.some(v => !byV[v] || byV[v].status !== 'ready')) return true;
+            return ps.some(p => p.status !== 'ready');
+        }
+        function vxHeldBlock(o) {
+            if (!isOrderHeld(o)) return false;
+            showToast('⛔ لا يمكن قبول الطلب: التجار لم يجهّزوا منتجاتهم بعد', 'error');
+            return true;
         }
         const VX_ST = { pending: ['🆕 لم يبدأ', 'wait'], preparing: ['🛠️ قيد التجهيز', 'wait'], ready: ['✅ جاهز', ''], unavailable: ['⚠️ غير متوفر', 'bad'], cancelled: ['🚫 ملغي', 'bad'], delivered: ['📦 مسلَّم', ''], returned: ['↩️ مرتجع', 'bad'] };
         function buildHeldOrdersHtml(list) {
@@ -8216,20 +8231,88 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 <div class="vx-ho"><div class="vx-ho-h"><span class="id">#${escapeHtml(String(o.id).slice(-8))}</span><span>${escapeHtml(o.recipientName || '')}</span><span style="color:var(--text-muted);font-weight:600">${o.createdAt ? new Date(o.createdAt).toLocaleString('ar-EG') : ''}</span>
                     <button class="btn btn-danger btn-sm" style="margin-inline-start:auto" onclick="window.openRejectModal('${o.id}')">❌ رفض الطلب</button></div>
                     ${vxPartsOf(o.id).map(p => { const [l, c] = VX_ST[p.status] || [p.status, '']; return `<div class="vx-part"><b style="color:var(--text-primary)">🏪 ${escapeHtml(vxVendorName(p.vendorId))}</b><span class="vx-pill ${c}">${l}</span><span>${vxItems(p).length} صنف — ${vxFmt(vxSub(p))} ج</span>${p.status === 'unavailable' ? `<span style="color:#fca5a5">${escapeHtml(p.unavailableNote || 'بدون سبب')}</span>` : ''}</div>`; }).join('')}
-                    ${vxItems({ items: o.items }).some(i => !i.vendorId) && vxPartsOf(o.id).length ? '<div class="vx-part">🏬 منتجات المتجر نفسه جاهزة دائماً</div>' : ''}
+                    ${vxVendorIdsOf(o).filter(v => !vxPartsOf(o.id).some(p => p.vendorId === v)).map(v => `<div class="vx-part"><b style="color:var(--text-primary)">🏪 ${escapeHtml(vxVendorName(v))}</b><span class="vx-pill wait">⏳ لم يصل الطلب للتاجر بعد</span></div>`).join('')}
+                    ${vxItems({ items: o.items }).some(i => !i.vendorId) && vxVendorIdsOf(o).length ? '<div class="vx-part">🏬 منتجات المتجر نفسه جاهزة دائماً</div>' : ''}
                 </div>`).join('') + '</div>';
         }
 
+        // مصدر واحد حي للخزنة والتحليلات: أي تغيير في analytics/الشهر الحالي يحدّث الاثنين معاً فوراً
+        let vxAnalyticsLive = false;
+        function setupLiveAnalytics() {
+            if (vxAnalyticsLive || !database) return; vxAnalyticsLive = true;
+            const now = new Date(), mk = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            onValue(ref(database, `analytics/${mk}`), snap => {
+                if (analyticsSuppressed) return;
+                const stat = document.getElementById('statTotalSales');
+                if (!snap.exists()) { if (stat) stat.textContent = '0.00 ج'; return; }
+                const d = rebuildAnalyticsSnapshot(snap.val() || {}, mk);
+                saveAnalyticsLocal(d);
+                if (stat) stat.textContent = moneyText(money(d.cashboxBalance || d.monthlySales || 0)) + ' ج';
+                if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(d);
+            }, e => console.warn('live analytics', e));
+        }
+
+        // ===== تحليلات التجار (تُحسب لحظياً من vendorOrders + vendorPayouts) =====
+        function vxAnalyticsHtml(d) {
+            try {
+                const mk = d?.monthKey || '';
+                const inMonth = t => { if (!t) return false; const x = new Date(Number(t)); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}` === mk; };
+                const all = []; Object.values(vxParts || {}).forEach(a => a.forEach(p => all.push(p)));
+                if (!all.length && !Object.keys(vxVendors || {}).length) return '';
+                const per = {};
+                const row = vid => (per[vid] = per[vid] || { vid, gross: 0, comm: 0, net: 0, delivered: 0, open: 0, ready: 0, cancelled: 0, prods: {}, allNet: 0, paid: 0 });
+                Object.keys(vxVendors || {}).forEach(row);
+                all.forEach(p => {
+                    const r = row(p.vendorId);
+                    if (p.status === 'delivered') {
+                        r.allNet += Number(p.netAmount || 0);
+                        if (inMonth(p.deliveredAt)) {
+                            r.gross += vxSub(p); r.comm += Number(p.commissionAmount || 0); r.net += Number(p.netAmount || 0); r.delivered++;
+                            vxItems(p).forEach(i => { const k = i.name || 'منتج'; const o = r.prods[k] || { q: 0, r: 0 }; o.q += Number(i.quantity || 0); o.r += Number(i.price || 0) * Number(i.quantity || 0); r.prods[k] = o; });
+                        }
+                    } else if (['pending', 'preparing'].includes(p.status)) r.open++;
+                    else if (p.status === 'ready') r.ready++;
+                    else if (['cancelled', 'unavailable', 'returned'].includes(p.status)) r.cancelled++;
+                });
+                let paidMonth = 0;
+                Object.keys(vxPayouts || {}).forEach(vid => Object.values(vxPayouts[vid] || {}).forEach(x => { const a = Number(x.amount || 0); row(vid).paid += a; if (inMonth(x.createdAt)) paidMonth += a; }));
+                const rows = Object.values(per);
+                const T = rows.reduce((a, r) => ({ gross: a.gross + r.gross, comm: a.comm + r.comm, net: a.net + r.net, del: a.del + r.delivered, bal: a.bal + (r.allNet - r.paid) }), { gross: 0, comm: 0, net: 0, del: 0, bal: 0 });
+                const sales = money(d.monthlySales || 0);
+                const storeOwn = vxR2(Math.max(0, sales - T.net));
+                const card = (v, l, c) => `<div class="analytics-stat"${c ? ` style="border-color:${c}"` : ''}><div class="stat-value">${vxFmt(v)} ج</div><div class="stat-label">${l}</div></div>`;
+                const cnt = `<div class="analytics-stat"><div class="stat-value">${T.del}</div><div class="stat-label">أجزاء تجار مسلَّمة (الشهر)</div></div>`;
+                const vrows = rows.sort((a, b) => b.gross - a.gross).map(r => {
+                    const top = Object.entries(r.prods).sort((a, b) => b[1].q - a[1].q).slice(0, 3).map(([n, o]) => `${escapeHtml(n)} (${o.q})`).join('، ') || '—';
+                    return `<div style="background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius);padding:12px 14px;">
+                        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><b style="color:var(--gold-300)">🏪 ${escapeHtml(vxVendorName(r.vid))}</b><span style="font-size:11px;color:var(--text-muted)">عمولة ${vxFmt(vxVendors[r.vid]?.commission || 0)}%</span></div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;margin-top:8px;font-size:12px">
+                            <div>مبيعات الشهر<br><b>${vxFmt(r.gross)} ج</b></div><div>عمولة المتجر<br><b style="color:#6ee7b7">${vxFmt(r.comm)} ج</b></div>
+                            <div>صافي التاجر<br><b>${vxFmt(r.net)} ج</b></div><div>رصيده المستحق<br><b style="color:var(--gold-300)">${vxFmt(r.allNet - r.paid)} ج</b></div>
+                            <div>مسلَّم<br><b>${r.delivered}</b></div><div>قيد التجهيز<br><b>${r.open}</b></div><div>جاهز للشحن<br><b>${r.ready}</b></div><div>ملغي/مرتجع<br><b>${r.cancelled}</b></div>
+                        </div><div style="margin-top:6px;font-size:11px;color:var(--text-muted)">الأكثر مبيعاً: ${top}</div></div>`;
+                }).join('');
+                return `<div style="margin-top:20px;"><h3 style="color:var(--gold-300);margin-bottom:12px;font-size:15px;">🏪 تحليلات التجار (شهر ${escapeHtml(mk)})</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px;">
+                        ${card(T.gross, 'مبيعات منتجات التجار', '')}${card(T.comm, '💼 عمولات المتجر من التجار', 'var(--gold-500)')}${card(T.net, 'صافي التجار (حصتهم)', '')}
+                        ${card(storeOwn, '🏬 حصة المتجر من المبيعات (منتجاته + شحن + عمولات)', 'var(--gold-500)')}${card(paidMonth, 'دفعات سُلّمت للتجار هذا الشهر', '')}${card(T.bal, 'مستحقات التجار غير المدفوعة (إجمالي)', 'var(--status-pending)')}${cnt}
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;">${vrows || '<div class="empty-state"><span>لا توجد حركة تجار</span></div>'}</div></div>`;
+            } catch (e) { console.warn('vxAnalyticsHtml', e); return ''; }
+        }
+
         function setupVendorListeners() {
+            setupLiveAnalytics();
             if (vxListening || !database) return; vxListening = true;
             onValue(ref(database, 'vendors'), s => { vxVendors = s.val() || {}; renderVendorsPanel(); renderApprovals(); reconcileVendorParts(); }, e => console.warn('vendors', e));
             onValue(ref(database, 'vendorInvites'), s => { vxInvites = s.val() || {}; renderVendorsPanel(); }, e => console.warn('invites', e));
-            onValue(ref(database, 'vendorPayouts'), s => { vxPayouts = s.val() || {}; renderVendorsPanel(); }, e => console.warn('payouts', e));
+            onValue(ref(database, 'vendorPayouts'), s => { vxPayouts = s.val() || {}; renderVendorsPanel(); try { if (document.getElementById('panel-analytics')?.classList.contains('active') && analyticsCache) renderAnalyticsHTML(analyticsCache); } catch (_) {} }, e => console.warn('payouts', e));
             onValue(ref(database, 'vendorOrders'), s => {
                 const by = {}, d = s.val() || {};
                 Object.keys(d).forEach(vid => Object.keys(d[vid] || {}).forEach(oid => { (by[oid] = by[oid] || []).push({ ...d[vid][oid], vendorId: vid, id: oid }); }));
                 vxParts = by;
                 if (document.getElementById('panel-orders')?.classList.contains('active')) renderOrders();
+                try { if (document.getElementById('panel-analytics')?.classList.contains('active') && analyticsCache) renderAnalyticsHTML(analyticsCache); } catch (_) {}
                 renderVendorsPanel(); reconcileVendorParts();
             }, e => console.warn('vendorOrders', e));
         }
@@ -8241,8 +8324,14 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 const ps = vxPartsOf(o.id); if (!ps.length) continue;
                 for (const p of ps) {
                     const key = o.id + '|' + p.vendorId + '|' + o.status;
-                    if (vxFinalizing.has(key)) continue;
                     const path = `vendorOrders/${p.vendorId}/${o.id}`;
+                    // مرآة حالة الطلب الرئيسي (مقبول/توصيل/...) داخل جزء التاجر ليراها في صفحته
+                    const osKey = 'os|' + key;
+                    if (o.status && p.orderStatus !== o.status && !vxFinalizing.has(osKey)) {
+                        vxFinalizing.add(osKey);
+                        try { await update(ref(database, path), { orderStatus: o.status, orderStatusAt: Date.now() }); } catch (e) { vxFinalizing.delete(osKey); console.warn('mirror status', e); }
+                    }
+                    if (vxFinalizing.has(key)) continue;
                     try {
                         if (o.status === 'delivered' && p.status !== 'delivered' && !['cancelled', 'returned'].includes(p.status)) {
                             vxFinalizing.add(key);
