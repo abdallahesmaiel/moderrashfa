@@ -8342,6 +8342,39 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             try { await update(ref(database), up); } catch (e) { console.warn('markup sync', e); } finally { setTimeout(() => vxMkBusy.delete(sig), 4000); }
         }
 
+        let vxLive = {}, vxArchive = {};
+        function vxMergeParts() {
+            const by = {}; Object.keys(vxLive).forEach(oid => { by[oid] = vxLive[oid].slice(); });
+            Object.keys(vxArchive).forEach(vid => Object.keys(vxArchive[vid] || {}).forEach(oid => {
+                if ((by[oid] || []).some(p => p.vendorId === vid)) return;
+                (by[oid] = by[oid] || []).push({ ...vxArchive[vid][oid], vendorId: vid, id: oid, archived: true });
+            }));
+            vxParts = by;
+            if (document.getElementById('panel-orders')?.classList.contains('active')) renderOrders();
+            try { if (document.getElementById('panel-analytics')?.classList.contains('active') && analyticsCache) renderAnalyticsHTML(analyticsCache); } catch (_) {}
+            renderVendorsPanel(); reconcileVendorParts(); vxPurgeOld();
+        }
+        // حذف الطلبات المكتملة من قاعدة البيانات بعد 24 ساعة (المسلَّم يُؤرشف أولاً فتبقى الحسابات سليمة)
+        let vxPurging = false;
+        async function vxPurgeOld() {
+            if (vxPurging || !database) return;
+            const up = {}; let n = 0, now = Date.now();
+            Object.keys(vxLive).forEach(oid => vxLive[oid].forEach(p => {
+                if (!['delivered', 'returned', 'cancelled'].includes(p.status)) return;
+                const t = Number(p.deliveredAt || p.returnedAt || p.cancelledAt || p.orderStatusAt || p.createdAt) || 0;
+                if (!t || now - t < 24 * 3600 * 1000) return;
+                up[`vendorOrders/${p.vendorId}/${p.id}`] = null; n++;
+                if (p.status === 'delivered') up[`vendorArchive/${p.vendorId}/${p.id}`] = {
+                    status: 'delivered', shortId: p.shortId || '', createdAt: p.createdAt || 0, deliveredAt: p.deliveredAt || 0,
+                    commissionRate: Number(p.commissionRate) || 0, commissionMode: p.commissionMode || 'minus',
+                    commissionAmount: Number(p.commissionAmount) || 0, netAmount: Number(p.netAmount) || 0, grossAmount: Number(p.grossAmount) || vxSub(p),
+                    items: vxItems(p).map(i => ({ name: String(i.name || '').slice(0, 120), price: Number(i.price) || 0, quantity: Number(i.quantity) || 0 })), archivedAt: now };
+            }));
+            if (!n) return; vxPurging = true;
+            try { await update(ref(database), up); } catch (e) { console.warn('purge old vendor orders', e); } finally { setTimeout(() => { vxPurging = false; }, 60000); }
+        }
+        setInterval(() => { try { vxPurgeOld(); } catch (_) {} }, 10 * 60 * 1000);
+
         function setupVendorListeners() {
             setupLiveAnalytics();
             if (vxListening || !database) return; vxListening = true;
@@ -8351,11 +8384,10 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             onValue(ref(database, 'vendorOrders'), s => {
                 const by = {}, d = s.val() || {};
                 Object.keys(d).forEach(vid => Object.keys(d[vid] || {}).forEach(oid => { (by[oid] = by[oid] || []).push({ ...d[vid][oid], vendorId: vid, id: oid }); }));
-                vxParts = by;
-                if (document.getElementById('panel-orders')?.classList.contains('active')) renderOrders();
-                try { if (document.getElementById('panel-analytics')?.classList.contains('active') && analyticsCache) renderAnalyticsHTML(analyticsCache); } catch (_) {}
-                renderVendorsPanel(); reconcileVendorParts();
+                vxLive = by; vxMergeParts();
             }, e => console.warn('vendorOrders', e));
+            // طلبات مسلَّمة حذفها التاجر من قائمته: تبقى هنا لحساب الرصيد والعمولة والتحليلات
+            onValue(ref(database, 'vendorArchive'), s => { vxArchive = s.val() || {}; vxMergeParts(); }, e => console.warn('vendorArchive', e));
         }
 
         // مطابقة حالة الطلب الرئيسي مع أجزاء التجار (تسليم ← عمولة | رفض ← إلغاء | مرتجع)
@@ -8364,6 +8396,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             for (const o of allOrders) {
                 const ps = vxPartsOf(o.id); if (!ps.length) continue;
                 for (const p of ps) {
+                    if (p.archived) continue;
                     const key = o.id + '|' + p.vendorId + '|' + o.status;
                     const path = `vendorOrders/${p.vendorId}/${o.id}`;
                     // مرآة حالة الطلب الرئيسي (مقبول/توصيل/...) داخل جزء التاجر ليراها في صفحته
