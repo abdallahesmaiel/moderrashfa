@@ -8545,17 +8545,37 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             if (!(amount > 0)) { showToast('⚠️ اكتب مبلغاً صحيحاً', 'error'); return; }
             try { await set(push(ref(database, 'vendorPayouts/' + vid)), { amount: vxR2(amount), note: (v[1] || '').trim().slice(0, 120), createdAt: Date.now() }); showToast('✅ تم تسجيل الدفعة'); } catch (e) { showToast('❌ تعذر الحفظ', 'error'); }
         };
+        function vxPrintStatement(vid) {
+            const v = vxVendors[vid] || {}, ac = vxAccount(vid), E = escapeHtml;
+            const del = []; Object.values(vxParts).forEach(ps => ps.forEach(p => { if (p.vendorId === vid && p.status === 'delivered') del.push(p); }));
+            del.sort((a, b) => (b.deliveredAt || 0) - (a.deliveredAt || 0));
+            const pays = Object.values(vxPayouts[vid] || {}).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            const d = t => t ? new Date(t).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+            const w = window.open('', '_blank'); if (!w) { showToast('اسمح بالنوافذ المنبثقة للطباعة', 'error'); return false; }
+            const tr = del.map(p => `<tr><td>#${E(p.shortId || String(p.id).slice(-8))}</td><td>${d(p.deliveredAt)}</td><td>${vxFmt(vxSub(p))}</td><td>${vxFmt(p.commissionAmount || 0)}</td><td>${vxFmt(p.netAmount || 0)}</td></tr>`).join('');
+            const pr = pays.map(p => `<tr><td>${d(p.createdAt)}</td><td>${E(p.note || '')}</td><td>${vxFmt(p.amount)} ج</td></tr>`).join('');
+            w.document.write(`<html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>كشف حساب ${E(v.name || '')}</title><style>body{font-family:Tahoma,Arial,sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:10px 0}td,th{border:1px solid #bbb;padding:6px 8px;font-size:13px;text-align:right}th{background:#f1f1f1}.s{display:flex;gap:10px;flex-wrap:wrap}.s div{border:1px solid #bbb;border-radius:8px;padding:8px 14px;font-size:13px}</style></head><body>
+                <h2>كشف حساب التاجر: ${E(v.name || '')} ${v.username ? '(@' + E(v.username) + ')' : ''}</h2><p>تاريخ الكشف: ${d(Date.now())} — نسبة المتجر: ${vxRateLabel(v.commission)}</p>
+                <div class="s"><div>المبيعات: <b>${vxFmt(ac.gross)} ج</b></div><div>عمولة المتجر: <b>${vxFmt(ac.comm)} ج</b></div><div>صافي التاجر: <b>${vxFmt(ac.net)} ج</b></div><div>المدفوع: <b>${vxFmt(ac.paid)} ج</b></div><div>المتبقي: <b>${vxFmt(ac.bal)} ج</b></div></div>
+                <h3>الطلبات المسلَّمة (${del.length})</h3><table><tr><th>الطلب</th><th>التاريخ</th><th>المبيعات</th><th>العمولة</th><th>الصافي</th></tr>${tr || '<tr><td colspan="5">لا توجد طلبات</td></tr>'}</table>
+                <h3>الدفعات (${pays.length})</h3><table><tr><th>التاريخ</th><th>ملاحظة</th><th>المبلغ</th></tr>${pr || '<tr><td colspan="3">لا توجد دفعات</td></tr>'}</table>
+                <script>onload=()=>setTimeout(()=>print(),300)<\/script></body></html>`);
+            w.document.close(); return true;
+        }
         window.vxDeleteVendor = async function(vid) {
             const v = vxVendors[vid]; if (!v) return;
             const mine = (allProducts || []).filter(p => p.vendorId === vid);
             const ac = vxAccount(vid);
             const debt = ac.bal > 0 ? `\n⚠️ للتاجر رصيد مستحق ${vxFmt(ac.bal)} ج لم يُدفع بعد!` : '';
-            if (!await window.proConfirm(`⚠️ حذف التاجر "${v.name}" نهائياً؟\n\nسيتم حذف حسابه و${mine.length} منتج من المتجر ولا يمكن التراجع.\n(سجل الطلبات والدفعات يبقى محفوظاً)${debt}`)) return;
+            if (!await window.proConfirm(`⚠️ حذف التاجر "${v.name}" وكل بياناته نهائياً؟\n\nسيتم حذف: حسابه، ${mine.length} منتج، كل طلباته وأرشيفه، دفعاته، سجل تصفيره، ورابط دعوته.\nلا يمكن التراجع.${debt}`)) return;
+            if (await window.proConfirm('🖨️ هل تريد طباعة كشف حساب التاجر قبل الحذف؟ (اختياري)', { type: 'warning', title: 'كشف الحساب', okText: 'نعم، اطبع الكشف', cancelText: 'لا، احذف بدون طباعة' })) vxPrintStatement(vid);
             try {
-                const up = { [`vendors/${vid}`]: null };
+                const up = {};
+                ['vendors', 'vendorOrders', 'vendorArchive', 'vendorPayouts', 'vendorReset'].forEach(n => { up[`${n}/${vid}`] = null; });
                 mine.forEach(p => { up[`products/${p.id}`] = null; });
+                Object.keys(vxInvites || {}).forEach(t => { if (vxInvites[t]?.usedBy === vid) up[`vendorInvites/${t}`] = null; });
                 await update(ref(database), up);
-                showToast('🗑️ تم حذف التاجر ومنتجاته');
+                showToast('🗑️ تم حذف التاجر وكل بياناته');
             } catch (e) { console.error(e); showToast('❌ تعذر حذف التاجر', 'error'); }
         };
         window.vxToggle = async function(vid) {
