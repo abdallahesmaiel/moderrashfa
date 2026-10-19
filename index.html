@@ -8640,6 +8640,34 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         }
 
         let vxLive = {}, vxArchive = {};
+        // ===== إشعار: تاجر جهّز طلبه / الطلب جاهز للشحن بالكامل =====
+        let vxPrevStatus = null;
+        function vxNotifyReady() {
+            const cur = new Map();
+            Object.keys(vxLive).forEach(oid => vxLive[oid].forEach(p => cur.set(oid + '|' + p.vendorId, p.status)));
+            const prev = vxPrevStatus; vxPrevStatus = cur;
+            if (!prev) return;                                   // أول تحميل: لا إشعارات قديمة
+            const readyNow = {};                                 // orderId -> [vendorId,...] جهّزوا الآن
+            cur.forEach((st, k) => {
+                if (st === 'ready' && prev.has(k) && prev.get(k) !== 'ready') { const [oid, vid] = k.split('|'); (readyNow[oid] = readyNow[oid] || []).push(vid); }
+            });
+            Object.keys(readyNow).forEach(oid => {
+                const parts = vxLive[oid] || [], o = allOrders.find(x => x.id === oid) || {};
+                const label = `#${notificationText(o.invoiceCode || o.invoiceNumber, String(oid).slice(-8))}`, who = notificationText(o.recipientName, 'العميل');
+                const active = parts.filter(p => !['cancelled', 'returned'].includes(p.status));
+                const allReady = active.length > 0 && active.every(p => ['ready', 'delivered'].includes(p.status));
+                const hasOwn = (o.items || []).some(i => { const pr = allProducts.find(x => x.id === i.productId); return pr && !pr.vendorId; });
+                const names = readyNow[oid].map(v => notificationText(vxVendors[v]?.name, 'تاجر'));
+                const push = (title, body, tag) => { try { window.playNewOrderSound?.(); } catch (_) {} showToast(`${title} — ${body}`, 'success'); showLocalNotification(title, body, { type: 'order', id: oid, tag }); };
+                if (allReady) {
+                    const names2 = [...new Set(active.map(p => notificationText(vxVendors[p.vendorId]?.name, 'تاجر')))];
+                    if (parts.length > 1) names.forEach((n, i) => push('✅ تاجر جهّز طلبه', `${n} جهّز منتجاته في الطلب ${label} (${who}) وهو قابل للشحن الآن`, `ready-${oid}-${readyNow[oid][i]}`));
+                    push('📦 الطلب جاهز للشحن', `${label} (${who}) — ${names2.length > 1 ? 'جهّز جميع التجار (' + names2.join('، ') + ')' : 'جهّز التاجر ' + names2[0]} ${hasOwn ? 'منتجاتهم، وبقيت منتجات المتجر لتجهيزها ثم الشحن' : 'وأصبح الطلب جاهزاً للشحن للعميل الآن'}`, `ready-all-${oid}`);
+                } else {
+                    names.forEach((n, i) => push('✅ تاجر جهّز طلبه', `${n} جهّز منتجاته في الطلب ${label} (${who}) وهو قابل للشحن الآن — بانتظار باقي التجار`, `ready-${oid}-${readyNow[oid][i]}`));
+                }
+            });
+        }
         function vxMergeParts() {
             const by = {}; Object.keys(vxLive).forEach(oid => { by[oid] = vxLive[oid].slice(); });
             Object.keys(vxArchive).forEach(vid => Object.keys(vxArchive[vid] || {}).forEach(oid => {
@@ -8682,6 +8710,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 const by = {}, d = s.val() || {};
                 Object.keys(d).forEach(vid => Object.keys(d[vid] || {}).forEach(oid => { (by[oid] = by[oid] || []).push({ ...d[vid][oid], vendorId: vid, id: oid }); }));
                 vxLive = by; vxMergeParts();
+                try { vxNotifyReady(); } catch (e) { console.warn('ready notify', e); }
             }, e => console.warn('vendorOrders', e));
             // طلبات مسلَّمة حذفها التاجر من قائمته: تبقى هنا لحساب الرصيد والعمولة والتحليلات
             onValue(ref(database, 'vendorArchive'), s => { vxArchive = s.val() || {}; vxMergeParts(); }, e => console.warn('vendorArchive', e));
