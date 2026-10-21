@@ -2096,6 +2096,109 @@
 .ai-add:disabled{opacity:.5;cursor:not-allowed}
 .ai-empty{text-align:center;padding:28px 10px;color:var(--text-muted);font-weight:700;font-size:13px}
 @media(max-width:520px){.ai-row{grid-template-columns:46px 1fr}.ai-row img{width:46px;height:46px}.ai-act{grid-column:1/-1;flex-direction:row;align-items:center}.ai-qty{flex:1}.ai-add{flex:1}}
+
+/* ===== POS: فاتورة بيع مباشر ===== */
+.pos-box{background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:14px}
+.pos-box+.pos-box{margin-top:12px}
+.pos-box-title{display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px;margin-bottom:10px;color:var(--text-primary)}
+.pos-box-title .pos-count{margin-inline-start:auto;min-width:26px;height:26px;padding:0 9px;border-radius:99px;background:var(--bg-hover);color:var(--text-secondary);font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center}
+.pos-box-title .pos-count.has{background:var(--gold-500);color:#1a1410}
+.pos-sub{font-size:12px;color:var(--text-muted);margin:-4px 0 10px;line-height:1.7}
+.pos-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.pos-field>span{font-size:12px;font-weight:700;color:var(--text-secondary)}
+.pos-field .form-input,.pos-field .form-select,.pos-box .form-input,.pos-box .form-select{margin:0}
+.pos-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pos-gap>*+*{margin-top:10px}
+.pos-sep{height:1px;background:var(--border-color);margin:14px 0}
+
+/* search */
+.pos-search{position:relative;display:flex;align-items:center}
+.pos-search input{width:100%;min-height:52px;padding:12px 46px;border-radius:14px;border:1.5px solid var(--border-light);background:var(--bg-primary);color:var(--text-primary);font:inherit;font-size:15px;outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none}
+.pos-search input::placeholder{color:var(--text-muted)}
+.pos-search input:focus{border-color:var(--gold-500);box-shadow:0 0 0 4px rgba(201,169,110,.16)}
+.pos-search-ic{position:absolute;inset-inline-start:17px;color:var(--text-muted);pointer-events:none;font-size:15px}
+.pos-search-x{position:absolute;inset-inline-end:9px;width:34px;height:34px;border-radius:50%;border:0;background:var(--bg-hover);color:var(--text-secondary);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+.pos-search-x[hidden]{display:none}
+.pos-results{margin-top:10px;display:flex;flex-direction:column;gap:8px;max-height:min(52vh,430px);overflow:auto;overscroll-behavior:contain}
+.pos-hint{display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;color:var(--text-muted);font-size:13px;line-height:1.7;padding:16px 10px;border:1.5px dashed var(--border-light);border-radius:14px}
+.pos-res{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;text-align:start;background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-primary);border-radius:14px;padding:9px 11px;cursor:pointer;font:inherit;min-height:66px;transition:border-color .15s,background .15s}
+.pos-res:hover:not([disabled]),.pos-res:focus-visible{border-color:var(--gold-500);background:var(--bg-hover);outline:none}
+.pos-res:active:not([disabled]){transform:scale(.99)}
+.pos-res[disabled]{opacity:.45;cursor:not-allowed}
+.pos-thumb{position:relative;width:48px;height:48px;border-radius:11px;background:var(--bg-primary);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:19px;overflow:hidden;flex:none}
+.pos-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pos-res .n{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:700;font-size:14px;line-height:1.5}
+.pos-res .sub{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:5px}
+.pos-pill{font-size:11px;font-weight:800;padding:2px 9px;border-radius:99px;background:rgba(16,185,129,.14);color:#34d399;white-space:nowrap}
+.pos-pill.low{background:rgba(245,158,11,.15);color:#fbbf24}
+.pos-pill.out{background:rgba(239,68,68,.15);color:#f87171}
+.pos-pill.in{background:rgba(201,169,110,.2);color:var(--gold-300)}
+.pos-res .p{font-weight:900;font-size:14px;color:var(--gold-300);white-space:nowrap;text-align:end}
+
+/* items */
+.pos-items{display:flex;flex-direction:column;gap:10px}
+.pos-empty{padding:24px 16px;text-align:center;color:var(--text-muted);border:1.5px dashed var(--border-light);border-radius:14px;font-size:13px;line-height:1.9}
+.pos-item{background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;padding:10px}
+.pos-item-head{display:grid;grid-template-columns:44px minmax(0,1fr) 36px;gap:10px;align-items:center}
+.pos-item-head .pos-thumb{width:44px;height:44px}
+.pos-item-name{font-weight:700;font-size:14px;line-height:1.5;word-break:break-word}
+.pos-item-name small{color:var(--text-muted);font-weight:600}
+.pos-rm{width:36px;height:36px;border-radius:10px;border:0;background:rgba(239,68,68,.12);color:#f87171;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.pos-item-row{display:flex;align-items:flex-end;gap:10px;margin-top:10px;flex-wrap:wrap}
+.pos-mini{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--text-muted);font-weight:700}
+.pos-mini input{width:94px;height:40px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-primary);color:var(--text-primary);font:inherit;font-size:14px;font-weight:700;text-align:center}
+.pos-step{display:flex;align-items:center;border:1px solid var(--border-light);border-radius:12px;overflow:hidden;background:var(--bg-primary)}
+.pos-step button{width:40px;height:40px;border:0;background:transparent;color:var(--text-primary);font-size:20px;cursor:pointer;line-height:1}
+.pos-step button:active{background:var(--bg-hover)}
+.pos-step input{width:46px;height:40px;border:0;background:transparent;color:var(--text-primary);font:inherit;font-size:14px;font-weight:800;text-align:center;-moz-appearance:textfield}
+.pos-step input::-webkit-outer-spin-button,.pos-step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.pos-mini input:focus,.pos-step input:focus{outline:2px solid var(--gold-500);outline-offset:-2px}
+.pos-line{margin-inline-start:auto;font-weight:900;font-size:15px;color:var(--gold-300);white-space:nowrap;padding-bottom:9px}
+
+/* shipping chips */
+.pos-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.pos-chips button{flex:1 1 auto;min-width:54px;min-height:42px;padding:0 14px;border-radius:12px;border:1px solid var(--border-light);background:var(--bg-card);color:var(--text-primary);cursor:pointer;font:inherit;font-size:13px;font-weight:700;transition:border-color .15s,background .15s}
+.pos-chips button.on{background:rgba(201,169,110,.16);border-color:var(--gold-500);color:var(--gold-300)}
+
+/* stock switch */
+.pos-switch{position:relative;display:flex;gap:12px;align-items:center;margin-top:12px;padding:13px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:14px;cursor:pointer}
+.pos-switch input{position:absolute;opacity:0;pointer-events:none}
+.pos-switch-ui{flex:none;width:46px;height:26px;border-radius:99px;background:var(--border-light);position:relative;transition:background .2s}
+.pos-switch-ui::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s}
+.pos-switch input:checked+.pos-switch-ui{background:var(--gold-500)}
+.pos-switch input:checked+.pos-switch-ui::after{transform:translateX(-20px)}
+.pos-switch input:focus-visible+.pos-switch-ui{outline:2px solid var(--gold-300);outline-offset:3px}
+.pos-switch-txt b{display:block;font-size:13px;font-weight:800}
+.pos-switch-txt small{display:block;font-size:12px;color:var(--text-muted);margin-top:2px;line-height:1.6}
+
+/* totals + actions */
+.pos-totals{margin-top:12px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--text-secondary)}
+.pos-totals div{display:flex;justify-content:space-between;gap:10px}
+.pos-totals b{color:var(--text-primary)}
+.pos-totals .g{font-size:20px;font-weight:900;color:var(--gold-300);border-top:1px dashed var(--border-light);padding-top:11px;margin-top:3px}
+.pos-totals .g b{color:var(--gold-300)}
+.pos-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.pos-actions .btn{min-height:50px;justify-content:center}
+.pos-note{font-size:12px;color:var(--text-muted);margin-top:8px;line-height:1.7}
+
+/* history */
+.pos-hist{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;padding:11px 13px;margin-bottom:8px;flex-wrap:wrap}
+.pos-hist .t{font-size:14px;min-width:0}
+.pos-hist .t small{display:block;color:var(--text-muted);font-size:12px;margin-top:3px;line-height:1.6}
+.pos-hist .a{display:flex;gap:6px}
+
+/* invoice viewer (in-page, no popup needed) */
+.pos-modal{position:fixed;inset:0;z-index:9000;background:rgba(5,5,10,.8);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px}
+.pos-modal-box{width:min(480px,100%);max-height:100%;display:flex;flex-direction:column;background:var(--bg-secondary);border:1px solid var(--border-light);border-radius:20px;box-shadow:var(--shadow-xl);overflow:hidden}
+.pos-modal-head{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border-color);font-weight:800;color:var(--gold-300)}
+.pos-modal-head .tag{font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px;background:rgba(245,158,11,.16);color:#fbbf24}
+.pos-modal-x{margin-inline-start:auto;width:38px;height:38px;border-radius:50%;border:0;background:var(--bg-hover);color:var(--text-primary);cursor:pointer;font-size:15px}
+.pos-modal-body{flex:1;min-height:0;overflow:auto;background:#f3f4f6;-webkit-overflow-scrolling:touch}
+.pos-modal-frame{display:block;width:100%;min-height:460px;border:0;background:#f3f4f6}
+.pos-modal-foot{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;padding:12px;border-top:1px solid var(--border-color);padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.pos-modal-foot .btn{justify-content:center;min-height:48px;padding-inline:8px;font-size:13px}
+@media(max-width:560px){.pos-modal{padding:0}.pos-modal-box{width:100%;height:100%;border-radius:0;border:0}}
+@media print{.pos-modal{display:none!important}}
 </style>
 </head>
 <body>
@@ -2191,6 +2294,7 @@
         <div class="tabs-container">
             <button class="tab active" onclick="window.switchTab('orders')"><i class="fa-solid fa-list-check"></i> الطلبات <span class="tab-badge hidden" id="pendingBadge">0</span></button>
             <button class="tab" onclick="window.switchTab('invoice')"><i class="fa-solid fa-receipt"></i> إعدادات الفاتورة</button>
+            <button class="tab" onclick="window.switchTab('pos')"><i class="fa-solid fa-cash-register"></i> فاتورة بيع</button>
             <button class="tab" onclick="window.switchTab('products')"><i class="fa-solid fa-boxes-stacked"></i> المنتجات <span class="tab-badge warning hidden" id="lowStockBadge">0</span></button>
             <button class="tab" onclick="window.switchTab('add')"><i class="fa-solid fa-plus-circle"></i> إضافة منتج</button>
             <button class="tab" onclick="window.switchTab('coupons')"><i class="fa-solid fa-ticket"></i> الكوبونات</button>
@@ -2283,6 +2387,94 @@
         </div>
 
         <!-- ===== Panel: Add Product ===== -->
+        <!-- ===== Panel: فاتورة بيع مباشر (POS) ===== -->
+<div class="panel" id="panel-pos">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fa-solid fa-cash-register"></i> إصدار فاتورة بيع مباشر</div>
+      <button class="btn btn-outline btn-sm" id="posResetBtn" type="button"><i class="fa-solid fa-redo"></i> فاتورة جديدة</button>
+    </div>
+    <div class="two-column-grid">
+      <div>
+        <div class="pos-box">
+          <label class="pos-box-title" for="posSearch">🔎 ابحث عن منتج</label>
+          <div class="pos-search">
+            <i class="fa-solid fa-magnifying-glass pos-search-ic" aria-hidden="true"></i>
+            <input type="text" id="posSearch" placeholder="اسم المنتج أو الباركود" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+            <button type="button" id="posSearchClear" class="pos-search-x" aria-label="مسح البحث" hidden><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div id="posResults" class="pos-results" aria-live="polite"></div>
+        </div>
+        <div class="pos-box">
+          <div class="pos-box-title">➕ منتج غير موجود في المتجر</div>
+          <div class="pos-sub">أضفه يدويًا بالاسم والسعر، ولن يتأثر به المخزون.</div>
+          <div class="pos-gap">
+            <label class="pos-field"><span>اسم المنتج</span><input type="text" id="posCustomName" class="form-input" placeholder="مثال: قناع وجه" maxlength="120"></label>
+            <div class="pos-grid2">
+              <label class="pos-field"><span>السعر (ج)</span><input type="number" id="posCustomPrice" class="form-input" placeholder="0" min="0" step="0.01" inputmode="decimal"></label>
+              <label class="pos-field"><span>الكمية</span><input type="number" id="posCustomQty" class="form-input" placeholder="1" min="1" step="1" value="1" inputmode="numeric"></label>
+            </div>
+            <button class="btn btn-outline btn-block" id="posAddCustom" type="button" style="width:100%;justify-content:center;min-height:46px"><i class="fa-solid fa-plus"></i> أضف للفاتورة</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="pos-box">
+          <div class="pos-box-title">🧾 بنود الفاتورة <span class="pos-count" id="posCount">0</span></div>
+          <div id="posItems" class="pos-items"></div>
+        </div>
+
+        <div class="pos-box">
+          <div class="pos-box-title">🚚 الشحن</div>
+          <div class="pos-chips" id="posShipChips">
+            <button type="button" data-ship="0">بدون</button><button type="button" data-ship="5">5 ج</button><button type="button" data-ship="10">10 ج</button><button type="button" data-ship="15">15 ج</button><button type="button" data-ship="20">20 ج</button>
+          </div>
+          <label class="pos-field"><span>أو اكتب قيمة الشحن</span><input type="number" id="posShip" class="form-input" placeholder="0" min="0" step="0.5" inputmode="decimal" value="0"></label>
+          <div class="pos-sep"></div>
+          <div class="pos-box-title">🏷️ خصم (اختياري)</div>
+          <div style="display:grid;grid-template-columns:1fr 110px;gap:10px;">
+            <input type="number" id="posDiscount" class="form-input" placeholder="0" min="0" step="0.5" inputmode="decimal" value="0" aria-label="قيمة الخصم" style="margin:0">
+            <select id="posDiscType" class="form-select" aria-label="نوع الخصم" style="margin:0"><option value="amt">جنيه</option><option value="pct">%</option></select>
+          </div>
+        </div>
+
+        <div class="pos-box">
+          <div class="pos-box-title">👤 بيانات العميل (اختيارية)</div>
+          <div class="pos-gap">
+            <input type="text" id="posCustName" class="form-input" placeholder="اسم العميل" maxlength="80" aria-label="اسم العميل">
+            <input type="tel" id="posCustPhone" class="form-input" placeholder="رقم الهاتف" maxlength="20" inputmode="tel" aria-label="رقم الهاتف">
+            <input type="text" id="posCustAddr" class="form-input" placeholder="العنوان (لو فيه توصيل)" maxlength="160" aria-label="العنوان">
+          </div>
+          <div class="pos-sep"></div>
+          <div class="pos-box-title">💵 طريقة الدفع</div>
+          <select id="posPayment" class="form-select" aria-label="طريقة الدفع" style="margin:0"><option>نقدي</option><option>فودافون كاش</option><option>إنستا باي</option><option>اتصالات كاش</option><option>أخرى</option></select>
+        </div>
+
+        <label class="pos-switch">
+          <input type="checkbox" id="posDeduct">
+          <span class="pos-switch-ui"></span>
+          <span class="pos-switch-txt"><b>خصم الكميات من المخزون</b><small>يتم الخصم عند الإصدار فقط، وليس عند المعاينة.</small></span>
+        </label>
+
+        <div class="pos-totals" id="posTotals"></div>
+        <div class="pos-actions">
+          <button class="btn btn-gold" id="posIssueBtn" type="button" style="flex:2;min-width:170px"><i class="fa-solid fa-file-invoice"></i> إصدار الفاتورة</button>
+          <button class="btn btn-outline" id="posPreviewBtn" type="button" style="flex:1;min-width:110px"><i class="fa-solid fa-eye"></i> معاينة</button>
+        </div>
+        <div class="pos-note">المعاينة لا تحفظ الفاتورة ولا تخصم من المخزون.</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> آخر الفواتير الصادرة</div>
+      <button class="btn btn-outline btn-sm" id="posClearHistory" type="button"><i class="fa-solid fa-trash"></i> مسح السجل</button>
+    </div>
+    <div class="pos-note" style="margin:0 0 10px">السجل محفوظ على هذا الجهاز فقط (آخر 30 فاتورة) لإعادة الفتح والطباعة.</div>
+    <div id="posHistory"></div>
+  </div>
+</div>
+
         <div class="panel" id="panel-add">
             <div class="card">
                 <div class="card-header">
@@ -6720,28 +6912,28 @@
             const tax = getInvoiceTaxData(o);
             const invoiceTotal = orderTotal + tax.amount;
             const barcode = getInvoiceBarcode(o);
-            const stLabel = ({ pending: 'قيد المراجعة', accepted: 'تم القبول', delivering: 'قيد التوصيل', delivered: 'تم التسليم', returned: 'مرتجع', rejected: 'مرفوض' })[o.status] || '';
+            const stLabel = o.manualInvoice ? 'بيع مباشر' : ({ pending: 'قيد المراجعة', accepted: 'تم القبول', delivering: 'قيد التوصيل', delivered: 'تم التسليم', returned: 'مرتجع', rejected: 'مرفوض' })[o.status] || '';
             const itemsHtml = (o.items || []).map(i => `<tr><td class="item-name">${escapeHtml(i.name || '---')}${i.customNote ? `<small style="display:block;font-weight:700;margin-top:2px;">✍️ ${escapeHtml(i.customNote)}</small>` : ''}</td><td class="item-qty">${Number(i.quantity || 0)}</td><td class="item-price">${Number(i.price || 0).toFixed(2)} ج</td><td class="item-total">${(Number(i.price || 0) * Number(i.quantity || 0)).toFixed(2)} ج</td></tr>`).join('');
             const storeName = s.showStoreName ? escapeHtml(s.storeName || 'بروفيشنال') : '';
             const storePhone = s.showStorePhone && s.storePhone ? `<div class="store-contact-line">${escapeHtml(s.storePhone)}</div>` : '';
             const storeAddress = s.showStoreAddress && s.storeAddress ? `<div class="store-contact-line">${escapeHtml(s.storeAddress)}</div>` : '';
             const barcodeHtml = s.showBarcode ? `<div class="barcode-title">باركود الفاتورة EAN-13</div><div class="barcode-wrap">${buildEAN13Svg(barcode)}</div><div class="barcode-number">${barcode}</div>` : '';
             return `<div class="invoice-sheet" dir="rtl">
-                <div class="invoice-head">${storeName ? `<div class="store-name">🏪 ${storeName}</div>` : ''}${storePhone}${storeAddress}<div class="invoice-title">فاتورة طلب إلكترونية</div>${stLabel ? `<div class="inv-chip">${stLabel}</div>` : ''}</div>
+                <div class="invoice-head">${storeName ? `<div class="store-name">🏪 ${storeName}</div>` : ''}${storePhone}${storeAddress}<div class="invoice-title">${o.manualInvoice ? 'فاتورة بيع' : 'فاتورة طلب إلكترونية'}</div>${stLabel ? `<div class="inv-chip">${stLabel}</div>` : ''}</div>
                 <div class="invoice-meta">
-                    <div class="meta-row"><span>رقم الطلب</span><b>#${escapeHtml(String(o.id || '').slice(-8))}</b></div>
+                    <div class="meta-row"><span>${o.manualInvoice ? 'رقم الفاتورة' : 'رقم الطلب'}</span><b>#${escapeHtml(String(o.id || '').slice(-8))}</b></div>
                     <div class="meta-row"><span>التاريخ</span><b>${escapeHtml(date)}</b></div>
-                    <div class="meta-row"><span>المستلم</span><b>${escapeHtml(o.recipientName || '---')}</b></div>
-                    <div class="meta-row"><span>الهاتف</span><b dir="ltr">${escapeHtml(o.phone || '---')}</b></div>
-                    <div class="meta-row"><span>العنوان</span><b>${escapeHtml(o.address || '---')}</b></div>
-                    <div class="meta-row"><span>الدفع</span><b>${escapeHtml(pmName)}</b></div>
-                    ${coupon ? `<div class="meta-row"><span>الكوبون</span><b>${escapeHtml(coupon.code || '')} — ${escapeHtml(getOrderCouponText(o))}</b></div>` : ''}
+                    ${o.manualInvoice && !o.recipientName ? '' : `<div class="meta-row"><span>${o.manualInvoice ? 'العميل' : 'المستلم'}</span><b>${escapeHtml(o.recipientName || '---')}</b></div>`}
+                    ${o.manualInvoice && !o.phone ? '' : `<div class="meta-row"><span>الهاتف</span><b dir="ltr">${escapeHtml(o.phone || '---')}</b></div>`}
+                    ${o.manualInvoice && !o.address ? '' : `<div class="meta-row"><span>العنوان</span><b>${escapeHtml(o.address || '---')}</b></div>`}
+                    <div class="meta-row"><span>الدفع</span><b>${escapeHtml(o.manualInvoice ? (o.paymentLabel || 'نقدي') : pmName)}</b></div>
+                    ${coupon && !o.manualInvoice ? `<div class="meta-row"><span>الكوبون</span><b>${escapeHtml(coupon.code || '')} — ${escapeHtml(getOrderCouponText(o))}</b></div>` : ''}
                 </div>
                 <div class="invoice-section-title">🛒 المنتجات</div>
                 <table class="invoice-items"><thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead><tbody>${itemsHtml || '<tr><td colspan="4">لا توجد منتجات</td></tr>'}</tbody></table>
                 <div class="invoice-totals">
                     <div><span>إجمالي المنتجات</span><strong>${subtotal.toFixed(2)} ج</strong></div>
-                    <div><span>الشحن${o.shippingZoneName ? ' (' + escapeHtml(o.shippingZoneName) + ')' : ''}</span><strong>${deliveryFee <= 0 ? 'مجاني 🎉' : deliveryFee.toFixed(2) + ' ج'}</strong></div>
+                    ${o.manualInvoice && deliveryFee <= 0 ? '' : `<div><span>الشحن${o.shippingZoneName ? ' (' + escapeHtml(o.shippingZoneName) + ')' : ''}</span><strong>${deliveryFee <= 0 ? 'مجاني 🎉' : deliveryFee.toFixed(2) + ' ج'}</strong></div>`}
                     ${codFee > 0 ? `<div><span>رسوم الدفع</span><strong>${codFee.toFixed(2)} ج</strong></div>` : ''}
                     ${discount > 0 ? `<div class="discount"><span>الخصم</span><strong>-${discount.toFixed(2)} ج</strong></div>` : ''}
                     ${tax.amount > 0 ? `<div><span>الضريبة (${tax.rate.toFixed(2)}%${tax.mode === 'products' ? ' على المنتجات' : ' على الفاتورة'})</span><strong>+${tax.amount.toFixed(2)} ج</strong></div>` : ''}
@@ -6867,7 +7059,7 @@
         }
 
         window.shareInvoiceImage = async (oid) => {
-            const o = allOrders.find(x => x.id === oid);
+            const o = (oid && typeof oid === 'object') ? oid : allOrders.find(x => x.id === oid);
             if (!o) { showToast('❌ الطلب غير موجود', 'error'); return; }
 
             const waPhone = formatPhoneNumber(o.phone);
@@ -9032,10 +9224,262 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             try { await update(ref(database, 'products/' + pid), { approval: 'rejected', approvalNote: (v[0] || '').trim().slice(0, 200) }); showToast('تم رفض المنتج'); } catch (e) { showToast('❌ تعذر الرفض', 'error'); }
         };
 
+        // ============================================================
+        // ===== فاتورة بيع مباشر (POS) =====
+        // تعيد استخدام buildInvoiceHtml نفسها (نفس إعدادات الفاتورة والباركود والضريبة)
+        // ============================================================
+        const POS_HISTORY_KEY = 'pro_pos_history_v1';
+        const POS_DEDUCT_KEY = 'pro_pos_deduct_v1';
+        let posItems = [], posBusy = false, posReady = false;
+        const posEl = id => document.getElementById(id);
+        const posNorm = s => String(s || '').toLowerCase().replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').trim();
+        const posNum = v => { const n = Number(String(v ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace('٫', '.').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
+        const posPrice = p => money(Number(p.finalPrice ?? p.price) || 0);
+        const posSellable = p => !p.approval || p.approval === 'approved';
+        const posProduct = id => allProducts.find(p => p.id === id);
+        const posStock = it => { const p = it.productId ? posProduct(it.productId) : null; return p ? Math.max(0, Math.floor(Number(p.quantity) || 0)) : 0; };
+        const posDeductOn = () => !!posEl('posDeduct')?.checked;
+        function posCap(it) { return (it.productId && posDeductOn()) ? posStock(it) : Infinity; }
+
+        function posStorageGet(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (_) { return d; } }
+        function posStorageSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
+
+        function posInit() {
+            if (!posReady) {
+                posReady = true;
+                posEl('posDeduct').checked = !!posStorageGet(POS_DEDUCT_KEY, false);
+                posEl('posDeduct').addEventListener('change', () => { posStorageSet(POS_DEDUCT_KEY, posDeductOn()); posItems.forEach(it => { const c = posCap(it); if (it.qty > c) it.qty = Math.max(1, c); }); posRenderItems(); });
+                posEl('posSearch').addEventListener('input', posSearchRender);
+                posEl('posSearchClear').addEventListener('click', () => { posEl('posSearch').value = ''; posSearchRender(); posEl('posSearch').focus(); });
+                ['posResults', 'posItems'].forEach(id => posEl(id).addEventListener('error', e => { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true));
+                posEl('posSearch').addEventListener('keydown', e => {
+                    if (e.key !== 'Enter') return; e.preventDefault();
+                    const q = posNorm(posEl('posSearch').value); if (!q) return;
+                    const exact = allProducts.filter(p => posSellable(p) && posNorm(p.barcode) === q);
+                    const pick = exact.length === 1 ? exact[0] : null;
+                    if (pick) { posAddProduct(pick.id); posEl('posSearch').value = ''; posSearchRender(); }
+                    else { const first = posEl('posResults').querySelector('.pos-res:not([disabled])'); if (first) first.click(); }
+                });
+                posEl('posResults').addEventListener('click', e => { const b = e.target.closest('[data-pid]'); if (b && !b.disabled) posAddProduct(b.dataset.pid); });
+                posEl('posAddCustom').addEventListener('click', posAddCustom);
+                posEl('posItems').addEventListener('click', e => {
+                    const b = e.target.closest('[data-act]'); if (!b) return;
+                    const it = posItems.find(x => x.key === b.dataset.k); if (!it) return;
+                    if (b.dataset.act === 'rm') posItems = posItems.filter(x => x !== it);
+                    else if (b.dataset.act === 'inc') { if (it.qty + 1 > posCap(it)) { showToast('⚠️ الكمية المتاحة في المخزون ' + posStock(it), 'warning'); return; } it.qty += 1; }
+                    else if (b.dataset.act === 'dec') it.qty = Math.max(1, it.qty - 1);
+                    posRenderItems();
+                });
+                posEl('posItems').addEventListener('input', e => {
+                    const inp = e.target.closest('[data-f]'); if (!inp) return;
+                    const it = posItems.find(x => x.key === inp.dataset.k); if (!it) return;
+                    if (inp.dataset.f === 'price') it.price = Math.max(0, posNum(inp.value));
+                    else it.qty = Math.max(1, Math.floor(posNum(inp.value)) || 1);
+                    const line = posEl('posItems').querySelector('[data-line="' + it.key + '"]'); if (line) line.textContent = moneyText(it.price * it.qty) + ' ج';
+                    posRenderTotals();
+                });
+                posEl('posItems').addEventListener('change', e => {
+                    const inp = e.target.closest('[data-f="qty"]'); if (!inp) return;
+                    const it = posItems.find(x => x.key === inp.dataset.k); if (!it) return;
+                    const c = posCap(it); if (it.qty > c) { it.qty = Math.max(1, c); showToast('⚠️ الكمية المتاحة في المخزون ' + posStock(it), 'warning'); }
+                    posRenderItems();
+                });
+                ['posShip', 'posDiscount', 'posDiscType'].forEach(id => posEl(id).addEventListener('input', () => { posMarkChips(); posRenderTotals(); }));
+                posEl('posShipChips').addEventListener('click', e => { const b = e.target.closest('[data-ship]'); if (!b) return; posEl('posShip').value = b.dataset.ship; posMarkChips(); posRenderTotals(); });
+                posEl('posResetBtn').addEventListener('click', async () => { if (posItems.length && !await window.proConfirm('مسح الفاتورة الحالية والبدء من جديد؟', { title: 'فاتورة جديدة', okText: 'نعم' })) return; posReset(); });
+                posEl('posIssueBtn').addEventListener('click', () => posIssue(false));
+                posEl('posPreviewBtn').addEventListener('click', () => posIssue(true));
+                posEl('posHistory').addEventListener('click', async e => {
+                    const b = e.target.closest('[data-hact]'); if (!b) return;
+                    const list = posStorageGet(POS_HISTORY_KEY, []); const rec = list.find(r => r.id === b.dataset.hid); if (!rec) return;
+                    if (b.dataset.hact === 'print') posShowInvoice(rec.order);
+                    else if (await window.proConfirm('حذف هذه الفاتورة من السجل المحلي؟ (لن يتأثر المخزون)', { type: 'danger', title: 'حذف من السجل', okText: 'احذف' })) { posStorageSet(POS_HISTORY_KEY, list.filter(r => r.id !== rec.id)); posRenderHistory(); }
+                });
+                posEl('posClearHistory').addEventListener('click', async () => { if (await window.proConfirm('مسح سجل الفواتير المحفوظ على هذا الجهاز؟ (لن يتأثر المخزون)', { type: 'danger', title: 'مسح السجل', okText: 'امسح' })) { posStorageSet(POS_HISTORY_KEY, []); posRenderHistory(); } });
+            }
+            try { if (typeof loadInvoiceSettings === 'function') loadInvoiceSettings(); } catch (_) {}
+            posSearchRender(); posRenderItems(); posRenderHistory(); posMarkChips();
+        }
+
+        function posThumb(p, big) {
+            const src = p && (p.image || (Array.isArray(p.images) && p.images[0]) || '');
+            return `<span class="pos-thumb">${p ? '📦' : '✍️'}${src ? `<img src="${escapeHtml(src)}" alt="" loading="lazy">` : ''}</span>`;
+        }
+
+        function posSearchRender() {
+            const box = posEl('posResults'); const raw = posEl('posSearch').value; const q = posNorm(raw);
+            const clr = posEl('posSearchClear'); if (clr) clr.hidden = !raw;
+            const keep = box.scrollTop;
+            if (!q) { box.innerHTML = '<div class="pos-hint"><i class="fa-solid fa-barcode"></i><span>اكتب اسم المنتج، أو امسح الباركود ثم اضغط Enter</span></div>'; return; }
+            const words = q.split(/\s+/).filter(Boolean);
+            const found = allProducts.filter(p => posSellable(p) && (() => { const hay = posNorm([p.name, p.barcode, p.category].join(' ')); return words.every(w => hay.includes(w)); })()).slice(0, 15);
+            if (!found.length) { box.innerHTML = '<div class="pos-hint"><i class="fa-regular fa-face-frown"></i><span>مفيش نتائج. ضيف المنتج يدويًا من الأسفل.</span></div>'; return; }
+            const inv = {}; posItems.forEach(i => { if (i.productId) inv[i.productId] = i.qty; });
+            box.innerHTML = found.map(p => {
+                const st = Math.max(0, Math.floor(Number(p.quantity) || 0));
+                const stock = st <= 0 ? '<span class="pos-pill out">نفد</span>' : `<span class="pos-pill${st <= 3 ? ' low' : ''}">متوفر ${st}</span>`;
+                const inB = inv[p.id] ? `<span class="pos-pill in">في الفاتورة ×${inv[p.id]}</span>` : '';
+                return `<button type="button" class="pos-res" data-pid="${escapeHtml(p.id)}" ${st <= 0 && posDeductOn() ? 'disabled' : ''}>${posThumb(p)}<span><span class="n">${escapeHtml(p.name || '---')}</span><span class="sub">${stock}${inB}</span></span><span class="p">${moneyText(posPrice(p))} ج</span></button>`;
+            }).join('');
+            box.scrollTop = keep;
+        }
+
+        function posAddProduct(id) {
+            const p = posProduct(id); if (!p) { showToast('❌ المنتج غير موجود', 'error'); return; }
+            const ex = posItems.find(i => i.productId === id);
+            if (ex) { if (ex.qty + 1 > posCap(ex)) { showToast('⚠️ الكمية المتاحة في المخزون ' + posStock(ex), 'warning'); return; } ex.qty += 1; }
+            else { if (posDeductOn() && (Number(p.quantity) || 0) <= 0) { showToast('⚠️ المنتج نفد من المخزون', 'warning'); return; } posItems.push({ key: 'p' + id, productId: id, name: String(p.name || 'منتج'), price: posPrice(p), qty: 1 }); }
+            posRenderItems();
+        }
+
+        function posAddCustom() {
+            const name = posEl('posCustomName').value.trim(); const price = posNum(posEl('posCustomPrice').value); const qty = Math.floor(posNum(posEl('posCustomQty').value)) || 1;
+            if (!name) { showToast('⚠️ اكتب اسم المنتج', 'warning'); posEl('posCustomName').focus(); return; }
+            if (!(price >= 0) || posEl('posCustomPrice').value === '') { showToast('⚠️ اكتب السعر', 'warning'); posEl('posCustomPrice').focus(); return; }
+            posItems.push({ key: 'c' + Date.now() + Math.floor(Math.random() * 1000), productId: null, name: name.slice(0, 120), price: money(price), qty: Math.max(1, qty) });
+            posEl('posCustomName').value = ''; posEl('posCustomPrice').value = ''; posEl('posCustomQty').value = '1';
+            posRenderItems();
+        }
+
+        function posRenderItems() {
+            const box = posEl('posItems'); const k = escapeHtml;
+            const cnt = posEl('posCount'); if (cnt) { cnt.textContent = posItems.length; cnt.classList.toggle('has', posItems.length > 0); }
+            if (!posItems.length) box.innerHTML = '<div class="pos-empty">لسه مفيش منتجات في الفاتورة.<br>ابحث عن منتج أو أضفه يدويًا.</div>';
+            else box.innerHTML = posItems.map(it => `<div class="pos-item"><div class="pos-item-head">${posThumb(it.productId ? posProduct(it.productId) : null)}<div class="pos-item-name">${k(it.name)}${it.productId ? '' : ' <small>(يدوي)</small>'}</div><button type="button" class="pos-rm" data-act="rm" data-k="${k(it.key)}" aria-label="حذف البند"><i class="fa-solid fa-trash-can"></i></button></div><div class="pos-item-row"><label class="pos-mini"><span>السعر</span><input type="number" data-f="price" data-k="${k(it.key)}" value="${it.price}" min="0" step="0.01" inputmode="decimal"></label><div class="pos-mini"><span>الكمية</span><div class="pos-step"><button type="button" data-act="dec" data-k="${k(it.key)}" aria-label="إنقاص">−</button><input type="number" data-f="qty" data-k="${k(it.key)}" value="${it.qty}" min="1" step="1" inputmode="numeric" aria-label="الكمية"><button type="button" data-act="inc" data-k="${k(it.key)}" aria-label="زيادة">+</button></div></div><span class="pos-line" data-line="${k(it.key)}">${moneyText(it.price * it.qty)} ج</span></div></div>`).join('');
+            posRenderTotals();
+            posSearchRender();
+        }
+
+        function posMarkChips() { const v = posNum(posEl('posShip').value); posEl('posShipChips').querySelectorAll('[data-ship]').forEach(b => b.classList.toggle('on', Number(b.dataset.ship) === v && posEl('posShip').value !== '')); }
+
+        function posCalc() {
+            const subtotal = money(posItems.reduce((s, i) => s + i.price * i.qty, 0));
+            const ship = money(Math.max(0, posNum(posEl('posShip').value)));
+            const raw = Math.max(0, posNum(posEl('posDiscount').value));
+            let disc = posEl('posDiscType').value === 'pct' ? subtotal * Math.min(100, raw) / 100 : raw;
+            disc = money(Math.min(disc, subtotal));
+            return { subtotal, ship, disc, total: money(Math.max(0, subtotal + ship - disc)) };
+        }
+
+        function posBuildOrder() {
+            const c = posCalc();
+            return {
+                id: String(Date.now()), manualInvoice: true, createdAt: Date.now(), status: 'delivered',
+                recipientName: posEl('posCustName').value.trim().slice(0, 80), phone: posEl('posCustPhone').value.trim().slice(0, 20), address: posEl('posCustAddr').value.trim().slice(0, 160),
+                paymentMethod: 'manual', paymentLabel: posEl('posPayment').value,
+                items: posItems.map(i => ({ productId: i.productId || null, name: i.name, price: i.price, quantity: i.qty })),
+                deliveryFee: c.ship, codFee: 0, coupon: c.disc > 0 ? { code: 'خصم', discount: c.disc } : null, total: c.total
+            };
+        }
+
+        function posRenderTotals() {
+            const c = posCalc(); const o = posBuildOrder(); const tax = getInvoiceTaxData(o);
+            posEl('posTotals').innerHTML = `<div><span>إجمالي المنتجات</span><b>${moneyText(c.subtotal)} ج</b></div><div><span>الشحن</span><b>${moneyText(c.ship)} ج</b></div>${c.disc > 0 ? `<div><span>الخصم</span><b>-${moneyText(c.disc)} ج</b></div>` : ''}${tax.amount > 0 ? `<div><span>الضريبة (${tax.rate.toFixed(2)}%)</span><b>+${moneyText(tax.amount)} ج</b></div>` : ''}<div class="g"><span>الإجمالي النهائي</span><b>${moneyText(c.total + tax.amount)} ج</b></div>`;
+        }
+
+        function posValidate() {
+            if (!posItems.length) return 'أضف منتجًا واحدًا على الأقل';
+            for (const it of posItems) {
+                if (!it.name.trim()) return 'يوجد بند بدون اسم';
+                if (!(it.price >= 0) || !Number.isFinite(it.price)) return 'سعر غير صحيح في: ' + it.name;
+                if (!Number.isInteger(it.qty) || it.qty < 1) return 'كمية غير صحيحة في: ' + it.name;
+                if (it.qty > posCap(it)) return 'الكمية المطلوبة من "' + it.name + '" أكبر من المتاح (' + posStock(it) + ')';
+            }
+            if (posNum(posEl('posShip').value) < 0) return 'الشحن لا يمكن أن يكون سالبًا';
+            return '';
+        }
+
+        let posModalKeyHandler = null;
+        function posCloseInvoice() {
+            const m = document.getElementById('posInvModal'); if (m) m.remove();
+            document.body.style.overflow = '';
+            if (posModalKeyHandler) { document.removeEventListener('keydown', posModalKeyHandler); posModalKeyHandler = null; }
+        }
+
+        // يعرض الفاتورة داخل الصفحة نفسها (بدون نافذة منبثقة) — يعمل على الموبايل وفي التطبيقات المثبتة
+        function posShowInvoice(o, isPreview) {
+            posCloseInvoice();
+            const html = buildInvoiceHtml(o)
+                .replace(/<button class="print-btn"[\s\S]*?<\/button>/i, '')
+                .replace(/<script[\s\S]*?<\/script>/gi, '');
+            const wrap = document.createElement('div');
+            wrap.id = 'posInvModal'; wrap.className = 'pos-modal';
+            wrap.innerHTML = `<div class="pos-modal-box" role="dialog" aria-modal="true" aria-label="الفاتورة">
+                <div class="pos-modal-head"><span>🧾 فاتورة #${escapeHtml(String(o.id || '').slice(-8))}</span>${isPreview ? '<span class="tag">معاينة — لم تُحفظ</span>' : ''}<button type="button" class="pos-modal-x" data-m="close" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button></div>
+                <div class="pos-modal-body"><iframe class="pos-modal-frame" title="الفاتورة"></iframe></div>
+                <div class="pos-modal-foot">
+                    <button type="button" class="btn btn-gold" data-m="print"><i class="fa-solid fa-print"></i> طباعة</button>
+                    <button type="button" class="btn btn-outline" data-m="image"><i class="fa-solid fa-image"></i> صورة</button>
+                    <button type="button" class="btn btn-outline" data-m="close">إغلاق</button>
+                </div></div>`;
+            document.body.appendChild(wrap);
+            document.body.style.overflow = 'hidden';
+            const fr = wrap.querySelector('iframe');
+            fr.addEventListener('load', () => { try { const d = fr.contentDocument; fr.style.height = Math.max(460, d.documentElement.scrollHeight, d.body.scrollHeight) + 'px'; } catch (_) {} });
+            fr.srcdoc = html;
+            wrap.addEventListener('click', e => {
+                if (e.target === wrap) { posCloseInvoice(); return; }
+                const b = e.target.closest('[data-m]'); if (!b) return;
+                if (b.dataset.m === 'close') posCloseInvoice();
+                else if (b.dataset.m === 'print') { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (_) { showToast('⚠️ الطباعة غير متاحة هنا — استخدم زر "صورة"', 'warning'); } }
+                else if (b.dataset.m === 'image') window.shareInvoiceImage(o);
+            });
+            posModalKeyHandler = e => { if (e.key === 'Escape') posCloseInvoice(); };
+            document.addEventListener('keydown', posModalKeyHandler);
+        }
+
+        async function posIssue(preview) {
+            if (posBusy) return;
+            const err = posValidate(); if (err) { showToast('⚠️ ' + err, 'warning'); return; }
+            const o = posBuildOrder();
+            if (preview) { posShowInvoice(o, true); return; }
+            posBusy = true;
+            const btn = posEl('posIssueBtn'); btn.disabled = true;
+            const deduct = posDeductOn(), done = [];
+            try {
+                if (deduct) {
+                    for (const it of posItems.filter(i => i.productId)) {
+                        const r = await runTransaction(ref(database, `products/${it.productId}/quantity`), cur => { const c = Number(cur) || 0; return c >= it.qty ? c - it.qty : undefined; });
+                        if (!r.committed) throw new Error('STOCK:' + it.name);
+                        done.push(it);
+                    }
+                }
+            } catch (e) {
+                for (const it of done) { try { await runTransaction(ref(database, `products/${it.productId}/quantity`), cur => (Number(cur) || 0) + it.qty); } catch (_) {} }
+                const msg = String(e && e.message || '');
+                showToast(msg.startsWith('STOCK:') ? '❌ الكمية غير كافية: ' + msg.slice(6) : '❌ تعذر خصم المخزون — لم تُصدر الفاتورة', 'error');
+                posBusy = false; btn.disabled = false; return;
+            }
+            try {
+                const list = posStorageGet(POS_HISTORY_KEY, []);
+                list.unshift({ id: o.id, createdAt: o.createdAt, total: o.total, customer: o.recipientName, count: o.items.length, deducted: deduct, order: o });
+                posStorageSet(POS_HISTORY_KEY, list.slice(0, 30));
+                posShowInvoice(o);
+                showToast('✅ تم إصدار الفاتورة' + (deduct ? ' وخصم المخزون' : ''), 'success');
+                posReset();
+            } catch (e) {
+                console.error(e);
+                showToast('❌ تعذر عرض الفاتورة: ' + (e && e.message || 'خطأ غير معروف'), 'error');
+            } finally { posBusy = false; btn.disabled = false; }
+        }
+
+        function posReset() {
+            posItems = [];
+            ['posSearch', 'posCustomName', 'posCustomPrice', 'posCustName', 'posCustPhone', 'posCustAddr'].forEach(id => { posEl(id).value = ''; });
+            posEl('posCustomQty').value = '1'; posEl('posShip').value = '0'; posEl('posDiscount').value = '0'; posEl('posDiscType').value = 'amt';
+            posSearchRender(); posRenderItems(); posRenderHistory(); posMarkChips();
+        }
+
+        function posRenderHistory() {
+            const list = posStorageGet(POS_HISTORY_KEY, []); const box = posEl('posHistory');
+            if (!list.length) { box.innerHTML = '<div class="pos-empty">لا توجد فواتير صادرة بعد</div>'; return; }
+            box.innerHTML = list.map(r => `<div class="pos-hist"><div class="t"><b>#${escapeHtml(String(r.id).slice(-8))}</b> — ${moneyText(r.total)} ج<small>${escapeHtml(new Date(r.createdAt).toLocaleString('ar-EG'))} · ${r.count} بند${r.customer ? ' · ' + escapeHtml(r.customer) : ''}${r.deducted ? ' · خُصم من المخزون' : ''}</small></div><div class="a"><button class="btn btn-outline btn-sm" type="button" data-hact="print" data-hid="${escapeHtml(r.id)}">🖨️ طباعة</button><button class="btn btn-outline btn-sm" type="button" data-hact="del" data-hid="${escapeHtml(r.id)}" style="color:#fca5a5">🗑️</button></div></div>`).join('');
+        }
+
         window.switchTab = function(n) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            const tabs = ['orders','invoice','products','add','coupons','wallets','about','contact','messages','logo','flashsale','promo','analytics','returns','vendors','approvals'];
+            const tabs = ['orders','invoice','pos','products','add','coupons','wallets','about','contact','messages','logo','flashsale','promo','analytics','returns','vendors','approvals'];
             const idx = tabs.indexOf(n);
             const at = document.querySelectorAll('.tab');
             if (idx >= 0 && at[idx]) at[idx].classList.add('active');
@@ -9045,6 +9489,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             if (n === 'vendors') renderVendorsPanel();
             if (n === 'approvals') renderApprovals();
             if (n === 'invoice') { loadInvoiceSettings(); updateInvoicePreview(); }
+            if (n === 'pos') posInit();
             if (n === 'products') renderProducts();
             if (n === 'coupons') renderCoupons();
             if (n === 'wallets') loadWalletSettings();
