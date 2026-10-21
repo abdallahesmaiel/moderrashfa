@@ -6299,13 +6299,16 @@
             if (deductedOrders.has(o.id)) return true;
             if (deductingOrders.has(o.id)) return false;
             deductingOrders.add(o.id);
+            let claimedMarker = false, deductionDone = false, partialDeduct = false;
             try {
                 const markerRef = ref(database, `orders/${o.id}/inventoryDeductedAt`);
-                const marker = await get(markerRef);
-                if (marker.exists() && Number(marker.val()) > 0) {
+                // حجز ذري للعلامة: أول جهاز ينجح فقط هو من يخصم، فلا يتكرر الخصم من لوحتين مفتوحتين
+                const claim = await runTransaction(markerRef, cur => (cur && Number(cur) > 0) ? undefined : Date.now());
+                if (!claim.committed) {
                     deductedOrders.add(o.id);
                     return true;
                 }
+                claimedMarker = true;
 
                 const items = Array.isArray(o.items) ? o.items : [];
                 if (!items.length) return true;
@@ -6340,6 +6343,7 @@
 
                 // خصم كل الكميات المطلوبة من القيم الحالية في Firebase.
                 for (const { product, qty } of resolved) {
+                    partialDeduct = true;
                     const quantityRef = ref(database, `products/${product.id}/quantity`);
                     await runTransaction(quantityRef, current => {
                         const currentQty = Math.max(0, Number(current || 0));
@@ -6348,11 +6352,13 @@
                     await update(ref(database, `products/${product.id}`), { lastUpdated: Date.now() });
                 }
 
-                await set(markerRef, Date.now());
+                deductionDone = true;
                 deductedOrders.add(o.id);
                 return true;
             } catch (e) {
                 console.error('deductStock failed:', e);
+                // فشل قبل اكتمال الخصم: نحرر العلامة لتتاح إعادة المحاولة (إن لم يبدأ خصم جزئي)
+                if (claimedMarker && !deductionDone && !partialDeduct) { try { await set(ref(database, `orders/${o.id}/inventoryDeductedAt`), null); } catch (_) {} }
                 showToast(`⚠️ لم يتم خصم المخزون: ${e.message || 'تعذر تحديد المنتج'}`, 'error');
                 return false;
             } finally {
@@ -9417,5 +9423,74 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             });
         })();
     </script>
+
+<!-- مؤشر حالة الاتصال (مرحلة PWA): لا يغيّر أي وظيفة قائمة -->
+<style>
+#proNetBar{position:fixed;left:0;right:0;top:0;z-index:2147483000;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px;text-align:center;font:600 13px/1.4 system-ui,'Segoe UI',Tahoma,sans-serif;color:#fff;transform:translateY(-110%);transition:transform .25s ease;pointer-events:none}
+#proNetBar.show{transform:translateY(0)}
+#proNetBar.off{background:#b45309}#proNetBar.on{background:#15803d}
+@media (prefers-reduced-motion:reduce){#proNetBar{transition:none}}
+</style>
+<div id="proNetBar" role="status" aria-live="polite"></div>
+<script>
+(function(){
+  var bar=document.getElementById('proNetBar'),t=null,wasOff=false;
+  function show(msg,cls,auto){bar.textContent=msg;bar.className='show '+cls;clearTimeout(t);if(auto)t=setTimeout(function(){bar.className=''},auto);}
+  function offline(){wasOff=true;show('⚠️ لا يوجد اتصال — البيانات المعروضة قد لا تكون محدّثة والتعديلات لن تُحفظ حتى يعود الاتصال','off',0);}
+  function online(){if(!wasOff)return;wasOff=false;show('✅ عاد الاتصال — جارٍ مزامنة البيانات','on',3500);}
+  window.addEventListener('offline',offline);window.addEventListener('online',online);
+  if(!navigator.onLine)offline();
+})();
+</script>
+
+<!-- شريط تنقل سفلي للهاتف (مرحلة تجربة الهاتف): يعتمد على window.switchTab الحالية دون تغييرها -->
+<style>
+#proBottomNav{display:none}
+@media (max-width:768px){
+  #proBottomNav{position:fixed;left:0;right:0;bottom:0;z-index:900;display:flex;background:var(--bg-card,#1e1e2a);border-top:1px solid var(--border-color,#2d2d3d);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 18px rgba(0,0,0,.35)}
+  #proBottomNav[hidden]{display:none}
+  #proBottomNav button{flex:1;min-width:0;min-height:48px;background:none;border:0;color:var(--text-muted,#64748b);font-size:11px;line-height:1.2;font-weight:600;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:relative;cursor:pointer;border-radius:12px;-webkit-tap-highlight-color:transparent}
+  #proBottomNav button i{font-size:18px}
+  #proBottomNav button.on{color:var(--gold-500,#c9a96e);background:rgba(201,169,110,.12)}
+  #proBottomNav .pbn-b{position:absolute;top:2px;inset-inline-end:calc(50% - 22px);background:#ef4444;color:#fff;border-radius:99px;font-size:10px;min-width:16px;height:16px;line-height:16px;padding:0 4px;text-align:center;font-style:normal}
+  body.has-pbn{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+}
+</style>
+<nav id="proBottomNav" hidden aria-label="التنقل السريع"></nav>
+<script>
+(function(){
+  var ITEMS=[{"t": "orders", "l": "الطلبات", "i": "fa-solid fa-list-check", "b": "pendingBadge"}, {"t": "products", "l": "المنتجات", "i": "fa-solid fa-boxes-stacked", "b": "lowStockBadge"}, {"t": "returns", "l": "المرتجعات", "i": "fa-solid fa-rotate-left", "b": "returnsBadge"}, {"t": "vendors", "l": "التجار", "i": "fa-solid fa-store"}], MORE="المزيد";
+  var nav=document.getElementById('proBottomNav');
+  if(!nav)return;
+  ITEMS.forEach(function(it){
+    var b=document.createElement('button');b.type='button';b.dataset.t=it.t;
+    b.innerHTML='<i class="'+it.i+'"></i><span></span>';b.lastChild.textContent=it.l;
+    if(it.b){var g=document.createElement('em');g.className='pbn-b';g.hidden=true;g.dataset.src=it.b;b.appendChild(g);}
+    b.addEventListener('click',function(){if(typeof window.switchTab==='function'){window.switchTab(it.t);window.scrollTo({top:0,behavior:'smooth'});}});
+    nav.appendChild(b);
+  });
+  var more=document.createElement('button');more.type='button';more.innerHTML='<i class="fa-solid fa-ellipsis"></i><span></span>';more.lastChild.textContent=MORE;
+  more.addEventListener('click',function(){var tc=document.querySelector('.tabs-container');if(tc)tc.scrollIntoView({behavior:'smooth',block:'start'});});
+  nav.appendChild(more);
+  var raf=0;
+  function sync(){
+    raf=0;
+    var tc=document.querySelector('.tabs-container');
+    var visible=!!(tc&&tc.offsetParent!==null);
+    nav.hidden=!visible;document.body.classList.toggle('has-pbn',visible);
+    if(!visible)return;
+    var act=document.querySelector('.tabs-container .tab.active');
+    var cur=act&&(act.dataset.tab||((act.getAttribute('onclick')||'').match(/switchTab\('([^']+)'/)||[])[1]);
+    nav.querySelectorAll('button[data-t]').forEach(function(b){b.classList.toggle('on',b.dataset.t===cur);});
+    nav.querySelectorAll('.pbn-b').forEach(function(g){
+      var s=document.getElementById(g.dataset.src);var n=s?(parseInt(s.textContent,10)||0):0;
+      g.hidden=!(n>0);g.textContent=n>99?'99+':String(n);
+    });
+  }
+  function queue(){if(!raf)raf=requestAnimationFrame(sync);}
+  new MutationObserver(queue).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','style','hidden'],childList:true,characterData:true});
+  window.addEventListener('resize',queue);queue();
+})();
+</script>
 </body>
     </html>
