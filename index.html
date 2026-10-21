@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#c9a96e">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -495,7 +495,7 @@
         /* ===== Two Column Grid ===== */
         .two-column-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
             gap: clamp(16px, 2vw, 22px);
             align-items: start;
         }
@@ -582,7 +582,7 @@
         /* ===== Orders Grid (2 columns) ===== */
         .orders-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
             gap: clamp(12px, 1.8vw, 16px);
         }
         
@@ -777,7 +777,7 @@
         /* ===== Products Grid ===== */
         .products-grid-admin {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
             gap: clamp(12px, 1.8vw, 18px);
         }
         
@@ -869,7 +869,7 @@
         /* ===== Wallets Grid ===== */
         .wallets-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
             gap: 14px;
             margin-top: 12px;
         }
@@ -932,7 +932,7 @@
         /* ===== Coupons Grid ===== */
         .coupons-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
             gap: 14px;
             margin-top: 12px;
         }
@@ -979,7 +979,7 @@
         /* ===== Messages Grid ===== */
         .messages-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
             gap: 14px;
         }
         
@@ -1109,7 +1109,7 @@
         
         .returns-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
             gap: 14px;
         }
         
@@ -1836,14 +1836,14 @@
         
         .promo-slides-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
             gap: 14px;
         }
 
         /* ===== Analytics ===== */
         .analytics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
             gap: 14px;
             margin-bottom: 18px;
         }
@@ -1871,7 +1871,7 @@
         /* ===== Responsive ===== */
         @media (max-width: 1024px) {
             .two-column-grid { grid-template-columns: 1fr; }
-            .orders-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+            .orders-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
         }
         
         @media (max-width: 768px) {
@@ -1941,7 +1941,7 @@
         .shipx-acc>summary:hover{background:var(--bg-hover)}
         .shipx-chev{color:var(--gold-300);transition:transform .3s ease}
         .shipx-acc[open] .shipx-chev{transform:rotate(180deg)}
-        .shipx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;padding:12px 14px 14px;border-top:1px solid var(--border-color);max-height:420px;overflow-y:auto;animation:shipxIn .3s ease}
+        .shipx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%, 230px),1fr));gap:8px;padding:12px 14px 14px;border-top:1px solid var(--border-color);max-height:420px;overflow-y:auto;animation:shipxIn .3s ease}
         @keyframes shipxIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
         .shipx-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px 8px 8px;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-tertiary);cursor:pointer;transition:var(--transition)}
         .shipx-row:hover,.shipx-row:focus-within{border-color:var(--gold-500)}
@@ -2199,6 +2199,125 @@
 .pos-modal-foot .btn{justify-content:center;min-height:48px;padding-inline:8px;font-size:13px}
 @media(max-width:560px){.pos-modal{padding:0}.pos-modal-box{width:100%;height:100%;border-radius:0;border:0}}
 @media print{.pos-modal{display:none!important}}
+
+/* ===== فاتورة طلب من التاجر ===== */
+.vi-cats{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;margin-top:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.vi-cats::-webkit-scrollbar{display:none}
+.vi-cats button{flex:none;min-height:36px;padding:0 14px;border-radius:99px;border:1px solid var(--border-light);background:var(--bg-card);color:var(--text-secondary);font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.vi-cats button.on{background:rgba(201,169,110,.16);border-color:var(--gold-500);color:var(--gold-300)}
+.vi-count{font-size:12px;color:var(--text-muted);margin:0 2px 8px}
+.vi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px;max-height:min(64vh,580px);overflow:auto;overscroll-behavior:contain;padding:2px}
+.vi-card{position:relative;display:flex;flex-direction:column;gap:7px;text-align:start;background:var(--bg-card);border:1px solid var(--border-color);border-radius:16px;padding:8px;cursor:pointer;color:var(--text-primary);font:inherit;transition:border-color .15s,background .15s,transform .1s}
+.vi-card:hover,.vi-card:focus-visible{border-color:var(--gold-500);outline:none}
+.vi-card:active{transform:scale(.98)}
+.vi-card.in{border-color:var(--gold-500);background:rgba(201,169,110,.09)}
+.vi-img{position:relative;aspect-ratio:1/1;width:100%;border-radius:12px;background:var(--bg-primary);display:flex;align-items:center;justify-content:center;font-size:30px;color:var(--text-muted);overflow:hidden}
+.vi-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.vi-name{font-weight:700;font-size:13px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
+.vi-meta{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.vi-price{font-weight:900;font-size:13px;color:var(--gold-300)}
+.vi-vend{font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vi-add{position:absolute;top:14px;inset-inline-start:14px;width:30px;height:30px;border-radius:50%;background:var(--gold-500);color:#1a1410;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.vi-badge{position:absolute;top:14px;inset-inline-end:14px;min-width:28px;height:28px;padding:0 8px;border-radius:99px;background:#10b981;color:#fff;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.vi-more{grid-column:1/-1;min-height:44px;justify-content:center}
+.vi-banner{display:flex;align-items:center;gap:10px;justify-content:space-between;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);color:#fbbf24;border-radius:14px;padding:10px 14px;margin-bottom:12px;font-size:13px;font-weight:700}
+.vi-banner[hidden]{display:none}
+.vi-grid2{display:grid;grid-template-columns:1fr 1.15fr;gap:10px}
+.vi-qpct{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.vi-qpct button{flex:1 1 auto;min-width:54px;min-height:40px;border-radius:12px;border:1px solid var(--border-light);background:var(--bg-card);color:var(--text-primary);font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+.vi-qpct button.on{background:rgba(201,169,110,.16);border-color:var(--gold-500);color:var(--gold-300)}
+.vi-nop{font-size:11px;color:#fbbf24;font-weight:800}
+.pos-line small{display:block;font-size:11px;font-weight:600;color:var(--text-muted);text-align:end;margin-top:2px}
+.vi-vinfo{font-size:12px;color:var(--text-muted);margin-top:8px;line-height:1.7}
+
+/* ===================================================================
+   تنسيق متجاوب لكل المقاسات (هواتف صغيرة جدًا → شاشات كبيرة)
+   =================================================================== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+*,*::before,*::after{box-sizing:border-box}
+img,video,canvas,svg{max-width:100%}
+.container,.panel,.card,.pos-box,.two-column-grid>*,.pos-grid2>*,.vi-grid2>*{min-width:0}
+.card,.pos-box,.pos-item,.pos-hist,.vi-card,.order-card,.vx-card{overflow-wrap:anywhere}
+input,select,textarea{max-width:100%}
+table{max-width:100%}
+
+/* تابلت (820 → 1024): صفحتا الفواتير عمودين بدل عمود واحد طويل */
+@media (min-width:820px) and (max-width:1024px){
+  #panel-pos .two-column-grid,#panel-vinvoice .two-column-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+/* شاشات كبيرة جدًا */
+@media (min-width:1500px){
+  .vi-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+}
+
+/* هواتف وتابلت صغير */
+@media (max-width:768px){
+  .tab{white-space:normal;line-height:1.35;min-height:42px}
+  .vi-grid,.pos-results{max-height:none;overflow:visible}
+  .vi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pos-modal-frame{min-height:380px}
+}
+/* منع تكبير iOS التلقائي عند الكتابة + أهداف لمس مريحة */
+@media (max-width:768px) and (pointer:coarse){
+  .form-input,.form-select,textarea,.pos-search input,.pos-mini input,.pos-step input{font-size:16px}
+  .btn,.pos-chips button,.vi-qpct button,.vi-cats button{min-height:44px}
+  .btn-sm{min-height:40px}
+}
+@supports (height:100dvh){
+  @media (max-width:560px){.pos-modal-box{height:100dvh}}
+}
+@media (max-height:480px) and (orientation:landscape){
+  .pos-modal-frame{min-height:260px}
+  .pos-modal-head{padding:8px 14px}.pos-modal-foot{padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+}
+
+/* هواتف صغيرة (≤ 400px) */
+@media (max-width:400px){
+  .container{padding-inline:8px}
+  .card{padding:12px;border-radius:18px}
+  .card-title{font-size:14px}
+  .card-header{gap:8px}
+  .tab{font-size:10px;padding:8px 5px;gap:4px}
+  .tab i{font-size:12px}
+  .pos-box{padding:11px;border-radius:16px}
+  .pos-box-title{font-size:13px}
+  .pos-grid2,.vi-grid2{grid-template-columns:1fr}
+  .pos-item{padding:9px}
+  .pos-item-row{gap:8px}
+  .pos-mini input{width:80px}
+  .pos-step button{width:36px}.pos-step input{width:38px}
+  .pos-totals{padding:11px;font-size:13px}.pos-totals .g{font-size:18px}
+  .pos-hist{flex-direction:column;align-items:stretch}.pos-hist .a{justify-content:flex-end;flex-wrap:wrap}
+  .pos-res{grid-template-columns:42px minmax(0,1fr) auto;gap:9px;padding:8px}
+  .pos-thumb{width:42px;height:42px}
+  .pos-chips{gap:6px}.pos-chips button{min-width:46px;padding:0 8px}
+  .vi-grid{gap:8px}
+  .vi-card{padding:6px;border-radius:14px}.vi-name{font-size:12px}.vi-price{font-size:12px}
+  .vi-add,.vi-badge{top:11px}.vi-add{inset-inline-start:11px;width:26px;height:26px}.vi-badge{inset-inline-end:11px;height:24px;min-width:24px}
+  .vi-qpct{gap:6px}.vi-qpct button{min-width:44px}
+  .pos-modal-foot{padding:10px;gap:6px}.pos-modal-foot .btn{font-size:12px;padding-inline:4px}.pos-modal-foot .btn i{display:none}
+  .pos-modal-head{padding:10px 12px;font-size:14px}
+  .pos-actions .btn{min-width:0!important;flex:1 1 100%!important}
+}
+/* هواتف صغيرة جدًا (≤ 340px) */
+@media (max-width:340px){
+  .tabs-container{grid-template-columns:1fr 1fr}
+  .tab{font-size:9.5px;padding:7px 3px}
+  .pos-item-head{grid-template-columns:36px minmax(0,1fr) 34px}.pos-item-head .pos-thumb{width:36px;height:36px}
+  .pos-mini input{width:72px}
+  .pos-line{margin-inline-start:0;width:100%;text-align:start}.pos-line small{text-align:start}
+}
+
+/* ===== نسبة على السعر (صفحة إضافة منتج) ===== */
+.pa-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.pa-seg button{min-height:44px;border-radius:12px;border:1.5px solid var(--border-light);background:var(--bg-card);color:var(--text-secondary);font:inherit;font-weight:800;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color .15s,background .15s}
+.pa-seg button.on{border-color:var(--gold-500);background:rgba(201,169,110,.16);color:var(--gold-300)}
+.pa-seg button[data-pa="up"].on{border-color:#10b981;background:rgba(16,185,129,.14);color:#34d399}
+.pa-seg button[data-pa="down"].on{border-color:#ef4444;background:rgba(239,68,68,.12);color:#f87171}
+.pa-result{margin-top:12px;padding:11px 12px;border-radius:12px;background:var(--bg-card);border:1px dashed var(--border-light);text-align:center;font-size:13px;line-height:1.9;color:var(--text-secondary)}
+.pa-result b{color:var(--gold-300);font-size:17px}
+.pa-result .sub{display:block;color:var(--text-muted);font-size:12px}
+@media (max-width:400px){.pa-seg button{font-size:12px;gap:4px;padding:0 4px}.pa-seg button i{display:none}}
 </style>
 </head>
 <body>
@@ -2309,6 +2428,7 @@
             <button class="tab" onclick="window.switchTab('returns')"><i class="fa-solid fa-rotate-left"></i> المرتجعات <span class="tab-badge hidden" id="returnsBadge">0</span></button>
             <button class="tab" onclick="window.switchTab('vendors')"><i class="fa-solid fa-store"></i> التجار</button>
             <button class="tab" onclick="window.switchTab('approvals')"><i class="fa-solid fa-circle-check"></i> موافقات المنتجات <span class="tab-badge warning hidden" id="vxApprBadge">0</span></button>
+            <button class="tab" onclick="window.switchTab('vinvoice')"><i class="fa-solid fa-file-invoice-dollar"></i> فاتورة تاجر</button>
         </div>
 
         <!-- ===== Panel: Orders ===== -->
@@ -2478,6 +2598,91 @@
   </div>
 </div>
 
+        <!-- ===== Panel: فاتورة طلب من التاجر ===== -->
+<div class="panel" id="panel-vinvoice">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fa-solid fa-file-invoice-dollar"></i> فاتورة طلب من التاجر</div>
+      <button class="btn btn-outline btn-sm" id="viResetBtn" type="button"><i class="fa-solid fa-redo"></i> فاتورة جديدة</button>
+    </div>
+    <div class="vi-banner" id="viEditBanner" hidden><span id="viEditText"></span><button type="button" class="btn btn-outline btn-sm" id="viCancelEdit">إلغاء التعديل</button></div>
+    <div class="two-column-grid">
+      <div>
+        <div class="pos-box">
+          <div class="pos-box-title">🏪 التاجر</div>
+          <div class="pos-gap">
+            <select id="viVendor" class="form-select" aria-label="التاجر" style="margin:0"></select>
+            <input type="text" id="viVendorName" class="form-input" placeholder="اسم التاجر" maxlength="80" aria-label="اسم التاجر" style="margin:0" hidden>
+            <input type="text" id="viNote" class="form-input" placeholder="ملاحظة أو رقم مرجعي (اختياري)" maxlength="120" aria-label="ملاحظة" style="margin:0">
+          </div>
+          <div class="vi-vinfo" id="viVendorInfo"></div>
+        </div>
+        <div class="pos-box">
+          <div class="pos-box-title">🛍️ اختر المنتجات</div>
+          <div class="pos-search">
+            <i class="fa-solid fa-magnifying-glass pos-search-ic" aria-hidden="true"></i>
+            <input type="text" id="viSearch" placeholder="ابحث بالاسم أو الباركود أو القسم" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+            <button type="button" id="viSearchClear" class="pos-search-x" aria-label="مسح البحث" hidden><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="vi-cats" id="viCats"></div>
+          <div class="vi-count" id="viCount"></div>
+          <div class="vi-grid" id="viGrid" aria-live="polite"></div>
+        </div>
+        <div class="pos-box">
+          <div class="pos-box-title">➕ منتج غير موجود في المتجر</div>
+          <div class="pos-gap">
+            <input type="text" id="viCustomName" class="form-input" placeholder="اسم المنتج" maxlength="120" aria-label="اسم المنتج" style="margin:0">
+            <div class="pos-grid2">
+              <label class="pos-field"><span>الكمية</span><input type="number" id="viCustomQty" class="form-input" value="1" min="1" step="1" inputmode="numeric" style="margin:0"></label>
+              <label class="pos-field"><span>السعر (اختياري)</span><input type="number" id="viCustomPrice" class="form-input" placeholder="0" min="0" step="0.01" inputmode="decimal" style="margin:0"></label>
+            </div>
+            <button class="btn btn-outline" id="viAddCustom" type="button" style="width:100%;justify-content:center;min-height:46px"><i class="fa-solid fa-plus"></i> أضف للفاتورة</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="pos-box">
+          <div class="pos-box-title">🧾 بنود الفاتورة <span class="pos-count" id="viCountBadge">0</span></div>
+          <label class="pos-switch" style="margin:0 0 12px">
+            <input type="checkbox" id="viAutoPrice">
+            <span class="pos-switch-ui"></span>
+            <span class="pos-switch-txt"><b>سحب السعر تلقائيًا عند إضافة المنتج</b><small>لو متوقف، المنتج بيتضاف بدون سعر وانت بتكتب السعر بنفسك.</small></span>
+          </label>
+          <div id="viItems" class="pos-items"></div>
+          <button type="button" class="btn btn-outline btn-sm" id="viFillPrices" style="width:100%;justify-content:center;margin-top:10px;min-height:42px"><i class="fa-solid fa-wand-magic-sparkles"></i> املأ الأسعار الفارغة من المتجر</button>
+        </div>
+        <div class="pos-box">
+          <div class="pos-box-title">💸 النسبة</div>
+          <div class="vi-grid2">
+            <label class="pos-field"><span>النسبة %</span><input type="number" id="viPct" class="form-input" placeholder="0" min="0" step="0.5" inputmode="decimal" value="0" style="margin:0"></label>
+            <label class="pos-field"><span>طريقة التطبيق</span><select id="viMode" class="form-select" style="margin:0"><option value="minus">خصم من سعر التاجر</option><option value="plus">زيادة على سعر التاجر</option></select></label>
+          </div>
+          <div class="vi-qpct" id="viQuick"><button type="button" data-pct="5">5%</button><button type="button" data-pct="10">10%</button><button type="button" data-pct="15">15%</button><button type="button" data-pct="20">20%</button><button type="button" data-pct="25">25%</button></div>
+          <div class="pos-note">النسبة بتتطبق على كل البنود، ولو كتبت "نسبة خاصة" لبند معيّن بتتقدّم عليها.</div>
+        </div>
+        <label class="pos-switch">
+          <input type="checkbox" id="viShowPrices" checked>
+          <span class="pos-switch-ui"></span>
+          <span class="pos-switch-txt"><b>إظهار الأسعار في الفاتورة</b><small>اقفله لو عايز فاتورة بالطلبات والكميات بس، من غير أسعار.</small></span>
+        </label>
+        <div class="pos-totals" id="viTotals"></div>
+        <div class="pos-actions">
+          <button class="btn btn-gold" id="viIssueBtn" type="button" style="flex:2;min-width:170px"><i class="fa-solid fa-file-invoice"></i> إصدار الفاتورة</button>
+          <button class="btn btn-outline" id="viPreviewBtn" type="button" style="flex:1;min-width:110px"><i class="fa-solid fa-eye"></i> معاينة</button>
+        </div>
+        <div class="pos-note">الإصدار بيحفظ الفاتورة في قاعدة البيانات (vendorInvoices) ولا يؤثر على الخزنة أو التحليلات.</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> آخر فواتير التجار</div>
+      <button class="btn btn-outline btn-sm" id="viClearHistory" type="button"><i class="fa-solid fa-trash"></i> مسح السجل</button>
+    </div>
+    <div id="viHistory"></div>
+  </div>
+</div>
+
         <div class="panel" id="panel-add">
             <div class="card">
                 <div class="card-header">
@@ -2503,6 +2708,21 @@
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                             <div class="form-group"><label class="form-label">السعر *</label><input type="number" id="prodPrice" class="form-input" placeholder="0.00" min="0" step="0.01"></div>
                             <div class="form-group"><label class="form-label">الكمية *</label><input type="number" id="prodQty" class="form-input" placeholder="0" min="0"></div>
+                        </div>
+                        <div class="discount-group" id="paBox" style="margin-bottom:14px;">
+                            <div class="discount-group-title"><i class="fa-solid fa-percent"></i> نسبة على السعر (زيادة أو خصم)</div>
+                            <div class="pa-seg" id="paModes">
+                                <button type="button" data-pa="none" class="on"><i class="fa-solid fa-ban"></i> بدون</button>
+                                <button type="button" data-pa="up"><i class="fa-solid fa-arrow-trend-up"></i> زيادة</button>
+                                <button type="button" data-pa="down"><i class="fa-solid fa-arrow-trend-down"></i> خصم</button>
+                            </div>
+                            <div id="paBody" hidden>
+                                <div class="form-group" style="margin-bottom:0"><label class="form-label" for="paPct">النسبة (%)</label><input type="number" id="paPct" class="form-input" min="0" max="1000" step="0.5" inputmode="decimal" placeholder="مثال: 15"></div>
+                                <div class="vi-qpct" id="paQuick"><button type="button" data-pct="5">5%</button><button type="button" data-pct="10">10%</button><button type="button" data-pct="15">15%</button><button type="button" data-pct="20">20%</button><button type="button" data-pct="25">25%</button><button type="button" data-pct="30">30%</button></div>
+                                <div class="pa-result" id="paResult"></div>
+                            </div>
+                            <button type="button" class="btn btn-outline btn-sm" id="paSave" style="margin-top:12px;width:100%;justify-content:center;min-height:44px"><i class="fa-solid fa-floppy-disk"></i> حفظ كإعداد افتراضي</button>
+                            <div class="pos-note" id="paSavedNote"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">باركود المنتج (اختياري)</label>
@@ -5069,6 +5289,64 @@
             if (sel && emoji) emoji.textContent = CATEGORIES.find(c => c.id === sel.value)?.emoji || '📱';
         };
 
+        // ===== نسبة على السعر: زيادة أو خصم يتحسبوا تلقائيًا عند إضافة المنتج =====
+        const PA_KEY = 'pro_price_adjust_v1';
+        let paState = { mode: 'none', pct: '' }, paSaved = null, paInited = false;
+        const paNum = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0; };
+        window.paApply = function(base) {
+            const b = Number(base) || 0, pct = Math.max(0, paNum(paState.pct));
+            if (paState.mode === 'none' || !pct) return b;
+            const v = paState.mode === 'up' ? b * (1 + pct / 100) : b * (1 - Math.min(100, pct) / 100);
+            return money(Math.max(0, v));
+        };
+        function paRender() {
+            const m = paState.mode, pct = Math.max(0, paNum(paState.pct)), up = m === 'up';
+            document.querySelectorAll('#paModes button').forEach(b => b.classList.toggle('on', b.dataset.pa === m));
+            document.getElementById('paBody').hidden = m === 'none';
+            document.querySelectorAll('#paQuick button').forEach(b => b.classList.toggle('on', Number(b.dataset.pct) === pct));
+            const inp = document.getElementById('paPct'); if (inp && document.activeElement !== inp) inp.value = paState.pct;
+            const base = parseFloat(document.getElementById('prodPrice')?.value), res = document.getElementById('paResult');
+            if (m !== 'none') {
+                if (!pct) res.innerHTML = 'اكتب النسبة وهتظهر لك النتيجة.';
+                else if (!(base > 0)) res.innerHTML = 'اكتب السعر الأساسي في خانة "السعر" فوق وهتظهر النتيجة هنا.';
+                else {
+                    const fin = window.paApply(base), diff = money(Math.abs(fin - base));
+                    res.innerHTML = `${money(base).toFixed(2)} ${up ? '+' : '−'} ${pct}% (${up ? '+' : '−'}${diff.toFixed(2)})<br>هيتحفظ بسعر <b>${fin.toFixed(2)} ج</b><span class="sub">السعر الأساسي اللي كتبته: ${money(base).toFixed(2)} ج</span>`;
+                }
+            }
+            const note = document.getElementById('paSavedNote');
+            if (note) note.textContent = !paSaved ? 'لسه ما حفظتش إعداد — اضبط النسبة واضغط الزر عشان تفضل في كل منتج جديد.' : (paSaved.mode === 'none' ? 'المحفوظ: بدون نسبة' : `المحفوظ: ${paSaved.mode === 'up' ? 'زيادة' : 'خصم'} ${paSaved.pct}% على كل منتج جديد`);
+            if (typeof updateDiscountPreview === 'function') updateDiscountPreview();
+        }
+        async function paSave() {
+            const s = { mode: paState.mode, pct: paState.mode === 'none' ? '' : paState.pct };
+            if (s.mode !== 'none' && !(paNum(s.pct) > 0)) { showToast('⚠️ اكتب النسبة الأول', 'warning'); return; }
+            if (s.mode === 'down' && paNum(s.pct) > 100) { showToast('⚠️ نسبة الخصم من 0 إلى 100', 'warning'); return; }
+            paSaved = s; try { localStorage.setItem(PA_KEY, JSON.stringify(s)); } catch (_) {}
+            paRender();
+            const btn = document.getElementById('paSave'); btn.disabled = true;
+            try { await set(ref(database, 'settings/priceAdjust'), { ...s, updatedAt: Date.now() }); showToast('✅ تم حفظ إعداد النسبة', 'success'); }
+            catch (e) { console.error(e); showToast('⚠️ اتحفظ على الجهاز بس — تعذر الحفظ على السيرفر', 'warning'); }
+            finally { btn.disabled = false; }
+        }
+        function paInit() {
+            if (paInited) { paRender(); return; }
+            paInited = true;
+            try { const l = JSON.parse(localStorage.getItem(PA_KEY) || 'null'); if (l && l.mode) { paSaved = l; paState = { mode: l.mode, pct: l.pct ?? '' }; } } catch (_) {}
+            if (database) get(ref(database, 'settings/priceAdjust')).then(s => {
+                if (!s.exists()) return; const v = s.val() || {}; if (!v.mode) return;
+                paSaved = { mode: v.mode, pct: v.pct ?? '' }; try { localStorage.setItem(PA_KEY, JSON.stringify(paSaved)); } catch (_) {}
+                if (!(parseFloat(document.getElementById('prodPrice')?.value) > 0)) paState = { ...paSaved };
+                paRender();
+            }).catch(() => {});
+            document.getElementById('paModes').addEventListener('click', e => { const b = e.target.closest('[data-pa]'); if (!b) return; paState.mode = b.dataset.pa; if (paState.mode === 'none') paState.pct = ''; paRender(); });
+            document.getElementById('paPct').addEventListener('input', e => { paState.pct = e.target.value; paRender(); });
+            document.getElementById('paQuick').addEventListener('click', e => { const b = e.target.closest('[data-pct]'); if (!b) return; paState.pct = b.dataset.pct; paRender(); });
+            document.getElementById('prodPrice').addEventListener('input', paRender);
+            document.getElementById('paSave').addEventListener('click', paSave);
+            paRender();
+        }
+
         window.selectDiscountType = function(type) {
             currentDiscountType = type;
             document.querySelectorAll('#panel-add .discount-type-btn').forEach(b => b.classList.remove('active'));
@@ -5091,7 +5369,7 @@
         };
 
         function updateDiscountPreview() {
-            const p = parseFloat(document.getElementById('prodPrice')?.value) || 0;
+            const p = window.paApply ? window.paApply(parseFloat(document.getElementById('prodPrice')?.value) || 0) : (parseFloat(document.getElementById('prodPrice')?.value) || 0);
             const v = parseFloat(document.getElementById('prodDiscountValue')?.value) || 0;
             const pv = document.getElementById('discountPreview'), fe = document.getElementById('finalPricePreview');
             if (currentDiscountType === 'none' || !v) { pv.style.display = 'none'; return; }
@@ -5113,6 +5391,7 @@
             currentDiscountType = 'none';
             window.selectDiscountType('none');
             document.getElementById('discountPreview').style.display = 'none';
+            if (paInited) paRender();
         };
 
         window.openEditModal = function(pid) {
@@ -6950,9 +7229,10 @@
         }
 
         function buildInvoiceHtml(o) {
+            if (o && o.vendorInvoice) return viBuildHtml(o);
             return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>فاتورة #${escapeHtml(String(o.id || '').slice(-8))}</title><style>
                 *{box-sizing:border-box}html,body{margin:0!important;padding:0!important;background:#f3f4f6!important;color:#111!important;font-family:Tahoma,Arial,sans-serif!important;opacity:1!important;filter:none!important;-webkit-text-fill-color:#111!important}.invoice-sheet,.invoice-sheet *{opacity:1!important;filter:none!important}body{padding:16px}.invoice-sheet{width:420px;max-width:100%;margin:0 auto;background:#fff;padding:22px;border-radius:12px;box-shadow:0 3px 18px rgba(0,0,0,.08);color:#111}.invoice-head{text-align:center;border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:14px}.store-name{font-size:27px;font-weight:900;color:#111}.invoice-title{font-size:16px;font-weight:800;margin-top:6px;color:#333}.invoice-meta{font-size:13px;line-height:1.9;border-bottom:1px solid #bbb;padding-bottom:12px}.invoice-meta b{color:#111}.invoice-section-title{font-size:16px;font-weight:900;margin:14px 0 8px;color:#111}.invoice-items{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;color:#111}.invoice-items th{background:#e9ecef;color:#111;font-weight:900;padding:9px 5px;border:1px solid #555}.invoice-items td{padding:9px 5px;border:1px solid #777;font-weight:700;color:#111;vertical-align:middle}.invoice-items .item-name{width:42%;word-break:break-word}.invoice-items .item-qty{width:15%;text-align:center}.invoice-items .item-price{width:21%;text-align:center}.invoice-items .item-total{width:22%;text-align:center;font-weight:900}.invoice-totals{margin-top:12px;border:1px solid #777;border-radius:8px;padding:9px 11px;font-size:13px;color:#111}.invoice-totals>div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-weight:700}.invoice-totals strong{font-weight:900;color:#111}.invoice-totals .discount{color:#b91c1c}.invoice-totals .grand-total{border-top:2px solid #111;margin-top:5px;padding-top:9px;font-size:17px;font-weight:900}.barcode-title{text-align:center;font-weight:900;font-size:13px;margin-top:15px;color:#111}.barcode-wrap{display:block;margin:8px auto 0;width:100%;max-width:360px;text-align:center}.barcode-wrap svg{display:block;width:100%;height:auto;margin:0 auto}.barcode-number{text-align:center;font-family:Arial,sans-serif;font-size:17px;font-weight:900;letter-spacing:2px;margin-top:-5px;color:#111}.qr-wrap{display:block;width:100%;max-width:100%;margin:14px auto 0!important;text-align:center!important;direction:ltr!important}.qr-wrap .qr-title{display:block;text-align:center!important;direction:rtl!important;font-weight:900;font-size:13px;margin-bottom:6px;color:#111}.qr-wrap img{display:block!important;width:180px!important;height:180px!important;max-width:180px!important;max-height:180px!important;margin:0 auto!important;position:static!important;float:none!important}.invoice-footer{text-align:center;border-top:1px dashed #777;margin-top:15px;padding-top:12px;font-size:13px;font-weight:800;line-height:1.8;color:#222}.invoice-footer small{font-weight:600;color:#333}.print-btn{display:block;margin:15px auto 0;padding:11px 25px;border:0;border-radius:8px;background:#111;color:#fff;font-size:15px;font-weight:800}@media print{html,body{background:#fff}body{padding:0}.invoice-sheet{width:80mm;box-shadow:none;border-radius:0;padding:10px}.print-btn{display:none}}
-            .invoice-sheet{border-top:7px solid #111}.inv-chip{display:inline-block;margin-top:9px;padding:4px 16px;border:2px solid #111;border-radius:50px;font-size:12px;font-weight:900;letter-spacing:0}.invoice-meta{background:#f6f6f6;border:1px solid #ddd!important;border-radius:10px;padding:6px 12px!important}.meta-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed #cfcfcf;font-size:12.5px;line-height:1.7}.meta-row:last-child{border-bottom:0}.meta-row span{color:#555;font-weight:700;flex:none}.meta-row b{text-align:left;word-break:break-word;color:#111;font-weight:800}.invoice-items thead th{background:#111!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#111!important}.invoice-items tbody tr:nth-child(even) td{background:#f4f4f4}.invoice-totals .grand-total{background:#111;color:#fff;-webkit-text-fill-color:#fff;border-radius:9px;padding:10px 12px!important;border-top:0!important;margin-top:8px}.invoice-totals .grand-total strong,.invoice-totals .grand-total span{color:#fff!important;-webkit-text-fill-color:#fff!important}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body>${buildInvoiceBody(o)}<button class="print-btn" onclick="window.print()">🖨️ طباعة</button><script>window.onload=function(){setTimeout(function(){try{window.print()}catch(e){}},400)};<\/script><!-- Professional unified latest: preserves exclusive offers, analytics, Cloudinary cleanup, and barcode camera/image search. -->
+            .invoice-sheet{border-top:7px solid #111}.inv-chip{display:inline-block;margin-top:9px;padding:4px 16px;border:2px solid #111;border-radius:50px;font-size:12px;font-weight:900;letter-spacing:0}.invoice-meta{background:#f6f6f6;border:1px solid #ddd!important;border-radius:10px;padding:6px 12px!important}.meta-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed #cfcfcf;font-size:12.5px;line-height:1.7}.meta-row:last-child{border-bottom:0}.meta-row span{color:#555;font-weight:700;flex:none}.meta-row b{text-align:left;word-break:break-word;color:#111;font-weight:800}.invoice-items thead th{background:#111!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#111!important}.invoice-items tbody tr:nth-child(even) td{background:#f4f4f4}.invoice-totals .grand-total{background:#111;color:#fff;-webkit-text-fill-color:#fff;border-radius:9px;padding:10px 12px!important;border-top:0!important;margin-top:8px}.invoice-totals .grand-total strong,.invoice-totals .grand-total span{color:#fff!important;-webkit-text-fill-color:#fff!important}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}@media(max-width:400px){.invoice-sheet{padding:14px 10px!important;border-radius:0}.store-name{font-size:22px}.invoice-title{font-size:14px}.invoice-section-title{font-size:14px}.invoice-items{font-size:11px}.invoice-items th,.invoice-items td{padding:7px 3px}.meta-row{flex-wrap:wrap;gap:2px 10px}.invoice-totals{font-size:12px;padding:7px 8px}.invoice-totals .grand-total{font-size:15px}.barcode-number{font-size:14px;letter-spacing:1px}.qr-wrap img{width:150px!important;height:150px!important;max-width:150px!important;max-height:150px!important}}</style></head><body>${buildInvoiceBody(o)}<button class="print-btn" onclick="window.print()">🖨️ طباعة</button><script>window.onload=function(){setTimeout(function(){try{window.print()}catch(e){}},400)};<\/script><!-- Professional unified latest: preserves exclusive offers, analytics, Cloudinary cleanup, and barcode camera/image search. -->
 </body></html>`;
         }
 
@@ -9561,10 +9841,314 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             }).join('');
         }
 
+        // ================= فاتورة طلب من التاجر =================
+        const viEl = id => document.getElementById(id);
+        const viNum = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0; };
+        const VI_SETTINGS_KEY = 'pro_vi_settings_v1', VI_HISTORY_KEY = 'pro_vi_history_v1';
+        let viItems = [], viInited = false, viEditingId = null, viEditingCreated = 0, viCat = 'all', viLimit = 24, viBusy = false;
+        const viKey = () => 'v' + Math.random().toString(36).slice(2, 9);
+
+        function viVendorId() { return viEl('viVendor') ? viEl('viVendor').value : ''; }
+        function viProducts() { return (typeof allProducts !== 'undefined' ? allProducts : []).filter(p => p && p.name && p.approval !== 'rejected'); }
+        function viStorePrice(p) { const mk = p && p.mk; if (mk && Number(mk.baseFinal) > 0) return money(Number(mk.baseFinal)); return posPrice(p); }
+
+        function viFillVendors() {
+            const sel = viEl('viVendor'), cur = sel.value;
+            const list = Object.entries(vxVendors || {}).map(([id, v]) => ({ id, name: (v && (v.name || v.username)) || 'تاجر' })).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+            sel.innerHTML = '<option value="">— اختر التاجر —</option>' + list.map(v => `<option value="${escapeHtml(v.id)}">${escapeHtml(v.name)}</option>`).join('') + '<option value="__manual">✍️ تاجر آخر (اكتب الاسم)</option>';
+            if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+            viVendorUi();
+        }
+        function viVendorUi() {
+            const vid = viVendorId(), manual = vid === '__manual';
+            viEl('viVendorName').hidden = !manual;
+            const v = vxVendors && vxVendors[vid];
+            const info = viEl('viVendorInfo');
+            if (v) { const c = Number(v.commission) || 0; info.textContent = c ? `نسبة المتجر المسجلة لهذا التاجر: ${c < 0 ? 'زيادة ' + (-c) : 'خصم ' + c}%` : 'لا توجد نسبة مسجلة لهذا التاجر — اكتبها بنفسك.'; }
+            else info.textContent = '';
+        }
+        function viOnVendorChange() {
+            const vid = viVendorId(), v = vxVendors && vxVendors[vid];
+            if (v && Number(v.commission)) { const c = Number(v.commission); viEl('viPct').value = Math.abs(c); viEl('viMode').value = c < 0 ? 'plus' : 'minus'; viSaveSettings(); }
+            viCat = (vid && viProducts().some(p => p.vendorId === vid)) ? 'vendor' : 'all';
+            viLimit = 24; viVendorUi(); viRenderCats(); viRenderGrid(); viRenderItems();
+        }
+        function viSaveSettings() {
+            posStorageSet(VI_SETTINGS_KEY, { pct: viEl('viPct').value, mode: viEl('viMode').value, showPrices: viEl('viShowPrices').checked, autoPrice: viEl('viAutoPrice').checked });
+        }
+
+        // ----- حساب الفاتورة -----
+        function viCalc() {
+            const g = Math.max(0, viNum(viEl('viPct').value)), mode = viEl('viMode').value === 'plus' ? 'plus' : 'minus';
+            let base = 0, adj = 0, net = 0;
+            const lines = viItems.map(it => {
+                const price = Math.max(0, viNum(it.price)), qty = Math.max(1, Math.floor(viNum(it.qty)) || 1);
+                const custom = !(it.pct === '' || it.pct == null);
+                const pct = custom ? Math.max(0, viNum(it.pct)) : g;
+                const b = money(price * qty), a = money(b * pct / 100), n = mode === 'plus' ? money(b + a) : money(Math.max(0, b - a));
+                base += b; adj += a; net += n;
+                return { key: it.key, productId: it.productId || '', name: it.name, qty, price, pct, custom, base: b, adj: a, net: n };
+            });
+            return { lines, base: money(base), adj: money(adj), net: money(net), pct: g, mode };
+        }
+        function viLineHtml(l, mode) {
+            if (!(l.price > 0)) return '<span class="vi-nop">بدون سعر</span>';
+            return `${moneyText(l.net)} ج<small>${moneyText(l.base)} ${mode === 'plus' ? '+' : '−'} ${moneyText(l.adj)} (${l.pct}%)</small>`;
+        }
+        function viRenderTotals() {
+            const c = viCalc(), box = viEl('viTotals'), minus = c.mode === 'minus';
+            const priced = c.lines.some(l => l.price > 0);
+            box.innerHTML = priced
+                ? `<div><span>إجمالي سعر التاجر</span><b>${moneyText(c.base)} ج</b></div><div><span>${minus ? 'خصم النسبة' : 'زيادة النسبة'}</span><b>${minus ? '−' : '+'}${moneyText(c.adj)} ج</b></div><div class="g"><span>الصافي المستحق للتاجر</span><b>${moneyText(c.net)} ج</b></div>`
+                : '<div style="justify-content:center;color:var(--text-muted)">لسه مفيش أسعار — اكتب سعر كل بند أو استخدم "املأ الأسعار".</div>';
+            viEl('viQuick').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.pct) === c.pct));
+            c.lines.forEach(l => { const el = document.querySelector(`#viItems [data-line="${l.key}"]`); if (el) el.innerHTML = viLineHtml(l, c.mode); });
+        }
+
+        // ----- المنتجات -----
+        function viRenderCats() {
+            const vid = viVendorId(), prods = viProducts();
+            const cats = [...new Set(prods.map(p => String(p.category || '').trim()).filter(Boolean))].slice(0, 14);
+            const hasV = vid && vid !== '__manual' && prods.some(p => p.vendorId === vid);
+            if (viCat === 'vendor' && !hasV) viCat = 'all';
+            const chip = (k, label) => `<button type="button" data-cat="${escapeHtml(k)}" class="${viCat === k ? 'on' : ''}">${escapeHtml(label)}</button>`;
+            viEl('viCats').innerHTML = chip('all', 'الكل') + (hasV ? chip('vendor', '🏪 منتجات هذا التاجر') : '') + cats.map(c => chip(c, c)).join('');
+        }
+        function viFiltered() {
+            const words = posNorm(viEl('viSearch').value).split(/\s+/).filter(Boolean), vid = viVendorId();
+            return viProducts().filter(p => {
+                if (viCat === 'vendor') { if (p.vendorId !== vid) return false; }
+                else if (viCat !== 'all' && String(p.category || '').trim() !== viCat) return false;
+                if (!words.length) return true;
+                const hay = posNorm([p.name, p.barcode, p.category].join(' '));
+                return words.every(w => hay.includes(w));
+            });
+        }
+        function viRenderGrid(keepScroll) {
+            const box = viEl('viGrid'), keep = box.scrollTop, raw = viEl('viSearch').value;
+            viEl('viSearchClear').hidden = !raw;
+            const all = viFiltered(), shown = all.slice(0, viLimit);
+            viEl('viCount').textContent = all.length ? `${all.length} منتج` : '';
+            if (!all.length) { box.innerHTML = '<div class="pos-hint" style="grid-column:1/-1"><i class="fa-regular fa-face-frown"></i><span>مفيش منتجات مطابقة. جرّب كلمة تانية أو أضفه يدويًا.</span></div>'; return; }
+            const inv = {}; viItems.forEach(i => { if (i.productId) inv[i.productId] = (inv[i.productId] || 0) + Math.max(1, Math.floor(viNum(i.qty)) || 1); });
+            box.innerHTML = shown.map(p => {
+                const st = Math.max(0, Math.floor(Number(p.quantity) || 0));
+                const src = p.image || (Array.isArray(p.images) && p.images[0]) || '';
+                const stock = st <= 0 ? '<span class="pos-pill out">نفد</span>' : `<span class="pos-pill${st <= 3 ? ' low' : ''}">${st}</span>`;
+                const n = inv[p.id];
+                return `<button type="button" class="vi-card${n ? ' in' : ''}" data-pid="${escapeHtml(p.id)}"><span class="vi-img">📦${src ? `<img src="${escapeHtml(src)}" alt="" loading="lazy">` : ''}</span>${n ? `<span class="vi-badge">×${n}</span>` : '<span class="vi-add"><i class="fa-solid fa-plus"></i></span>'}<span class="vi-name">${escapeHtml(p.name)}</span><span class="vi-meta"><span class="vi-price">${moneyText(viStorePrice(p))} ج</span>${stock}</span>${p.vendorId && vxVendors && vxVendors[p.vendorId] ? `<span class="vi-vend">🏪 ${escapeHtml(vxVendors[p.vendorId].name || '')}</span>` : ''}</button>`;
+            }).join('') + (all.length > shown.length ? `<button type="button" class="btn btn-outline vi-more" data-more="1">عرض المزيد (${all.length - shown.length})</button>` : '');
+            if (keepScroll) box.scrollTop = keep;
+        }
+        function viAddProduct(pid) {
+            const p = viProducts().find(x => x.id === pid); if (!p) return;
+            const ex = viItems.find(i => i.productId === pid);
+            if (ex) ex.qty = Math.max(1, Math.floor(viNum(ex.qty)) || 1) + 1;
+            else viItems.push({ key: viKey(), productId: pid, name: p.name, qty: 1, price: viEl('viAutoPrice').checked ? viStorePrice(p) : '', pct: '' });
+            viRenderItems(true);
+        }
+        function viRenderItems(keepGridScroll) {
+            const box = viEl('viItems'), c = viCalc();
+            const cnt = viEl('viCountBadge'); cnt.textContent = viItems.length; cnt.classList.toggle('has', viItems.length > 0);
+            if (!viItems.length) box.innerHTML = '<div class="pos-empty">لسه مفيش بنود.<br>اختار منتجات من القائمة أو أضفها يدويًا.</div>';
+            else box.innerHTML = viItems.map(it => {
+                const p = it.productId ? viProducts().find(x => x.id === it.productId) : null;
+                const src = p && (p.image || (Array.isArray(p.images) && p.images[0]) || '');
+                const k = escapeHtml(it.key), l = c.lines.find(x => x.key === it.key);
+                return `<div class="pos-item"><div class="pos-item-head"><span class="pos-thumb">${p ? '📦' : '✍️'}${src ? `<img src="${escapeHtml(src)}" alt="" loading="lazy">` : ''}</span><div class="pos-item-name">${escapeHtml(it.name)}${it.productId ? '' : ' <small>(يدوي)</small>'}</div><button type="button" class="pos-rm" data-act="rm" data-k="${k}" aria-label="حذف البند"><i class="fa-solid fa-trash-can"></i></button></div><div class="pos-item-row"><label class="pos-mini"><span>سعر التاجر</span><input type="number" data-f="price" data-k="${k}" value="${it.price === '' ? '' : escapeHtml(String(it.price))}" placeholder="0" min="0" step="0.01" inputmode="decimal"></label><div class="pos-mini"><span>الكمية</span><div class="pos-step"><button type="button" data-act="dec" data-k="${k}" aria-label="إنقاص">−</button><input type="number" data-f="qty" data-k="${k}" value="${it.qty}" min="1" step="1" inputmode="numeric" aria-label="الكمية"><button type="button" data-act="inc" data-k="${k}" aria-label="زيادة">+</button></div></div><label class="pos-mini"><span>نسبة خاصة %</span><input type="number" data-f="pct" data-k="${k}" value="${it.pct === '' ? '' : escapeHtml(String(it.pct))}" placeholder="${c.pct}" min="0" step="0.5" inputmode="decimal" style="width:84px"></label><div class="pos-line" data-line="${k}">${l ? viLineHtml(l, c.mode) : ''}</div></div></div>`;
+            }).join('');
+            viRenderTotals();
+            viRenderGrid(keepGridScroll);
+        }
+
+        // ----- إصدار الفاتورة -----
+        function viValidate() {
+            if (!viItems.length) return 'أضف منتجًا واحدًا على الأقل';
+            const vid = viVendorId();
+            if (!vid) return 'اختر التاجر أو اكتب اسمه';
+            if (vid === '__manual' && !viEl('viVendorName').value.trim()) return 'اكتب اسم التاجر';
+            const g = viNum(viEl('viPct').value), minus = viEl('viMode').value !== 'plus';
+            if (g < 0 || (minus && g > 100)) return 'النسبة غير صحيحة';
+            const bad = viItems.find(i => i.pct !== '' && (viNum(i.pct) < 0 || (minus && viNum(i.pct) > 100)));
+            if (bad) return 'النسبة الخاصة غير صحيحة: ' + bad.name;
+            if (viEl('viShowPrices').checked) { const miss = viItems.find(i => !(viNum(i.price) > 0)); if (miss) return 'حدد سعر: ' + miss.name + ' (أو اقفل "إظهار الأسعار")'; }
+            return '';
+        }
+        function viBuildOrder() {
+            const c = viCalc(), vid = viVendorId(), v = (vxVendors && vxVendors[vid]) || {};
+            const name = vid === '__manual' ? viEl('viVendorName').value.trim() : (v.name || v.username || 'تاجر');
+            return {
+                id: viEditingId || String(Date.now()), vendorInvoice: true, status: 'vendor-invoice',
+                createdAt: viEditingCreated || Date.now(), updatedAt: Date.now(),
+                vendorId: vid === '__manual' ? '' : vid, vendorName: name, phone: String(v.phone || ''),
+                note: viEl('viNote').value.trim(), showPrices: viEl('viShowPrices').checked, pct: c.pct, mode: c.mode,
+                items: c.lines.map(l => ({ productId: l.productId, name: l.name, quantity: l.qty, price: l.price, pct: l.pct, pctCustom: l.custom, base: l.base, adj: l.adj, net: l.net })),
+                baseTotal: c.base, adjTotal: c.adj, netTotal: c.net, total: c.net
+            };
+        }
+        async function viIssue(preview) {
+            if (viBusy) return;
+            const err = viValidate(); if (err) { showToast('⚠️ ' + err, 'warning'); return; }
+            const o = viBuildOrder();
+            if (preview) { posShowInvoice(o, true); return; }
+            viBusy = true; const btn = viEl('viIssueBtn'); btn.disabled = true;
+            let dbOk = false;
+            try { await set(ref(database, `vendorInvoices/${o.id}`), JSON.parse(JSON.stringify(o))); dbOk = true; }
+            catch (e) { console.error('vendor invoice save failed:', e); }
+            try {
+                const list = posStorageGet(VI_HISTORY_KEY, []).filter(r => r.id !== o.id);
+                list.unshift({ id: o.id, createdAt: o.createdAt, vendorName: o.vendorName, netTotal: o.netTotal, count: o.items.length, showPrices: o.showPrices, dbOk, order: o });
+                posStorageSet(VI_HISTORY_KEY, list.slice(0, 40));
+                posShowInvoice(o);
+                showToast(dbOk ? '✅ تم إصدار الفاتورة وحفظها' : '⚠️ اتصدرت الفاتورة لكن تعذر حفظها على السيرفر — اضغط "حفظ" من السجل', dbOk ? 'success' : 'warning');
+                viReset(true);
+            } finally { viBusy = false; btn.disabled = false; }
+        }
+        function viReset(keepVendor) {
+            viItems = []; viEditingId = null; viEditingCreated = 0;
+            viEl('viNote').value = ''; viEl('viSearch').value = ''; viEl('viCustomName').value = ''; viEl('viCustomQty').value = '1'; viEl('viCustomPrice').value = '';
+            if (!keepVendor) { viEl('viVendor').value = ''; viEl('viVendorName').value = ''; viVendorUi(); }
+            viEl('viEditBanner').hidden = true; viEl('viIssueBtn').innerHTML = '<i class="fa-solid fa-file-invoice"></i> إصدار الفاتورة';
+            viLimit = 24; viRenderCats(); viRenderItems();
+        }
+        function viLoadInvoice(o) {
+            viReset(true);
+            viEditingId = o.id; viEditingCreated = o.createdAt || Date.now();
+            const sel = viEl('viVendor');
+            if (o.vendorId && [...sel.options].some(op => op.value === o.vendorId)) sel.value = o.vendorId;
+            else { sel.value = '__manual'; viEl('viVendorName').value = o.vendorName || ''; }
+            viVendorUi();
+            viEl('viNote').value = o.note || ''; viEl('viPct').value = o.pct ?? 0; viEl('viMode').value = o.mode === 'plus' ? 'plus' : 'minus'; viEl('viShowPrices').checked = o.showPrices !== false;
+            viItems = (o.items || []).map(i => ({ key: viKey(), productId: i.productId || '', name: i.name, qty: i.quantity, price: Number(i.price) > 0 ? i.price : '', pct: i.pctCustom ? i.pct : '' }));
+            viEl('viEditText').textContent = `✏️ تعديل فاتورة #${String(o.id).slice(-8)} — هتتحدّث بنفس الرقم`;
+            viEl('viEditBanner').hidden = false; viEl('viIssueBtn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ التعديلات';
+            viRenderCats(); viRenderItems();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ----- السجل -----
+        function viRenderHistory() {
+            const list = posStorageGet(VI_HISTORY_KEY, []), box = viEl('viHistory');
+            if (!list.length) { box.innerHTML = '<div class="pos-empty">لا توجد فواتير تجار بعد</div>'; return; }
+            box.innerHTML = list.map(r => {
+                const id = escapeHtml(r.id);
+                const state = r.dbOk === true ? '<span class="pos-pill">محفوظة ✓</span>' : '<span class="pos-pill low">لم تُحفظ على السيرفر</span>';
+                const sync = r.dbOk === true ? '' : `<button class="btn btn-gold btn-sm" type="button" data-vact="sync" data-vid="${id}">🔄 حفظ</button>`;
+                return `<div class="pos-hist"><div class="t"><b>#${escapeHtml(String(r.id).slice(-8))}</b> — ${escapeHtml(r.vendorName || 'تاجر')}${r.showPrices ? ' — ' + moneyText(r.netTotal) + ' ج' : ' — بدون أسعار'}<small>${escapeHtml(new Date(r.createdAt).toLocaleString('ar-EG'))} · ${r.count} بند</small><div style="margin-top:6px">${state}</div></div><div class="a">${sync}<button class="btn btn-outline btn-sm" type="button" data-vact="view" data-vid="${id}">🖨️ عرض</button><button class="btn btn-outline btn-sm" type="button" data-vact="edit" data-vid="${id}">✏️ تعديل</button><button class="btn btn-outline btn-sm" type="button" data-vact="del" data-vid="${id}" style="color:#fca5a5">🗑️</button></div></div>`;
+            }).join('');
+        }
+
+        function viInit() {
+            if (!viInited) {
+                viInited = true;
+                const st = posStorageGet(VI_SETTINGS_KEY, null) || {};
+                if (st.pct !== undefined) viEl('viPct').value = st.pct;
+                if (st.mode) viEl('viMode').value = st.mode;
+                if (typeof st.showPrices === 'boolean') viEl('viShowPrices').checked = st.showPrices;
+                if (typeof st.autoPrice === 'boolean') viEl('viAutoPrice').checked = st.autoPrice;
+                viEl('viVendor').addEventListener('change', viOnVendorChange);
+                viEl('viSearch').addEventListener('input', () => { viLimit = 24; viRenderGrid(); });
+                viEl('viSearchClear').addEventListener('click', () => { viEl('viSearch').value = ''; viLimit = 24; viRenderGrid(); viEl('viSearch').focus(); });
+                viEl('viCats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; viCat = b.dataset.cat; viLimit = 24; viRenderCats(); viRenderGrid(); });
+                viEl('viGrid').addEventListener('click', e => {
+                    if (e.target.closest('[data-more]')) { viLimit += 24; viRenderGrid(true); return; }
+                    const c = e.target.closest('[data-pid]'); if (c) viAddProduct(c.dataset.pid);
+                });
+                viEl('viGrid').addEventListener('error', e => { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
+                viEl('viItems').addEventListener('error', e => { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
+                viEl('viItems').addEventListener('input', e => {
+                    const f = e.target.dataset && e.target.dataset.f; if (!f) return;
+                    const it = viItems.find(x => x.key === e.target.dataset.k); if (!it) return;
+                    it[f] = e.target.value; viRenderTotals(); viRenderGrid(true);
+                });
+                viEl('viItems').addEventListener('click', e => {
+                    const b = e.target.closest('[data-act]'); if (!b) return;
+                    const it = viItems.find(x => x.key === b.dataset.k); if (!it) return;
+                    const q = Math.max(1, Math.floor(viNum(it.qty)) || 1);
+                    if (b.dataset.act === 'rm') viItems = viItems.filter(x => x !== it);
+                    else if (b.dataset.act === 'inc') it.qty = q + 1;
+                    else if (b.dataset.act === 'dec') it.qty = Math.max(1, q - 1);
+                    viRenderItems(true);
+                });
+                viEl('viPct').addEventListener('input', () => { viSaveSettings(); viRenderItems(true); });
+                viEl('viMode').addEventListener('change', () => { viSaveSettings(); viRenderItems(true); });
+                viEl('viShowPrices').addEventListener('change', viSaveSettings);
+                viEl('viAutoPrice').addEventListener('change', viSaveSettings);
+                viEl('viQuick').addEventListener('click', e => { const b = e.target.closest('[data-pct]'); if (!b) return; viEl('viPct').value = b.dataset.pct; viSaveSettings(); viRenderItems(true); });
+                viEl('viFillPrices').addEventListener('click', () => {
+                    let n = 0;
+                    viItems.forEach(it => { if (it.productId && !(viNum(it.price) > 0)) { const p = viProducts().find(x => x.id === it.productId); if (p && viStorePrice(p) > 0) { it.price = viStorePrice(p); n++; } } });
+                    viRenderItems(true);
+                    showToast(n ? `✅ اتملى سعر ${n} بند من المتجر` : 'مفيش بنود فاضية تتملى', n ? 'success' : 'info');
+                });
+                viEl('viAddCustom').addEventListener('click', () => {
+                    const name = viEl('viCustomName').value.trim(); if (!name) { showToast('⚠️ اكتب اسم المنتج', 'warning'); return; }
+                    const qty = Math.max(1, Math.floor(viNum(viEl('viCustomQty').value)) || 1), price = viNum(viEl('viCustomPrice').value);
+                    viItems.push({ key: viKey(), productId: '', name, qty, price: price > 0 ? price : '', pct: '' });
+                    viEl('viCustomName').value = ''; viEl('viCustomQty').value = '1'; viEl('viCustomPrice').value = '';
+                    viRenderItems(true);
+                });
+                viEl('viIssueBtn').addEventListener('click', () => viIssue(false));
+                viEl('viPreviewBtn').addEventListener('click', () => viIssue(true));
+                viEl('viResetBtn').addEventListener('click', () => viReset(false));
+                viEl('viCancelEdit').addEventListener('click', () => viReset(false));
+                viEl('viClearHistory').addEventListener('click', async () => {
+                    if (await window.proConfirm('مسح سجل فواتير التجار من هذا الجهاز؟ (الفواتير المحفوظة في قاعدة البيانات لن تتأثر)', { type: 'danger', title: 'مسح السجل', okText: 'امسح' })) { posStorageSet(VI_HISTORY_KEY, []); viRenderHistory(); }
+                });
+                viEl('viHistory').addEventListener('click', async e => {
+                    const b = e.target.closest('[data-vact]'); if (!b) return;
+                    const list = posStorageGet(VI_HISTORY_KEY, []), rec = list.find(r => String(r.id) === b.dataset.vid); if (!rec) return;
+                    const a = b.dataset.vact;
+                    if (a === 'view') posShowInvoice(rec.order);
+                    else if (a === 'edit') viLoadInvoice(rec.order);
+                    else if (a === 'sync') {
+                        b.disabled = true;
+                        try { await set(ref(database, `vendorInvoices/${rec.id}`), JSON.parse(JSON.stringify(rec.order))); rec.dbOk = true; showToast('✅ اتحفظت الفاتورة', 'success'); }
+                        catch (err) { console.error(err); showToast('⚠️ تعذر الحفظ — راجع صلاحيات قاعدة البيانات', 'warning'); }
+                        posStorageSet(VI_HISTORY_KEY, list); viRenderHistory();
+                    }
+                    else if (await window.proConfirm('حذف هذه الفاتورة من السجل المحلي؟', { type: 'danger', title: 'حذف من السجل', okText: 'احذف' })) { posStorageSet(VI_HISTORY_KEY, list.filter(r => r.id !== rec.id)); viRenderHistory(); }
+                });
+                if (!Object.keys(vxVendors || {}).length) setTimeout(() => { viFillVendors(); viRenderCats(); }, 1500);
+            }
+            viFillVendors(); viRenderCats(); viRenderGrid(); viRenderItems(); viRenderHistory();
+        }
+
+        // قالب الفاتورة المطبوعة/المصوّرة (مستقل، ويعمل مع الطباعة وحفظ الصورة)
+        function viBuildHtml(o) {
+            const s = getInvoiceSettingsSnapshot(), k = escapeHtml, sp = o.showPrices !== false, minus = o.mode !== 'plus';
+            const date = new Date(o.createdAt || Date.now()).toLocaleString('ar-EG');
+            const rows = (o.items || []).map(i => {
+                const hint = sp && Number(i.pct) > 0 && Number(i.price) > 0 ? `<small>${minus ? 'خصم' : 'زيادة'} ${Number(i.pct)}% (${minus ? '−' : '+'}${moneyText(i.adj)} ج)</small>` : '';
+                return `<tr><td class="n">${k(i.name || '---')}${hint}</td><td>${Number(i.quantity || 0)}</td>${sp ? `<td>${Number(i.price) > 0 ? moneyText(i.price) : '—'}</td><td>${Number(i.price) > 0 ? moneyText(i.net) : '—'}</td>` : ''}</tr>`;
+            }).join('');
+            const totals = sp ? `<div class="tot"><div><span>إجمالي سعر التاجر</span><b>${moneyText(o.baseTotal)} ج</b></div><div><span>${minus ? 'خصم النسبة' : 'زيادة النسبة'}</span><b>${minus ? '−' : '+'}${moneyText(o.adjTotal)} ج</b></div><div class="g"><span>الصافي المستحق للتاجر</span><b>${moneyText(o.netTotal)} ج</b></div></div>` : '<div class="nop">الأسعار تُحدد لاحقًا</div>';
+            return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>فاتورة تاجر #${k(String(o.id || '').slice(-8))}</title><style>
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:#f3f4f6;color:#111;font-family:Tahoma,Arial,sans-serif}
+.invoice-sheet{max-width:440px;margin:0 auto;background:#fff;padding:20px 18px 24px;border-top:7px solid #111;color:#111}
+.hd{text-align:center;padding-bottom:12px;border-bottom:2px dashed #999}.sn{font-size:22px;font-weight:900}.tt{margin-top:6px;font-size:15px;font-weight:800}
+.chip{display:inline-block;margin-top:8px;padding:3px 14px;border:2px solid #111;border-radius:50px;font-size:12px;font-weight:900}
+.meta{background:#f6f6f6;border:1px solid #ddd;border-radius:10px;padding:6px 12px;margin:14px 0}.meta div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13px;border-bottom:1px dotted #ccc}.meta div:last-child{border-bottom:0}
+table{width:100%;border-collapse:collapse;font-size:13px}th{background:#111;color:#fff;padding:8px 6px;font-size:12px}td{padding:8px 6px;border-bottom:1px solid #ddd;text-align:center}td.n{text-align:right;font-weight:700}td small{display:block;font-weight:600;color:#555;font-size:11px;margin-top:2px}
+.tot{margin-top:14px;border:2px solid #111;border-radius:10px;padding:8px 12px}.tot div{display:flex;justify-content:space-between;padding:5px 0;font-size:14px}.tot .g{border-top:2px dashed #111;margin-top:4px;padding-top:9px;font-size:17px;font-weight:900}
+.nop{margin-top:14px;text-align:center;border:2px dashed #999;border-radius:10px;padding:12px;font-weight:800;color:#444}
+.sig{display:flex;justify-content:space-between;gap:16px;margin-top:30px;font-size:12px;color:#444}.sig div{flex:1;text-align:center;border-top:1px solid #111;padding-top:6px}
+td,th,.meta b{overflow-wrap:anywhere}.meta div b{text-align:end}.sig div{min-width:0}
+@media(max-width:400px){.invoice-sheet{padding:14px 10px 18px;border-top-width:6px}.sn{font-size:19px}.tt{font-size:14px}table{font-size:12px}th,td{padding:7px 3px}th{font-size:11px}td small{font-size:10px}.meta{padding:4px 9px}.meta div{flex-wrap:wrap;gap:2px 10px;font-size:12px}.tot{padding:6px 9px}.tot div{font-size:13px;gap:8px}.tot .g{font-size:15px}.sig{gap:8px;font-size:11px}}
+@media print{html,body{background:#fff}.invoice-sheet{max-width:none}}
+</style></head><body><div class="invoice-sheet" dir="rtl">
+<div class="hd">${s.showStoreName ? `<div class="sn">🏪 ${k(s.storeName || 'بروفيشنال')}</div>` : ''}<div class="tt">فاتورة طلب من التاجر</div><div class="chip">${sp ? 'بالأسعار' : 'بدون أسعار'}</div></div>
+<div class="meta"><div><span>رقم الفاتورة</span><b>#${k(String(o.id || '').slice(-8))}</b></div><div><span>التاريخ</span><b>${k(date)}</b></div><div><span>التاجر</span><b>${k(o.vendorName || '---')}</b></div>${o.note ? `<div><span>ملاحظة</span><b>${k(o.note)}</b></div>` : ''}</div>
+<table><thead><tr><th style="text-align:right">المنتج</th><th>الكمية</th>${sp ? '<th>السعر</th><th>الصافي</th>' : ''}</tr></thead><tbody>${rows || '<tr><td colspan="4">لا توجد بنود</td></tr>'}</tbody></table>
+${totals}
+<div class="sig"><div>توقيع التاجر</div><div>توقيع المتجر</div></div>
+</div></body></html>`;
+        }
+
         window.switchTab = function(n) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            const tabs = ['orders','invoice','pos','products','add','coupons','wallets','about','contact','messages','logo','flashsale','promo','analytics','returns','vendors','approvals'];
+            const tabs = ['orders','invoice','pos','products','add','coupons','wallets','about','contact','messages','logo','flashsale','promo','analytics','returns','vendors','approvals','vinvoice'];
             const idx = tabs.indexOf(n);
             const at = document.querySelectorAll('.tab');
             if (idx >= 0 && at[idx]) at[idx].classList.add('active');
@@ -9575,6 +10159,8 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             if (n === 'approvals') renderApprovals();
             if (n === 'invoice') { loadInvoiceSettings(); updateInvoicePreview(); }
             if (n === 'pos') posInit();
+            if (n === 'vinvoice') viInit();
+            if (n === 'add') paInit();
             if (n === 'products') renderProducts();
             if (n === 'coupons') renderCoupons();
             if (n === 'wallets') loadWalletSettings();
@@ -9701,13 +10287,15 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         document.getElementById('addProductBtn')?.addEventListener('click', async function() {
             const name = document.getElementById('prodName')?.value?.trim();
             const category = document.getElementById('prodCategory')?.value || 'أجهزة شخصية';
-            const price = parseFloat(document.getElementById('prodPrice')?.value);
+            const basePrice = parseFloat(document.getElementById('prodPrice')?.value);
+            const price = isNaN(basePrice) ? basePrice : window.paApply(basePrice);
             const qty = parseInt(document.getElementById('prodQty')?.value);
             const barcode = normalizeBarcode(document.getElementById('prodBarcode')?.value);
             const desc = document.getElementById('prodDesc')?.value?.trim();
             const img = selectedProductImage;
             const dv = parseFloat(document.getElementById('prodDiscountValue')?.value) || 0;
             if (!name) { showToast('⚠️ أدخل الاسم', 'error'); return; }
+            if (paState.mode === 'down' && paNum(paState.pct) > 100) { showToast('⚠️ نسبة الخصم من 0 إلى 100', 'error'); return; }
             if (isNaN(price) || price < 0) { showToast('⚠️ سعر صحيح', 'error'); return; }
             if (isNaN(qty) || qty < 0) { showToast('⚠️ كمية صحيحة', 'error'); return; }
             if (!desc) { showToast('⚠️ أدخل وصف', 'error'); return; }
@@ -9724,7 +10312,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 await set(r, { name, price, finalPrice: calculateFinalPrice(price, currentDiscountType, dv), category, quantity: qty, initialStock: qty, barcode: barcode || '', description: desc, image: img, cloudinary_public_id: imageMeta.public_id || '', cloudinary_delete_token: imageMeta.delete_token || '', discountType: currentDiscountType, discountValue: dv, createdAt: Date.now(), ...window.readDetailsFields('prod') });
                 window.resetAddProductForm();
                 window.switchTab('products');
-                showToast(`🎉 تم إضافة "${name}"`);
+                showToast(`🎉 تم إضافة "${name}"` + (price !== basePrice ? ` بسعر ${price.toFixed(2)} ج (الأساسي ${basePrice.toFixed(2)})` : ''));
             } catch (e) {
                 try {
                     const token = window.selectedProductImageMeta?.delete_token;
