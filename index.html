@@ -2456,12 +2456,15 @@
           <span class="pos-switch-txt"><b>خصم الكميات من المخزون</b><small>يتم الخصم عند الإصدار فقط، وليس عند المعاينة.</small></span>
         </label>
 
+        <button type="button" class="btn btn-outline btn-sm" id="posSaveDefaults" style="width:100%;justify-content:center;margin-top:10px;min-height:46px"><i class="fa-solid fa-floppy-disk"></i> حفظ الإعدادات الحالية كافتراضي</button>
+        <div class="pos-note" id="posSavedNote"></div>
+
         <div class="pos-totals" id="posTotals"></div>
         <div class="pos-actions">
           <button class="btn btn-gold" id="posIssueBtn" type="button" style="flex:2;min-width:170px"><i class="fa-solid fa-file-invoice"></i> إصدار الفاتورة</button>
           <button class="btn btn-outline" id="posPreviewBtn" type="button" style="flex:1;min-width:110px"><i class="fa-solid fa-eye"></i> معاينة</button>
         </div>
-        <div class="pos-note">المعاينة لا تحفظ الفاتورة ولا تخصم من المخزون.</div>
+        <div class="pos-note">الإصدار بيحفظ الفاتورة في قاعدة البيانات ويضيف قيمتها للخزنة والتحليلات. المعاينة لا تحفظ ولا تخصم شيئًا.</div>
       </div>
     </div>
   </div>
@@ -9248,7 +9251,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             if (!posReady) {
                 posReady = true;
                 posEl('posDeduct').checked = !!posStorageGet(POS_DEDUCT_KEY, false);
-                posEl('posDeduct').addEventListener('change', () => { posStorageSet(POS_DEDUCT_KEY, posDeductOn()); posItems.forEach(it => { const c = posCap(it); if (it.qty > c) it.qty = Math.max(1, c); }); posRenderItems(); });
+                posEl('posDeduct').addEventListener('change', () => { posStorageSet(POS_DEDUCT_KEY, posDeductOn()); posSaveDeductOnly(); posItems.forEach(it => { const c = posCap(it); if (it.qty > c) it.qty = Math.max(1, c); }); posRenderItems(); });
                 posEl('posSearch').addEventListener('input', posSearchRender);
                 posEl('posSearchClear').addEventListener('click', () => { posEl('posSearch').value = ''; posSearchRender(); posEl('posSearch').focus(); });
                 ['posResults', 'posItems'].forEach(id => posEl(id).addEventListener('error', e => { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true));
@@ -9288,16 +9291,24 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 posEl('posShipChips').addEventListener('click', e => { const b = e.target.closest('[data-ship]'); if (!b) return; posEl('posShip').value = b.dataset.ship; posMarkChips(); posRenderTotals(); });
                 posEl('posResetBtn').addEventListener('click', async () => { if (posItems.length && !await window.proConfirm('مسح الفاتورة الحالية والبدء من جديد؟', { title: 'فاتورة جديدة', okText: 'نعم' })) return; posReset(); });
                 posEl('posIssueBtn').addEventListener('click', () => posIssue(false));
+                posEl('posSaveDefaults').addEventListener('click', posSaveSettings);
                 posEl('posPreviewBtn').addEventListener('click', () => posIssue(true));
                 posEl('posHistory').addEventListener('click', async e => {
                     const b = e.target.closest('[data-hact]'); if (!b) return;
                     const list = posStorageGet(POS_HISTORY_KEY, []); const rec = list.find(r => r.id === b.dataset.hid); if (!rec) return;
                     if (b.dataset.hact === 'print') posShowInvoice(rec.order);
+                    else if (b.dataset.hact === 'sync') {
+                        b.disabled = true;
+                        const r = await posPersist(rec.order);
+                        rec.dbOk = r.db; rec.salesOk = r.sales; posStorageSet(POS_HISTORY_KEY, list); posRenderHistory();
+                        showToast(r.db && r.sales ? '✅ اتسجلت الفاتورة في الخزنة والتحليلات' : '⚠️ لسه فيه جزء مش اتسجل — جرّب تاني', r.db && r.sales ? 'success' : 'warning');
+                    }
                     else if (await window.proConfirm('حذف هذه الفاتورة من السجل المحلي؟ (لن يتأثر المخزون)', { type: 'danger', title: 'حذف من السجل', okText: 'احذف' })) { posStorageSet(POS_HISTORY_KEY, list.filter(r => r.id !== rec.id)); posRenderHistory(); }
                 });
                 posEl('posClearHistory').addEventListener('click', async () => { if (await window.proConfirm('مسح سجل الفواتير المحفوظ على هذا الجهاز؟ (لن يتأثر المخزون)', { type: 'danger', title: 'مسح السجل', okText: 'امسح' })) { posStorageSet(POS_HISTORY_KEY, []); posRenderHistory(); } });
             }
             try { if (typeof loadInvoiceSettings === 'function') loadInvoiceSettings(); } catch (_) {}
+            posLoadSettings();
             posSearchRender(); posRenderItems(); posRenderHistory(); posMarkChips();
         }
 
@@ -9364,7 +9375,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
         function posBuildOrder() {
             const c = posCalc();
             return {
-                id: String(Date.now()), manualInvoice: true, createdAt: Date.now(), status: 'delivered',
+                id: String(Date.now()), manualInvoice: true, createdAt: Date.now(), deliveredAt: Date.now(), status: 'delivered',
                 recipientName: posEl('posCustName').value.trim().slice(0, 80), phone: posEl('posCustPhone').value.trim().slice(0, 20), address: posEl('posCustAddr').value.trim().slice(0, 160),
                 paymentMethod: 'manual', paymentLabel: posEl('posPayment').value,
                 items: posItems.map(i => ({ productId: i.productId || null, name: i.name, price: i.price, quantity: i.qty })),
@@ -9428,6 +9439,72 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             document.addEventListener('keydown', posModalKeyHandler);
         }
 
+        // ===== إعدادات الفاتورة الافتراضية (الشحن / الخصم / الدفع / خصم المخزون) =====
+        const POS_SETTINGS_KEY = 'pro_pos_settings_v1';
+        let posSavedSettings = null, posSettingsLoaded = false;
+
+        function posCollectSettings() {
+            return { ship: money(Math.max(0, posNum(posEl('posShip').value))), discount: Math.max(0, posNum(posEl('posDiscount').value)), discType: posEl('posDiscType').value, payment: posEl('posPayment').value, deduct: posDeductOn() };
+        }
+        function posResetValues() { return Object.assign({ ship: 0, discount: 0, discType: 'amt' }, posSavedSettings || {}); }
+        function posApplySettings(s) {
+            if (!s) return;
+            if (s.ship !== undefined) posEl('posShip').value = s.ship;
+            if (s.discount !== undefined) posEl('posDiscount').value = s.discount;
+            if (s.discType === 'amt' || s.discType === 'pct') posEl('posDiscType').value = s.discType;
+            if (s.payment && [...posEl('posPayment').options].some(op => op.value === s.payment)) posEl('posPayment').value = s.payment;
+            if (typeof s.deduct === 'boolean') posEl('posDeduct').checked = s.deduct;
+            posMarkChips(); posRenderTotals(); posRenderSavedNote();
+        }
+        function posRenderSavedNote() {
+            const el = posEl('posSavedNote'); if (!el) return;
+            const s = posSavedSettings;
+            if (!s) { el.textContent = 'لسه ما حفظتش إعدادات — اضبط الشحن والخصم وبعدها اضغط الزر.'; return; }
+            const disc = Number(s.discount) > 0 ? (s.discType === 'pct' ? s.discount + '%' : s.discount + ' ج') : 'بدون';
+            el.textContent = `المحفوظ: شحن ${s.ship ?? 0} ج · خصم ${disc}${s.payment ? ' · دفع ' + s.payment : ''} · خصم المخزون ${s.deduct ? 'مفعّل' : 'متوقف'}`;
+        }
+        function posLoadSettings() {
+            if (posSettingsLoaded) { posRenderSavedNote(); return; }
+            posSettingsLoaded = true;
+            posSavedSettings = posStorageGet(POS_SETTINGS_KEY, null);
+            if (posSavedSettings) posApplySettings(posSavedSettings); else posRenderSavedNote();
+            if (!database) return;
+            get(ref(database, 'settings/pos')).then(snap => {
+                if (!snap.exists()) return;
+                const s = { ...(snap.val() || {}) }; delete s.updatedAt;
+                posSavedSettings = { ...(posSavedSettings || {}), ...s };
+                posStorageSet(POS_SETTINGS_KEY, posSavedSettings);
+                if (!posItems.length) posApplySettings(posSavedSettings); else posRenderSavedNote();
+            }).catch(() => {});
+        }
+        async function posSaveSettings() {
+            const s = posCollectSettings();
+            posSavedSettings = s; posStorageSet(POS_SETTINGS_KEY, s); posStorageSet(POS_DEDUCT_KEY, s.deduct); posRenderSavedNote();
+            const btn = posEl('posSaveDefaults'); btn.disabled = true;
+            try { await set(ref(database, 'settings/pos'), { ...s, updatedAt: Date.now() }); showToast('✅ تم حفظ الإعدادات — هتفضل في كل فاتورة جديدة', 'success'); }
+            catch (e) { console.error(e); showToast('⚠️ اتحفظت على الجهاز بس — تعذر الحفظ على السيرفر', 'warning'); }
+            finally { btn.disabled = false; }
+        }
+        function posSaveDeductOnly() {
+            posSavedSettings = { ...(posSavedSettings || {}), deduct: posDeductOn() };
+            posStorageSet(POS_SETTINGS_KEY, posSavedSettings); posRenderSavedNote();
+            try { update(ref(database, 'settings/pos'), { deduct: posDeductOn(), updatedAt: Date.now() }).catch(() => {}); } catch (_) {}
+        }
+
+        // ===== حفظ الفاتورة في قاعدة البيانات + تسجيلها في الخزنة والتحليلات =====
+        async function posPersist(o) {
+            const res = { db: false, sales: false };
+            try { await set(ref(database, `posInvoices/${o.id}`), { ...o, source: 'pos', savedAt: Date.now() }); res.db = true; }
+            catch (e) { console.error('pos invoice save failed:', e); }
+            try { res.sales = !!(await recordDeliveredSale(o)); }
+            catch (e) { console.error('pos sale record failed:', e); }
+            if (res.sales) {
+                try { await updateMonthlySales(); await updateAnalyticsCache(true); updateStats(); }
+                catch (e) { console.error('pos analytics refresh failed:', e); }
+            }
+            return res;
+        }
+
         async function posIssue(preview) {
             if (posBusy) return;
             const err = posValidate(); if (err) { showToast('⚠️ ' + err, 'warning'); return; }
@@ -9451,29 +9528,37 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 posBusy = false; btn.disabled = false; return;
             }
             try {
+                showToast('⏳ جاري حفظ الفاتورة...', 'info');
+                const res = await posPersist(o);
                 const list = posStorageGet(POS_HISTORY_KEY, []);
-                list.unshift({ id: o.id, createdAt: o.createdAt, total: o.total, customer: o.recipientName, count: o.items.length, deducted: deduct, order: o });
+                list.unshift({ id: o.id, createdAt: o.createdAt, total: o.total, customer: o.recipientName, count: o.items.length, deducted: deduct, dbOk: res.db, salesOk: res.sales, order: o });
                 posStorageSet(POS_HISTORY_KEY, list.slice(0, 30));
                 posShowInvoice(o);
-                showToast('✅ تم إصدار الفاتورة' + (deduct ? ' وخصم المخزون' : ''), 'success');
+                if (res.db && res.sales) showToast('✅ تم إصدار الفاتورة وإضافتها للخزنة والتحليلات' + (deduct ? ' وخصم المخزون' : ''), 'success');
+                else showToast('⚠️ اتصدرت الفاتورة لكن ' + (!res.sales ? 'تعذر تسجيلها في الخزنة' : 'تعذر حفظها على السيرفر') + ' — اضغط "تسجيل" من سجل الفواتير', 'warning');
                 posReset();
             } catch (e) {
                 console.error(e);
-                showToast('❌ تعذر عرض الفاتورة: ' + (e && e.message || 'خطأ غير معروف'), 'error');
+                showToast('❌ تعذر إكمال الفاتورة: ' + (e && e.message || 'خطأ غير معروف'), 'error');
             } finally { posBusy = false; btn.disabled = false; }
         }
 
         function posReset() {
             posItems = [];
             ['posSearch', 'posCustomName', 'posCustomPrice', 'posCustName', 'posCustPhone', 'posCustAddr'].forEach(id => { posEl(id).value = ''; });
-            posEl('posCustomQty').value = '1'; posEl('posShip').value = '0'; posEl('posDiscount').value = '0'; posEl('posDiscType').value = 'amt';
+            posEl('posCustomQty').value = '1'; posApplySettings(posResetValues());
             posSearchRender(); posRenderItems(); posRenderHistory(); posMarkChips();
         }
 
         function posRenderHistory() {
             const list = posStorageGet(POS_HISTORY_KEY, []); const box = posEl('posHistory');
             if (!list.length) { box.innerHTML = '<div class="pos-empty">لا توجد فواتير صادرة بعد</div>'; return; }
-            box.innerHTML = list.map(r => `<div class="pos-hist"><div class="t"><b>#${escapeHtml(String(r.id).slice(-8))}</b> — ${moneyText(r.total)} ج<small>${escapeHtml(new Date(r.createdAt).toLocaleString('ar-EG'))} · ${r.count} بند${r.customer ? ' · ' + escapeHtml(r.customer) : ''}${r.deducted ? ' · خُصم من المخزون' : ''}</small></div><div class="a"><button class="btn btn-outline btn-sm" type="button" data-hact="print" data-hid="${escapeHtml(r.id)}">🖨️ طباعة</button><button class="btn btn-outline btn-sm" type="button" data-hact="del" data-hid="${escapeHtml(r.id)}" style="color:#fca5a5">🗑️</button></div></div>`).join('');
+            box.innerHTML = list.map(r => {
+                const ok = r.dbOk === true && r.salesOk === true;
+                const state = ok ? '<span class="pos-pill">في الخزنة ✓</span>' : '<span class="pos-pill low">لم تُسجل في الخزنة</span>';
+                const sync = ok ? '' : `<button class="btn btn-gold btn-sm" type="button" data-hact="sync" data-hid="${escapeHtml(r.id)}">🔄 تسجيل</button>`;
+                return `<div class="pos-hist"><div class="t"><b>#${escapeHtml(String(r.id).slice(-8))}</b> — ${moneyText(r.total)} ج<small>${escapeHtml(new Date(r.createdAt).toLocaleString('ar-EG'))} · ${r.count} بند${r.customer ? ' · ' + escapeHtml(r.customer) : ''}${r.deducted ? ' · خُصم من المخزون' : ''}</small><div style="margin-top:6px">${state}</div></div><div class="a">${sync}<button class="btn btn-outline btn-sm" type="button" data-hact="print" data-hid="${escapeHtml(r.id)}">🖨️ عرض</button><button class="btn btn-outline btn-sm" type="button" data-hact="del" data-hid="${escapeHtml(r.id)}" style="color:#fca5a5">🗑️</button></div></div>`;
+            }).join('');
         }
 
         window.switchTab = function(n) {
