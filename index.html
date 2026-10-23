@@ -2678,7 +2678,7 @@ table{max-width:100%}
           <button class="btn btn-gold" id="viIssueBtn" type="button" style="flex:2;min-width:170px"><i class="fa-solid fa-file-invoice"></i> إصدار الفاتورة</button>
           <button class="btn btn-outline" id="viPreviewBtn" type="button" style="flex:1;min-width:110px"><i class="fa-solid fa-eye"></i> معاينة</button>
         </div>
-        <div class="pos-note">الإصدار بيحفظ الفاتورة في قاعدة البيانات (vendorInvoices) ولا يؤثر على الخزنة أو التحليلات.</div>
+        <div class="pos-note">الإصدار بيحفظ الفاتورة في قاعدة البيانات (vendorInvoices) ويخصم من الخزنة تكلفة المنتج فقط (الصافي المستحق للتاجر، بدون العمولة أو التوصيل).</div>
       </div>
     </div>
   </div>
@@ -5586,7 +5586,7 @@ table{max-width:100%}
                 if (aSnap.exists()) {
                     const d = rebuildAnalyticsSnapshot(aSnap.val() || {}, monthKey);
                     saveAnalyticsLocal(d);
-                    const cashbox = money(d.cashboxBalance || d.monthlySales || 0);
+                    const cashbox = cashboxOf(d);
                     stat.textContent = moneyText(cashbox) + ' ج';
                     return cashbox;
                 }
@@ -5600,7 +5600,7 @@ table{max-width:100%}
                 try {
                     const cached = analyticsCache && String(analyticsCache.monthKey || '') === String(monthKey)
                         ? rebuildAnalyticsSnapshot(analyticsCache, monthKey) : null;
-                    const fallback = money(cached?.cashboxBalance || cached?.monthlySales || 0);
+                    const fallback = cashboxOf(cached);
                     stat.textContent = moneyText(fallback) + ' ج';
                     return fallback;
                 } catch (_) {
@@ -5682,6 +5682,12 @@ table{max-width:100%}
             }
         }
 
+        // رصيد الخزنة (يسمح بالصفر الحقيقي ولا يرجع لقيمة المبيعات عند 0)
+        function cashboxOf(d) {
+            if (!d) return 0;
+            return (d.cashboxBalance !== undefined && d.cashboxBalance !== null) ? money(d.cashboxBalance) : money(d.monthlySales || 0);
+        }
+
         function rebuildAnalyticsSnapshot(data, monthKey) {
             const d = (data && typeof data === 'object') ? { ...data } : {};
             const deliveredOrderLedger = d.deliveredOrderLedger && typeof d.deliveredOrderLedger === 'object'
@@ -5692,6 +5698,9 @@ table{max-width:100%}
                 ? { ...d.rejectedOrderLedger } : {};
             const refundTotals = d.refundTotals && typeof d.refundTotals === 'object' ? { ...d.refundTotals } : {};
             const refundLedger = d.refundLedger && typeof d.refundLedger === 'object' ? { ...d.refundLedger } : {};
+            // فواتير التجار: تُخصم من الخزنة بتكلفة المنتج فقط (الصافي المستحق للتاجر، بدون عمولة أو توصيل)
+            const vendorInvoiceLedger = d.vendorInvoiceLedger && typeof d.vendorInvoiceLedger === 'object' ? { ...d.vendorInvoiceLedger } : {};
+            const vendorPaidTotal = money(Object.values(vendorInvoiceLedger).reduce((sum, v) => sum + money(v?.amount ?? v), 0));
 
             // دعم السجلات القديمة التي كانت تحفظ refundTotals فقط.
             Object.entries(refundTotals).forEach(([rid, amount]) => {
@@ -5762,7 +5771,9 @@ table{max-width:100%}
                 totalSalesAll: monthlySales,
                 returnsTotal: totalRefunds,
                 returnCount: Object.keys(refundLedger).length,
-                cashboxBalance: monthlySales,
+                cashboxBalance: money(Math.max(0, monthlySales - vendorPaidTotal)),
+                vendorInvoiceLedger,
+                vendorPaidTotal,
                 refundTotals: Object.fromEntries(Object.entries(refundLedger).map(([rid, entry]) => [rid, money(entry?.amount ?? entry)])),
                 refundLedger,
                 deliveredOrderLedger,
@@ -5814,7 +5825,7 @@ table{max-width:100%}
                 const snap = await get(aRef);
                 savedAnalytics = snap.exists() ? rebuildAnalyticsSnapshot(snap.val(), monthKey) : savedAnalytics;
                 saveAnalyticsLocal(savedAnalytics);
-                const homepageCashbox = money(savedAnalytics?.cashboxBalance || savedAnalytics?.monthlySales || 0);
+                const homepageCashbox = cashboxOf(savedAnalytics);
                 const homepageStat = document.getElementById('statTotalSales');
                 if (homepageStat) homepageStat.textContent = moneyText(homepageCashbox) + ' ج';
                 if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(savedAnalytics);
@@ -5916,13 +5927,41 @@ table{max-width:100%}
                 const stat = document.getElementById('statTotalSales');
                 if (stat && monthKey === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`) {
                     // نفس قيمة الخزنة المحفوظة في التحليلات؛ لا نعرض قيمة مستقلة من sales.
-                    const currentCashbox = money(analyticsCache?.cashboxBalance || analyticsCache?.monthlySales || savedTotal || 0);
+                    const currentCashbox = (analyticsCache ? cashboxOf(analyticsCache) : money(savedTotal || 0));
                     stat.textContent = moneyText(currentCashbox) + ' ج';
                 }
                 return true;
             } catch (e) {
                 console.error('recordReturnFinancialImpact failed:', e);
                 throw e;
+            }
+        }
+
+        // خصم تكلفة المنتج (الصافي المستحق للتاجر فقط) من الخزنة عند إصدار فاتورة التاجر.
+        // المفتاح = رقم الفاتورة، فتعديل نفس الفاتورة يحدّث القيمة ولا يكررها.
+        async function recordVendorInvoiceCost(o) {
+            try {
+                if (!database || !o?.id) return false;
+                const amount = money(o.netTotal ?? o.total);
+                const dt = new Date(Number(o.createdAt || Date.now()));
+                const monthKey = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+                const now = new Date();
+                const nowKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const aRef = ref(database, `analytics/${monthKey}`);
+                if (monthKey === nowKey && !(await get(aRef)).exists()) { try { await updateAnalyticsCache(true); } catch (_) {} }
+                await runTransaction(aRef, current => {
+                    const d = current && typeof current === 'object' ? current : {};
+                    const led = d.vendorInvoiceLedger && typeof d.vendorInvoiceLedger === 'object' ? { ...d.vendorInvoiceLedger } : {};
+                    if (amount > 0) led[o.id] = { amount, vendorId: String(o.vendorId || ''), vendorName: String(o.vendorName || ''), at: Number(o.createdAt || Date.now()) };
+                    else delete led[o.id];
+                    return { ...rebuildAnalyticsSnapshot({ ...d, vendorInvoiceLedger: led }, monthKey), savedAt: Date.now(), schemaVersion: 5 };
+                });
+                try { await updateMonthlySales(); await updateAnalyticsCache(true); updateStats(); }
+                catch (e) { console.warn('vendor invoice refresh failed:', e); }
+                return true;
+            } catch (e) {
+                console.error('recordVendorInvoiceCost failed:', e);
+                return false;
             }
         }
 
@@ -5982,7 +6021,7 @@ table{max-width:100%}
                 totalSalesAll: money(d.totalSalesAll || 0),
                 returnsTotal: money(d.returnsTotal || 0),
                 returnCount: Number(d.returnCount || 0),
-                cashboxBalance: money(d.cashboxBalance || d.monthlySales || 0),
+                cashboxBalance: cashboxOf(d),
                 conversionRate: d.conversionRate ?? '0.0',
                 totalOrders: Number(d.totalOrders || 0),
                 rejectedOrders: Number(d.rejectedOrders || 0),
@@ -6031,7 +6070,7 @@ table{max-width:100%}
                     saveAnalyticsLocal(d);
                     if (String(monthKey) === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`) {
                         const stat = document.getElementById('statTotalSales');
-                        if (stat) stat.textContent = moneyText(money(d.cashboxBalance || d.monthlySales || 0)) + ' ج';
+                        if (stat) stat.textContent = moneyText(cashboxOf(d)) + ' ج';
                     }
                     if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(d);
                     return d;
@@ -6085,7 +6124,7 @@ table{max-width:100%}
                     analyticsCache = rebuildAnalyticsSnapshot(s.val() || {}, monthKey);
                     saveAnalyticsLocal(analyticsCache);
                     const stat = document.getElementById('statTotalSales');
-                    if (stat) stat.textContent = moneyText(money(analyticsCache.cashboxBalance || analyticsCache.monthlySales || 0)) + ' ج';
+                    if (stat) stat.textContent = moneyText(cashboxOf(analyticsCache)) + ' ج';
                     if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(analyticsCache);
                     return analyticsCache;
                 }
@@ -6098,7 +6137,7 @@ table{max-width:100%}
             if (!d) { showToast('⚠️ لا توجد تحليلات', 'error'); return; }
             let csv = '\uFEFFالبند,القيمة\n';
             csv += `المبيعات الشهرية,"${Number(d.monthlySales || 0).toFixed(2)}"\n`;
-            csv += `رصيد الخزنة,"${Number(d.cashboxBalance || d.monthlySales || 0).toFixed(2)}"\n`;
+            csv += `رصيد الخزنة,"${cashboxOf(d).toFixed(2)}"\n`;
             csv += `المرتجعات,"${Number(d.returnsTotal || 0).toFixed(2)}"\n`;
             csv += `عدد المرتجعات,"${Number(d.returnCount || 0)}"\n`;
             csv += `إجمالي المبيعات,"${Number(d.totalSalesAll || 0).toFixed(2)}"\n`;
@@ -6313,7 +6352,7 @@ table{max-width:100%}
 
             c.innerHTML = `
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px;">
-                    <div class="analytics-stat" style="border-color:var(--gold-500);"><div class="stat-value">${money(d.cashboxBalance || 0).toFixed(2)} ج</div><div class="stat-label">💰 رصيد الخزنة</div><div style="font-size:10px;color:var(--text-muted);margin-top:4px;">صافي المقبوضات بعد المرتجعات</div></div>
+                    <div class="analytics-stat" style="border-color:var(--gold-500);"><div class="stat-value">${money(d.cashboxBalance || 0).toFixed(2)} ج</div><div class="stat-label">💰 رصيد الخزنة</div><div style="font-size:10px;color:var(--text-muted);margin-top:4px;">صافي المقبوضات بعد المرتجعات وفواتير التجار${Number(d.vendorPaidTotal) > 0 ? ' (مدفوع للتجار: ' + money(d.vendorPaidTotal).toFixed(2) + ' ج)' : ''}</div></div>
                     <div class="analytics-stat"><div class="stat-value">${money(d.monthlySales || 0).toFixed(2)} ج</div><div class="stat-label">المبيعات الشهرية الصافية</div></div>
                     <div class="analytics-stat"><div class="stat-value" style="color:var(--status-returned);">${money(d.returnsTotal || 0).toFixed(2)} ج</div><div class="stat-label">إجمالي المرتجعات</div><div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${Number(d.returnCount || 0)} عملية</div></div>
                     <div class="analytics-stat"><div class="stat-value">${Number(d.deliveredCount || 0)}</div><div class="stat-label">طلبات مكتملة</div></div>
@@ -9135,7 +9174,7 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 if (!snap.exists()) { if (stat) stat.textContent = '0.00 ج'; return; }
                 const d = rebuildAnalyticsSnapshot(snap.val() || {}, mk);
                 saveAnalyticsLocal(d);
-                if (stat) stat.textContent = moneyText(money(d.cashboxBalance || d.monthlySales || 0)) + ' ج';
+                if (stat) stat.textContent = moneyText(cashboxOf(d)) + ' ج';
                 if (document.getElementById('panel-analytics')?.classList.contains('active')) renderAnalyticsHTML(d);
             }, e => console.warn('live analytics', e));
         }
@@ -10044,21 +10083,30 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                 baseTotal: c.base, adjTotal: c.adj, netTotal: c.net, total: c.net
             };
         }
+        // سبب فشل الحفظ بشكل مفهوم (بدل رسالة عامة)
+        function viDbErrText(e) {
+            const code = String(e?.code || e?.message || '');
+            if (/permission|PERMISSION_DENIED/i.test(code)) return 'قواعد Firebase مش مسموحة لمسار vendorInvoices (PERMISSION_DENIED) — أضف له قاعدة للأدمن';
+            if (/network|unavailable|offline|timeout/i.test(code)) return 'مشكلة اتصال بالإنترنت — جرّب تاني';
+            return code || 'سبب غير معروف';
+        }
         async function viIssue(preview) {
             if (viBusy) return;
             const err = viValidate(); if (err) { showToast('⚠️ ' + err, 'warning'); return; }
             const o = viBuildOrder();
             if (preview) { posShowInvoice(o, true); return; }
             viBusy = true; const btn = viEl('viIssueBtn'); btn.disabled = true;
-            let dbOk = false;
+            let dbOk = false, dbErr = '';
             try { await set(ref(database, `vendorInvoices/${o.id}`), JSON.parse(JSON.stringify(o))); dbOk = true; }
-            catch (e) { console.error('vendor invoice save failed:', e); }
+            catch (e) { console.error('vendor invoice save failed:', e); dbErr = viDbErrText(e); }
+            let costOk = null;
+            if (dbOk) costOk = await recordVendorInvoiceCost(o);
             try {
                 const list = posStorageGet(VI_HISTORY_KEY, []).filter(r => r.id !== o.id);
-                list.unshift({ id: o.id, createdAt: o.createdAt, vendorName: o.vendorName, netTotal: o.netTotal, count: o.items.length, showPrices: o.showPrices, dbOk, order: o });
+                list.unshift({ id: o.id, createdAt: o.createdAt, vendorName: o.vendorName, netTotal: o.netTotal, count: o.items.length, showPrices: o.showPrices, dbOk, costOk, order: o });
                 posStorageSet(VI_HISTORY_KEY, list.slice(0, 40));
                 posShowInvoice(o);
-                showToast(dbOk ? '✅ تم إصدار الفاتورة وحفظها' : '⚠️ اتصدرت الفاتورة لكن تعذر حفظها على السيرفر — اضغط "حفظ" من السجل', dbOk ? 'success' : 'warning');
+                showToast(!dbOk ? '⚠️ اتصدرت الفاتورة لكن فشل حفظها على السيرفر: ' + dbErr : (costOk ? '✅ تم إصدار الفاتورة وخصم التكلفة (' + moneyText(o.netTotal) + ' ج) من الخزنة' : '⚠️ اتحفظت الفاتورة لكن تعذر خصمها من الخزنة — اضغط "حفظ" من السجل'), dbOk && costOk ? 'success' : 'warning');
                 viReset(true);
             } finally { viBusy = false; btn.disabled = false; }
         }
@@ -10090,8 +10138,9 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
             if (!list.length) { box.innerHTML = '<div class="pos-empty">لا توجد فواتير تجار بعد</div>'; return; }
             box.innerHTML = list.map(r => {
                 const id = escapeHtml(r.id);
-                const state = r.dbOk === true ? '<span class="pos-pill">محفوظة ✓</span>' : '<span class="pos-pill low">لم تُحفظ على السيرفر</span>';
-                const sync = r.dbOk === true ? '' : `<button class="btn btn-gold btn-sm" type="button" data-vact="sync" data-vid="${id}">🔄 حفظ</button>`;
+                const full = r.dbOk === true && r.costOk !== false;
+                const state = full ? '<span class="pos-pill">محفوظة ✓' + (r.costOk === true && Number(r.netTotal) > 0 ? ' · خُصمت من الخزنة' : '') + '</span>' : (r.dbOk === true ? '<span class="pos-pill low">لم تُخصم من الخزنة</span>' : '<span class="pos-pill low">لم تُحفظ على السيرفر</span>');
+                const sync = full ? '' : `<button class="btn btn-gold btn-sm" type="button" data-vact="sync" data-vid="${id}">🔄 حفظ</button>`;
                 return `<div class="pos-hist"><div class="t"><b>#${escapeHtml(String(r.id).slice(-8))}</b> — ${escapeHtml(r.vendorName || 'تاجر')}${r.showPrices ? ' — ' + moneyText(r.netTotal) + ' ج' : ' — بدون أسعار'}<small>${escapeHtml(new Date(r.createdAt).toLocaleString('ar-EG'))} · ${r.count} بند</small><div style="margin-top:6px">${state}</div></div><div class="a">${sync}<button class="btn btn-outline btn-sm" type="button" data-vact="view" data-vid="${id}">🖨️ عرض</button><button class="btn btn-outline btn-sm" type="button" data-vact="edit" data-vid="${id}">✏️ تعديل</button><button class="btn btn-outline btn-sm" type="button" data-vact="del" data-vid="${id}" style="color:#fca5a5">🗑️</button></div></div>`;
             }).join('');
         }
@@ -10161,8 +10210,8 @@ su[`returnRequests/${requestId}/returnId`] = returnId; // ✅ ربط مهم
                     else if (a === 'edit') viLoadInvoice(rec.order);
                     else if (a === 'sync') {
                         b.disabled = true;
-                        try { await set(ref(database, `vendorInvoices/${rec.id}`), JSON.parse(JSON.stringify(rec.order))); rec.dbOk = true; showToast('✅ اتحفظت الفاتورة', 'success'); }
-                        catch (err) { console.error(err); showToast('⚠️ تعذر الحفظ — راجع صلاحيات قاعدة البيانات', 'warning'); }
+                        try { await set(ref(database, `vendorInvoices/${rec.id}`), JSON.parse(JSON.stringify(rec.order))); rec.dbOk = true; rec.costOk = await recordVendorInvoiceCost(rec.order); showToast(rec.costOk ? '✅ اتحفظت الفاتورة وخُصمت من الخزنة' : '⚠️ اتحفظت لكن تعذر الخصم من الخزنة', rec.costOk ? 'success' : 'warning'); }
+                        catch (err) { console.error(err); showToast('⚠️ تعذر الحفظ: ' + viDbErrText(err), 'warning'); }
                         posStorageSet(VI_HISTORY_KEY, list); viRenderHistory();
                     }
                     else if (await window.proConfirm('حذف هذه الفاتورة من السجل المحلي؟', { type: 'danger', title: 'حذف من السجل', okText: 'احذف' })) { posStorageSet(VI_HISTORY_KEY, list.filter(r => r.id !== rec.id)); viRenderHistory(); }
